@@ -1,0 +1,25 @@
+#!/usr/bin/php
+<?php
+include('/opt/uit-toolbox/include.php');
+
+
+$stdin = fopen('php://stdin', 'r');
+$input = trim(fgets(STDIN));
+fclose($stdin);
+
+$dbPSQL = new dbPSQL();
+
+$dbPSQL->select($input);
+if (arrFilter($dbPSQL->get()) == 0)  {
+    foreach ($dbPSQL->get() as $key => $value) {
+        if (strFilter($value["result"]) == 0) {
+            echo $value["result"] . PHP_EOL;
+        } else {
+            echo "NULL" . PHP_EOL;
+        }
+    }
+} else {
+    echo "NULL" . PHP_EOL;
+}
+
+?>

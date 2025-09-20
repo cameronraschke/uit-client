@@ -1,0 +1,116 @@
+#!/bin/bash
+while true; do
+SECONDS=0
+serial=$(dmidecode --string system-serial-number)
+tagNum=$(echo "SELECT tagnumber AS result FROM locations WHERE system_serial = '${serial}' ORDER BY time DESC LIMIT 1" | /opt/uit-toolbox/select)
+echo "remote|${tagNum}|present|$(date '+%Y-%m-%d %H:%M:%S')" | /opt/uit-toolbox/parse
+
+for i in $(find /sys/class/hwmon/ -mindepth 1); do
+    type=$(cat ${i}/name)
+    if [[ $type == "coretemp" ]]; then
+        cpuTemp=$(cat ${i}/temp1_input)
+        echo "remote|${tagNum}|cpu_temp|${cpuTemp}" | /opt/uit-toolbox/parse
+        fi
+    
+    if [[ $type == "BAT0" || $type == "BAT1" ]]; then
+     if [[ -f ${i}/device/charge_full_design ]]; then
+        battCapacityFactory=$(cat ${i}/device/charge_full_design)
+        elif [[ -f ${i}/device/energy_full_design ]]; then 
+            battCapacityFactory=$(cat ${i}/device/energy_full_design)
+        fi
+        #battCapacityNow=$(cat ${i}/device/charge_full)
+        #battCharge=$(cat ${i}/device/charge_now)
+        battCharePcnt=$(cat ${i}/device/capacity)
+        battStatus=$(cat ${i}/device/status)
+        #battModel=$(cat ${i}/device/model_name)
+        echo "remote|${tagNum}|battery_charge|${battCharePcnt}" | /opt/uit-toolbox/parse
+        echo "remote|${tagNum}|battery_status|${battStatus}" | /opt/uit-toolbox/parse
+        fi
+
+    if [[ $type == "nvme" ]]; then
+        nvmeTemp=$(cat ${i}/temp1_input)
+        nvmeMaxTemp=$(cat ${i}/temp1_max)
+        nvmeAlarm=$(cat ${i}/temp1_alarm)
+        nvmeFirmware=$(cat ${i}/device/firmware_rev)
+        nvmeModel=$(cat ${i}/device/model)
+        nvmeSerial=$(cat ${i}/device/serial)
+        echo "remote|${tagNum}|disk_temp|${nvmeTemp}" | /opt/uit-toolbox/parse
+        echo "remote|${tagNum}|max_disk_temp|${nvmeMaxTemp}" | /opt/uit-toolbox/parse
+        fi
+
+    # # Dell BIOS/Motherboard Temp
+    # if [[ $type == "dell_smm" ]]; then
+    #     tmpSum=0
+    #     tmpNum=0
+    #     for tmp in $(find ${i}/temp*_input); do
+    #         tmpSum=$(( tmpSum + tmp ))
+    #         tmpNum=$(( tmpNum + 1 ))
+    #         done
+    #     motherboardTemp=$(( tmpSum / tmpNum ))
+    #     fi
+done
+
+
+# See realtime energy usage
+if [[ -d /sys/class/powercap ]]; then
+    uj1=0
+    uj2=0
+    for i in $(cat /sys/class/powercap/*/energy_uj 2>/dev/null); do
+        uj1=$(( uj1 + i ))
+    done
+    sleep 1
+    for i in $(cat /sys/class/powercap/*/energy_uj 2>/dev/null); do
+        uj2=$(( uj2 + i ))
+    done
+
+    echo "remote|${tagNum}|watts_now|${uj1}|${uj2}" | /opt/uit-toolbox/parse
+fi
+
+
+# Check if running kernel is up to date
+for i in $(ls /lib/modules); do
+    echo "${i}" | grep -i --quiet "$(uname -r)"
+    if [[ ${PIPESTATUS[1]} == "0" ]]; then
+        echo "remote|${tagNum}|kernel_updated|1" | /opt/uit-toolbox/parse
+        break
+    else
+        echo "remote|${tagNum}|kernel_updated|" | /opt/uit-toolbox/parse
+    fi
+done
+
+
+# Check if cancel job has been sent
+if [[ $(echo "SELECT job_queued AS result FROM remote WHERE tagnumber = '${tagNum}'" | /opt/uit-toolbox/select) == "cancel" ]]; then
+    echo "remote|${tagNum}|job_queued|" | /opt/uit-toolbox/parse
+    echo "remote|${tagNum}|job_active|" | /opt/uit-toolbox/parse
+    echo "remote|${tagNum}|status|fail - Job cancelled :(" | /opt/uit-toolbox/parse
+    UUID=$(printf '%s' "SELECT uuid AS result FROM jobstats WHERE tagnumber = '${tagNum}' AND host_connected = TRUE ORDER BY time DESC LIMIT 1" | /opt/uit-toolbox/select)
+    echo "general|erase_completed||${UUID}" | /opt/uit-toolbox/parse
+    echo "general|clone_completed||${UUID}" | /opt/uit-toolbox/parse
+    echo "general|job_failed|TRUE|${UUID}" | /opt/uit-toolbox/parse
+    pkill --terminal tty1
+fi
+
+
+#Network link speed
+for i in $(ip addr | awk '/state UP/ {print $2}' | sed 's/://g'); do
+    netSpeed=$(cat /sys/class/net/${i}/speed 2>/dev/null)
+    if [[ $netSpeed != $(echo "SELECT network_speed AS result FROM remote WHERE tagnumber = '${tagNum}'" | /opt/uit-toolbox/select) ]]; then
+        echo "remote|${tagNum}|network_speed|$netSpeed" | /opt/uit-toolbox/parse
+    fi
+done
+
+# Sleep before next loop
+sleep 1
+
+elapsed=0
+elapsed=$(cat /root/uptime)
+if [[ -z $elapsed ]]; then
+    elapsed=0
+fi
+
+elapsed=$(( elapsed + SECONDS ))
+echo "${elapsed}" > /root/uptime
+echo "remote|${tagNum}|uptime|${elapsed}" | /opt/uit-toolbox/parse
+
+done

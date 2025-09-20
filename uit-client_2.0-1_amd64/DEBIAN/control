@@ -1,0 +1,9 @@
+Package: uit-client
+Source: uit-client
+Version: 2.0-1
+Section: utils
+Priority: optional
+Architecture: amd64
+Maintainer: Cameron Raschke <caraschke@uh.edu>
+Description: uit-client
+Pre-Depends: wget
