@@ -7,3 +7,4 @@ Architecture: amd64
 Maintainer: Cameron Raschke <caraschke@uh.edu>
 Description: uit-client
 Pre-Depends: wget
+
