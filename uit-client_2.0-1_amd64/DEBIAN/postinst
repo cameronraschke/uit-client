@@ -50,23 +50,23 @@ configArr[UIT_WEB_HOST]=$(getConfigValue "UIT_WEB_HOST")
 configArr[UIT_WEB_PORT]=$(getConfigValue "UIT_WEB_PORT")
 configArr[UIT_TOOLBOX_SERVER_HOSTNAME]=$(getConfigValue "UIT_TOOLBOX_SERVER_HOSTNAME")
 
-function checkNullConfigVals() {
-for checkVal in ${!configArr[@]}; do
-  if [[ -z ${configArr[$checkVal]} ]]; then
-    echo "[Error] Missing/NULL parameter ${checkVal} in /etc/uit-toolbox/uit-toolbox.conf"
-    echo ""
-    read -t 10 -p "Value for ${checkVal} is missing. Continue? [y/N] " userInput
-    if [[ $userInput == "n" || $userInput == "N" ]]; then
-      echo "Exiting..."
-      exit 1
-      elif [[ -z $userInput || $userInput == "y" || $userInput == "Y" ]]; then
-        :
-      else checkNullConfigVals
-    fi
-  fi
-done
-}
-checkNullConfigVals
+# function checkNullConfigVals() {
+# for checkVal in ${!configArr[@]}; do
+#   if [[ -z ${configArr[$checkVal]} ]]; then
+#     echo "[Error] Missing/NULL parameter ${checkVal} in /etc/uit-client.conf"
+#     echo ""
+#     read -t 10 -p "Value for ${checkVal} is missing. Continue? [y/N] " userInput
+#     if [[ $userInput == "n" || $userInput == "N" ]]; then
+#       echo "Exiting..."
+#       exit 1
+#       elif [[ -z $userInput || $userInput == "y" || $userInput == "Y" ]]; then
+#         :
+#       else checkNullConfigVals
+#     fi
+#   fi
+# done
+# }
+# checkNullConfigVals
 
 for i in ${!configArr[@]}; do
   for file in $(find /usr/sbin/ -type f -name 'uit-*'; find /opt/uit-toolbox/ -type f); do
