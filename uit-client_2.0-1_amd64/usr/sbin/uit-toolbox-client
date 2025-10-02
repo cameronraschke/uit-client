@@ -2042,7 +2042,7 @@ function main {
 	hardwareData
 	tput reset
 	autodetectClient
-	curl "https://UIT_WEB_HOST:UIT_WEB_PORT/api/refresh-client.php?password=UIT_DB_CLIENT_PASSWD&tagnumber=${tagNum}"
+	# curl "https://UIT_WEB_HOST:UIT_WEB_PORT/api/refresh-client.php?password=UIT_DB_CLIENT_PASSWD&tagnumber=${tagNum}"
 	if [[ $mainMenuOpt == "1" ]]; then
 		APPSELECT="EC"
 		ACTION="erase and clone"
