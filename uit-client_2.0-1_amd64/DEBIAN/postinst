@@ -38,17 +38,17 @@ getConfigValue() {
 }
 
 # Load config values (values that need spaces preserved are marked with 'false')
-configArr[UIT_DB_CLIENT_USER]=$(getConfigValue "UIT_DB_CLIENT_USER")
-configArr[UIT_DB_CLIENT_PASSWD]=$(getConfigValue "UIT_DB_CLIENT_PASSWD")
-configArr[UIT_DB_CLIENT_DBNAME]=$(getConfigValue "UIT_DB_CLIENT_DBNAME")
+configArr[UIT_CLIENT_DB_USER]=$(getConfigValue "UIT_CLIENT_DB_USER")
+configArr[UIT_CLIENT_DB_PASSWD]=$(getConfigValue "UIT_CLIENT_DB_PASSWD")
+configArr[UIT_CLIENT_DB_NAME]=$(getConfigValue "UIT_CLIENT_DB_NAME")
 configArr[UIT_WEBMASTER_NAME]=$(getConfigValue "UIT_WEBMASTER_NAME")
-configArr[UIT_DB_HOST]=$(getConfigValue "UIT_DB_HOST")
-configArr[UIT_DB_PORT]=$(getConfigValue "UIT_DB_PORT")
-configArr[UIT_NTP_HOST]=$(getConfigValue "UIT_NTP_HOST")
-configArr[UIT_PING_HOST]=$(getConfigValue "UIT_PING_HOST")
-configArr[UIT_WEB_HOST]=$(getConfigValue "UIT_WEB_HOST")
-configArr[UIT_WEB_PORT]=$(getConfigValue "UIT_WEB_PORT")
-configArr[UIT_TOOLBOX_SERVER_HOSTNAME]=$(getConfigValue "UIT_TOOLBOX_SERVER_HOSTNAME")
+configArr[UIT_CLIENT_DB_HOST]=$(getConfigValue "UIT_CLIENT_DB_HOST")
+configArr[UIT_CLIENT_DB_PORT]=$(getConfigValue "UIT_CLIENT_DB_PORT")
+configArr[UIT_CLIENT_NTP_HOST]=$(getConfigValue "UIT_CLIENT_NTP_HOST")
+configArr[UIT_CLIENT_PING_HOST]=$(getConfigValue "UIT_CLIENT_PING_HOST")
+configArr[UIT_SERVER_LAN_IP_ADDRESS]=$(getConfigValue "UIT_SERVER_LAN_IP_ADDRESS")
+configArr[UIT_WEB_HTTP_PORT]=$(getConfigValue "UIT_WEB_HTTP_PORT")
+configArr[UIT_SERVER_HOSTNAME]=$(getConfigValue "UIT_SERVER_HOSTNAME")
 
 # function checkNullConfigVals() {
 # for checkVal in ${!configArr[@]}; do

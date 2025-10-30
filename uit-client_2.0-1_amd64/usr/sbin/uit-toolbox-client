@@ -98,14 +98,14 @@ for i in $(ip addr | awk '/state UP/ {print $2}' | sed 's/://g'); do
 printf '\n'
 printf '%s\n' "${BOLD}Syncing time...${RESET}"
 printf '%s\n' "[Time]
-NTP=UIT_NTP_HOST" > /etc/systemd/timesyncd.conf
+NTP=UIT_CLIENT_NTP_HOST" > /etc/systemd/timesyncd.conf
 
 systemctl daemon-reload &>/dev/null
 /usr/bin/timedatectl set-timezone 'America/Chicago'
 /usr/bin/timedatectl set-ntp true
 /usr/bin/timedatectl set-local-rtc false
 
-/usr/bin/chronyc add server UIT_NTP_HOST iburst
+/usr/bin/chronyc add server UIT_CLIENT_NTP_HOST iburst
 /usr/bin/chronyc makestep
 
 while [[ $(printf '%s' "SELECT TO_CHAR(NOW(), 'YYYY-MM-DD HH24:MI:ss') AS result" | /opt/uit-toolbox/select) != $(date '+%Y-%m-%d %H:%M:%S') ]]; do
@@ -445,7 +445,7 @@ fi
 
 function checkNetwork {
 	while sleep 1; do
-		ping -c 1 UIT_PING_HOST &>/dev/null
+		ping -c 1 UIT_CLIENT_PING_HOST &>/dev/null
 		if [[ $? == 0 ]]; then
 			break
 		fi
@@ -1504,8 +1504,8 @@ function execute_Clone {
 	printf '%s' "0" > /tmp/network-usage.txt
 	SECONDS=0
 	start_time=$SECONDS
-	linuxServer="UIT_DB_HOST"
-	linuxDNS="UIT_TOOLBOX_SERVER_HOSTNAME"
+	linuxServer="UIT_CLIENT_DB_HOST"
+	linuxDNS="UIT_SERVER_HOSTNAME"
 	umount /home/partimag 2>/dev/null
 	mkdir -p /home/partimag
 	if [[ $cloneMode == "restoredisk" ]]; then
@@ -1865,8 +1865,8 @@ function autodetectClient {
 				shredMode="autodetect"
 				RMODE="Autodetect"
 					printf '%s' "general|erase_mode|${RMODE}|${UUID}" | /opt/uit-toolbox/parse
-				linuxServer="UIT_DB_HOST"
-				linuxDNS="UIT_TOOLBOX_SERVER_HOSTNAME"
+				linuxServer="UIT_CLIENT_DB_HOST"
+				linuxDNS="UIT_SERVER_HOSTNAME"
 				footer
 				rtcwake --mode mem --seconds 3
 				checkNetwork
@@ -1893,8 +1893,8 @@ function autodetectClient {
 				fi
 					printf '%s' "general|disk|${CLIENTDISK}|${UUID}" | /opt/uit-toolbox/parse
 				cloneMode="restoredisk"
-				linuxServer="UIT_DB_HOST"
-				linuxDNS="UIT_TOOLBOX_SERVER_HOSTNAME"
+				linuxServer="UIT_CLIENT_DB_HOST"
+				linuxDNS="UIT_SERVER_HOSTNAME"
 				footer
 				rtcwake --mode mem --seconds 3
 				checkNetwork
@@ -2042,7 +2042,7 @@ function main {
 	hardwareData
 	tput reset
 	autodetectClient
-	# curl "https://UIT_WEB_HOST:UIT_WEB_PORT/api/refresh-client.php?password=UIT_DB_CLIENT_PASSWD&tagnumber=${tagNum}"
+	# curl "https://UIT_SERVER_LAN_IP_ADDRESS:UIT_WEB_HTTP_PORT/api/refresh-client.php?password=UIT_CLIENT_DB_PASSWD&tagnumber=${tagNum}"
 	if [[ $mainMenuOpt == "1" ]]; then
 		APPSELECT="EC"
 		ACTION="erase and clone"
@@ -2057,8 +2057,8 @@ function main {
 		shredMode="autodetect"
 		RMODE="autodetect"
 			printf '%s' "general|erase_mode|${RMODE}|${UUID}" | /opt/uit-toolbox/parse
-		linuxServer="UIT_DB_HOST"
-		linuxDNS="UIT_TOOLBOX_SERVER_HOSTNAME"
+		linuxServer="UIT_CLIENT_DB_HOST"
+		linuxDNS="UIT_SERVER_HOSTNAME"
 		powerWarning
 		execute
 	elif [[ $mainMenuOpt == "2" ]]; then
@@ -2075,8 +2075,8 @@ function main {
 		shredMode="autodetect"
 		RMODE="autodetect"
 			printf '%s' "general|erase_mode|${RMODE}|${UUID}" | /opt/uit-toolbox/parse
-		linuxServer="UIT_DB_HOST"
-		linuxDNS="UIT_TOOLBOX_SERVER_HOSTNAME"
+		linuxServer="UIT_CLIENT_DB_HOST"
+		linuxDNS="UIT_SERVER_HOSTNAME"
 		powerWarning
 		execute
 	elif [[ $mainMenuOpt == "3" ]]; then
