@@ -126,7 +126,7 @@ class PostgreSQLConn {
     private static $user = "UIT_DB_CLIENT_USER";
     private static $pass = "UIT_DB_CLIENT_PASSWD";
     private static $host = "UIT_DB_HOST";
-    private static $dbName = "UIT_DB_NAME";
+    private static $dbName = "UIT_DB_CLIENT_DBNAME";
     private static $options = array(PDO::ATTR_PERSISTENT => true, PDO::ATTR_ERRMODE => true, PDO::ERRMODE_EXCEPTION => true);
     public function dbObj() {
         return new PDO("pgsql:host=" . self::$host . ";port=5432;dbname=" . self::$dbName . ";", self::$user, self::$pass, self::$options);
