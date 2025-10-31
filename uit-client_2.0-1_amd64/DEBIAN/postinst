@@ -14,10 +14,10 @@ while [ ! -f /usr/local/share/ca-certificates/uit-web.crt ]; do
 done
 update-ca-certificates
 
-curl 'http://mickey.uit:8080/api/configs/uit-client' --output /etc/uit-client.conf &>/dev/null
+curl 'https://mickey.uit:8080/api/configs/uit-client' --output /etc/uit-client.conf &>/dev/null
 while [ ! -f /etc/uit-client.conf ]; do
     echo "Downloading client config..."
-    curl 'http://mickey.uit:8080/api/configs/uit-client' --output /etc/uit-client.conf &>/dev/null
+    curl 'https://mickey.uit:8080/api/configs/uit-client' --output /etc/uit-client.conf &>/dev/null
     sleep 1
 done
 
