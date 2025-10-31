@@ -41,32 +41,15 @@ getConfigValue() {
 configArr[UIT_CLIENT_DB_USER]=$(getConfigValue "UIT_CLIENT_DB_USER")
 configArr[UIT_CLIENT_DB_PASSWD]=$(getConfigValue "UIT_CLIENT_DB_PASSWD")
 configArr[UIT_CLIENT_DB_NAME]=$(getConfigValue "UIT_CLIENT_DB_NAME")
-configArr[UIT_WEBMASTER_NAME]=$(getConfigValue "UIT_WEBMASTER_NAME")
 configArr[UIT_CLIENT_DB_HOST]=$(getConfigValue "UIT_CLIENT_DB_HOST")
 configArr[UIT_CLIENT_DB_PORT]=$(getConfigValue "UIT_CLIENT_DB_PORT")
 configArr[UIT_CLIENT_NTP_HOST]=$(getConfigValue "UIT_CLIENT_NTP_HOST")
 configArr[UIT_CLIENT_PING_HOST]=$(getConfigValue "UIT_CLIENT_PING_HOST")
+configArr[UIT_SERVER_HOSTNAME]=$(getConfigValue "UIT_SERVER_HOSTNAME")
 configArr[UIT_SERVER_LAN_IP_ADDRESS]=$(getConfigValue "UIT_SERVER_LAN_IP_ADDRESS")
 configArr[UIT_WEB_HTTP_PORT]=$(getConfigValue "UIT_WEB_HTTP_PORT")
-configArr[UIT_SERVER_HOSTNAME]=$(getConfigValue "UIT_SERVER_HOSTNAME")
-
-# function checkNullConfigVals() {
-# for checkVal in ${!configArr[@]}; do
-#   if [[ -z ${configArr[$checkVal]} ]]; then
-#     echo "[Error] Missing/NULL parameter ${checkVal} in /etc/uit-client.conf"
-#     echo ""
-#     read -t 10 -p "Value for ${checkVal} is missing. Continue? [y/N] " userInput
-#     if [[ $userInput == "n" || $userInput == "N" ]]; then
-#       echo "Exiting..."
-#       exit 1
-#       elif [[ -z $userInput || $userInput == "y" || $userInput == "Y" ]]; then
-#         :
-#       else checkNullConfigVals
-#     fi
-#   fi
-# done
-# }
-# checkNullConfigVals
+configArr[UIT_WEB_HTTPS_PORT]=$(getConfigValue "UIT_WEB_HTTPS_PORT")
+configArr[UIT_WEBMASTER_NAME]=$(getConfigValue "UIT_WEBMASTER_NAME")
 
 for i in ${!configArr[@]}; do
   for file in $(find /usr/sbin/ -type f -name 'uit-*'; find /opt/uit-toolbox/ -type f); do
