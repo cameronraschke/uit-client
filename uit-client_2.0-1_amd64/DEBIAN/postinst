@@ -53,18 +53,19 @@ configArr[UIT_WEB_HTTPS_PORT]=$(getConfigValue "UIT_WEB_HTTPS_PORT")
 configArr[UIT_WEBMASTER_NAME]=$(getConfigValue "UIT_WEBMASTER_NAME")
 
 for i in ${!configArr[@]}; do
-  for file in $(find /usr/sbin/ -type f -name 'uit-*'; find /opt/uit-toolbox/ -type f); do
+  while IFS= read -r -d '' file; do
     if [[ -f $file ]]; then
       sanitizedValue=${configArr[$i]}
       sanitizedValue=${sanitizedValue//\\/\\\\}
       sanitizedValue=${sanitizedValue//&/\\&}
       sanitizedValue=${sanitizedValue//|/\\|}
+      
       sed -i "s|${i}|${sanitizedValue}|g" "$file"
-      else
+    else
       echo "File ${file} does not exist. Exiting..."
       exit 1
     fi
-  done
+  done < <(find /usr/sbin/ -type f -name 'uit-*' -print0; find /opt/uit-toolbox/ -type f -print0)
 done
 
 /usr/bin/chmod 700 /usr/sbin/uit-*
