@@ -55,8 +55,11 @@ configArr[UIT_WEBMASTER_NAME]=$(getConfigValue "UIT_WEBMASTER_NAME")
 for i in ${!configArr[@]}; do
   for file in $(find /usr/sbin/ -type f -name 'uit-*'; find /opt/uit-toolbox/ -type f); do
     if [[ -f $file ]]; then
-      sanitizedValue=${configArr[$i]//\//\\/}
-      sed --in-place "s/${i}/${sanitizedValue}/g" ${file}
+      sanitizedValue=${configArr[$i]}
+      sanitizedValue=${sanitizedValue//\\/\\\\}
+      sanitizedValue=${sanitizedValue//&/\\&}
+      sanitizedValue=${sanitizedValue//|/\\|}
+      sed -i "s|${i}|${sanitizedValue}|g" "$file"
       else
       echo "File ${file} does not exist. Exiting..."
       exit 1
