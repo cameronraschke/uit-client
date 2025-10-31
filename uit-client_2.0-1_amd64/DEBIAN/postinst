@@ -14,11 +14,11 @@ while [ ! -f /usr/local/share/ca-certificates/uit-web.crt ]; do
 done
 update-ca-certificates
 
-curl 'http://mickey.uit:8080/client/api/configs/uit-client' --output /etc/uit-client.conf &>/dev/null
+curl --silent 'http://mickey.uit:8080/client/api/configs/uit-client' | sed 's/\\n/\n/g' | sed 's/^"//g' | sed 's/^[[:space:]]//g' > /etc/uit-client.conf
 while [ ! -f /etc/uit-client.conf ]; do
-    echo "Failed to download client config, trying again..."
-    curl 'http://mickey.uit:8080/client/api/configs/uit-client' --output /etc/uit-client.conf &>/dev/null
-    sleep 1
+  echo "Failed to download client config, trying again..."
+  curl --silent 'http://mickey.uit:8080/client/api/configs/uit-client' | sed 's/\\n/\n/g' | sed 's/^"//g' | sed 's/^[[:space:]]//g' > /etc/uit-client.conf
+  sleep 1
 done
 
 ## Server config
@@ -27,14 +27,14 @@ declare -A configArr
 
 # Get config value from file
 getConfigValue() {
-    local key="$1"
-    local trim_spaces="${2:-true}"
-    local value
-    value=$(grep "^${key}=" /etc/uit-client.conf | cut -d'=' -f2-)
-    if [[ "$trim_spaces" == "true" ]]; then
-        value=$(echo "$value" | tr -d '[:space:]')
-    fi
-    echo "$value"
+  local key="$1"
+  local trim_spaces="${2:-true}"
+  local value
+  value=$(grep "^${key}=" /etc/uit-client.conf | cut -d'=' -f2-)
+  if [[ "$trim_spaces" == "true" ]]; then
+      value=$(echo "$value" | tr -d '[:space:]')
+  fi
+  echo "$value"
 }
 
 # Load config values (values that need spaces preserved are marked with 'false')
