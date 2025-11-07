@@ -1837,9 +1837,9 @@ function autodetectClient {
 				hardwareData
 				printf '%s' "remote|${tagNum}|status|Updating..." | /opt/uit-toolbox/parse
 				rm /root/uit-toolbox-client.deb
-        curl http://mickey.uit:8080/client/pkg/uit-toolbox-client.deb --output /root/uit-toolbox-client.deb &>/dev/null
+        curl http://10.0.0.1:8080/client/pkg/uit-toolbox-client.deb --output /root/uit-toolbox-client.deb &>/dev/null
 				while [[ ! -f /root/uit-toolbox-client.deb ]]; do
-					curl http://mickey.uit:8080/client/pkg/uit-toolbox-client.deb --output /root/uit-toolbox-client.deb &>/dev/null
+					curl http://10.0.0.1:8080/client/pkg/uit-toolbox-client.deb --output /root/uit-toolbox-client.deb &>/dev/null
 					sleep 1
 				done
 				dpkg --install /root/uit-toolbox-client.deb &>/dev/null

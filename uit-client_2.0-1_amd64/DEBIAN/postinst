@@ -1,23 +1,23 @@
 #!/bin/bash
 
-curl 'http://mickey.uit:8080/client/certs/uit-ca.crt' --output /usr/local/share/ca-certificates/uit-ca.crt &>/dev/null
+curl 'http://10.0.0.1:8080/client/certs/uit-ca.crt' --output /usr/local/share/ca-certificates/uit-ca.crt &>/dev/null
 while [ ! -f /usr/local/share/ca-certificates/uit-ca.crt ]; do
   echo "Failed to downloading CA cert, trying again..."
-  curl 'http://mickey.uit:8080/client/certs/uit-ca.crt' --output /usr/local/share/ca-certificates/uit-ca.crt &>/dev/null
+  curl 'http://10.0.0.1:8080/client/certs/uit-ca.crt' --output /usr/local/share/ca-certificates/uit-ca.crt &>/dev/null
   sleep 1
 done
-curl 'http://mickey.uit:8080/client/certs/uit-web.crt' --output /usr/local/share/ca-certificates/uit-web.crt &>/dev/null
+curl 'http://10.0.0.1:8080/client/certs/uit-web.crt' --output /usr/local/share/ca-certificates/uit-web.crt &>/dev/null
 while [ ! -f /usr/local/share/ca-certificates/uit-web.crt ]; do
   echo "Failed to download web cert, trying again..."
-  curl 'http://mickey.uit:8080/client/certs/uit-web.crt' --output /usr/local/share/ca-certificates/uit-web.crt &>/dev/null
+  curl 'http://10.0.0.1:8080/client/certs/uit-web.crt' --output /usr/local/share/ca-certificates/uit-web.crt &>/dev/null
   sleep 1
 done
 update-ca-certificates
 
-curl --silent 'http://mickey.uit:8080/client/api/configs/uit-client' | sed 's/\\n/\n/g' | sed 's/^"//g' | sed 's/^[[:space:]]//g' > /etc/uit-client.conf
+curl --silent 'http://10.0.0.1:8080/client/api/configs/uit-client' | sed 's/\\n/\n/g' | sed 's/^"//g' | sed 's/^[[:space:]]//g' > /etc/uit-client.conf
 while [ ! -f /etc/uit-client.conf ]; do
   echo "Failed to download client config, trying again..."
-  curl --silent 'http://mickey.uit:8080/client/api/configs/uit-client' | sed 's/\\n/\n/g' | sed 's/^"//g' | sed 's/^[[:space:]]//g' > /etc/uit-client.conf
+  curl --silent 'http://10.0.0.1:8080/client/api/configs/uit-client' | sed 's/\\n/\n/g' | sed 's/^"//g' | sed 's/^[[:space:]]//g' > /etc/uit-client.conf
   sleep 1
 done
 
