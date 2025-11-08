@@ -11,15 +11,15 @@ $dbPSQL = new dbPSQL();
 
 $dbPSQL->select($input);
 if (arrFilter($dbPSQL->get()) == 0)  {
-    foreach ($dbPSQL->get() as $key => $value) {
-        if (strFilter($value["result"]) == 0) {
-            echo $value["result"] . PHP_EOL;
-        } else {
-            echo "NULL" . PHP_EOL;
-        }
-    }
+	foreach ($dbPSQL->get() as $key => $value) {
+		if (strFilter($value["result"]) == 0) {
+			echo $value["result"] . PHP_EOL;
+		} else {
+			echo "NULL" . PHP_EOL;
+		}
+	}
 } else {
-    echo "NULL" . PHP_EOL;
+echo "NULL" . PHP_EOL;
 }
 
 ?>

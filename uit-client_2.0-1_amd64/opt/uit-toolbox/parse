@@ -13,277 +13,275 @@ $dbPSQL = new dbPSQL();
 
 
 if ($arr[0] == "init") {
-    $uuid = $arr[1];
-    $tagNum = $arr[2];
-    $serial = $arr[3];
-    $macAddr = $arr[4];
-    $wifiMac = $arr[5];
-    $tpmVersion = $arr[6];
+	$uuid = $arr[1];
+	$tagNum = $arr[2];
+	$serial = $arr[3];
+	$macAddr = $arr[4];
+	$wifiMac = $arr[5];
+	$tpmVersion = $arr[6];
 
-    $dbPSQL->insertJob($uuid);
+	$dbPSQL->insertJob($uuid);
 
-    $dbPSQL->updateJob("tagnumber", $tagNum, $uuid);
-    $dbPSQL->updateJob("system_serial", $serial, $uuid);
-    $dbPSQL->updateJob("etheraddress", $macAddr, $uuid);
-    if (strFilter($macAddr) === 0) {
-        $dbPSQL->updateSystemData($tagNum, "etheraddress", $macAddr);
-    }
-    if (strFilter($wifiMac) === 0) {
-        $dbPSQL->updateSystemData($tagNum, "wifi_mac", $wifiMac);
-    }
-    if (strFilter($tpmVersion) === 0) {
-        $dbPSQL->updateClientHealth($tagNum, "tpm_version", $tpmVersion);
-    }
-    $dbPSQL->updateJob("date", $date, $uuid);
+	$dbPSQL->updateJob("tagnumber", $tagNum, $uuid);
+	$dbPSQL->updateJob("system_serial", $serial, $uuid);
+	$dbPSQL->updateJob("etheraddress", $macAddr, $uuid);
+	if (strFilter($macAddr) === 0) {
+		$dbPSQL->updateSystemData($tagNum, "etheraddress", $macAddr);
+	}
+	if (strFilter($wifiMac) === 0) {
+		$dbPSQL->updateSystemData($tagNum, "wifi_mac", $wifiMac);
+	}
+	if (strFilter($tpmVersion) === 0) {
+		$dbPSQL->updateClientHealth($tagNum, "tpm_version", $tpmVersion);
+	}
+	$dbPSQL->updateJob("date", $date, $uuid);
 
-    function queryTime($queryTime) {
-        $dbPSQL = new dbPSQL();
-        $time = updateTimeValue();
-        $dbPSQL->Pselect("SELECT COUNT(time) AS count FROM jobstats WHERE time = :time", array(':time' => $queryTime));
-        foreach ($dbPSQL->get() as $key => $value) {
-            return $value["count"];
-        }
-    }
+	function queryTime($queryTime) {
+		$dbPSQL = new dbPSQL();
+		$time = updateTimeValue();
+		$dbPSQL->Pselect("SELECT COUNT(time) AS count FROM jobstats WHERE time = :time", array(':time' => $queryTime));
+		foreach ($dbPSQL->get() as $key => $value) {
+			return $value["count"];
+		}
+	}
 
-    do {
-        sleep(1);
-        $time = updateTimeValue();
-    } while (queryTime($time) > 0);
-    
-    $dbPSQL->updateJob("time", $time, $uuid);
+	do {
+		sleep(1);
+		$time = updateTimeValue();
+	} while (queryTime($time) > 0);
+
+	$dbPSQL->updateJob("time", $time, $uuid);
 }
 
 if ($arr[0] == "location") {
 
-    if (empty($arr[7])) {
-        $arr[7] = "unknown";
-    }
+	if (empty($arr[7])) {
+		$arr[7] = "unknown";
+	}
 
-    if ($arr[1] == "begin") {
-        $tagNum = $arr[2];
-        $serial = $arr[3];
-        $location = $arr[4];
-        $status = "0";
-        $note = "";
-    }
+	if ($arr[1] == "begin") {
+		$tagNum = $arr[2];
+		$serial = $arr[3];
+		$location = $arr[4];
+		$status = "0";
+		$note = "";
+	}
 
-    if ($arr[1] == "end") {
-        $tagNum = $arr[2];
-        $serial = $arr[3];
-        $location = $arr[4];
-        $status = "0";
-        $note = "";
-    }
+	if ($arr[1] == "end") {
+		$tagNum = $arr[2];
+		$serial = $arr[3];
+		$location = $arr[4];
+		$status = "0";
+		$note = "";
+	}
 
-    if ($arr[1] == "custom") {
-        $tagNum = $arr[2];
-        $serial = $arr[3];
-        $location = $arr[4];
-        $status = $arr[5];
-        $note = $arr[6];
-    }
+	if ($arr[1] == "custom") {
+		$tagNum = $arr[2];
+		$serial = $arr[3];
+		$location = $arr[4];
+		$status = $arr[5];
+		$note = $arr[6];
+	}
 
-    //$uuid = uniqid("location-", true);
-    
-    //$dbPSQL->insertJob($uuid);
-    //$dbPSQL->updateJob("tagnumber", $tagNum, $uuid);
-    //$dbPSQL->updateJob("system_serial", $serial, $uuid);
-    //$dbPSQL->updateJob ("date", $date, $uuid);
-    //$dbPSQL->updateJob ("time", $time, $uuid);
+	//$uuid = uniqid("location-", true);
 
-    $dbPSQL->insertLocation($time);
-    $dbPSQL->updateLocation("tagnumber", $tagNum, $time);
-    $dbPSQL->updateLocation("system_serial", $serial, $time);
-    $dbPSQL->updateLocation("location", $location, $time);
-    $dbPSQL->updateLocation("status", boolval($status), $time);
-    $dbPSQL->updateLocation("note", $note, $time);
+	//$dbPSQL->insertJob($uuid);
+	//$dbPSQL->updateJob("tagnumber", $tagNum, $uuid);
+	//$dbPSQL->updateJob("system_serial", $serial, $uuid);
+	//$dbPSQL->updateJob ("date", $date, $uuid);
+	//$dbPSQL->updateJob ("time", $time, $uuid);
 
+	$dbPSQL->insertLocation($time);
+	$dbPSQL->updateLocation("tagnumber", $tagNum, $time);
+	$dbPSQL->updateLocation("system_serial", $serial, $time);
+	$dbPSQL->updateLocation("location", $location, $time);
+	$dbPSQL->updateLocation("status", boolval($status), $time);
+	$dbPSQL->updateLocation("note", $note, $time);
 }
 
 
 if ($arr[0] == "general") {
-    $key = $arr[1];
-    $value = $arr[2];
-    $uuid = $arr[3];
+	$key = $arr[1];
+	$value = $arr[2];
+	$uuid = $arr[3];
 
-    if ($key == "cpu_temp") {
-        $value = round(bcdiv($value, 1000, 2), 0);
-    }
+	if ($key == "cpu_temp") {
+		$value = round(bcdiv($value, 1000, 2), 0);
+	}
 
-    if (!empty($arr[4]) && $arr[4] == "nvme") {
-        $value = bcmul($value, 512, 4);
-        $value = bcdiv($value, 1000000000, 2);
-    } elseif (!empty($arr[4]) && $arr[4] == "sata") {
-        if (!empty($arr[5]) && $arr[5] == "gib") {
-            $value = bcdiv($value, 1024, 2);
-        } else {
-            $value = bcmul($value, 512, 4);
-            $value = bcdiv($value, 1000000000000, 2);
-        }
-    }
+	if (!empty($arr[4]) && $arr[4] == "nvme") {
+		$value = bcmul($value, 512, 4);
+		$value = bcdiv($value, 1000000000, 2);
+	} elseif (!empty($arr[4]) && $arr[4] == "sata") {
+		if (!empty($arr[5]) && $arr[5] == "gib") {
+			$value = bcdiv($value, 1024, 2);
+		} else {
+			$value = bcmul($value, 512, 4);
+			$value = bcdiv($value, 1000000000000, 2);
+		}
+	}
 
-    if ($key == "disk_type") {
-        if ($value == "1") {
-            $value = "hdd";
-        } elseif ($value == "0") {
-            $value = "ssd";
-        } elseif ($value == "nvme") {
-            $value = "nvme";
-        } else {
-            $value = "NULL";
-        }
-    }
+	if ($key == "disk_type") {
+		if ($value == "1") {
+			$value = "hdd";
+		} elseif ($value == "0") {
+			$value = "ssd";
+		} elseif ($value == "nvme") {
+			$value = "nvme";
+		} else {
+			$value = "NULL";
+		}
+	}
 
-    if ($key == "ram_capacity") {
-        $value = round($value / 1000000, 0);
-    }
+	if ($key == "ram_capacity") {
+		$value = round($value / 1000000, 0);
+	}
 
-    if ((is_bool($value) === true && boolval($value) === true) || $value == "TRUE") {
-        $dbPSQL->updateJob($key, true, $uuid);
-    } else if ((is_bool($value) === true && boolval($value) === false) || $value == "FALSE") {
-        $dbPSQL->updateJob($key, false, $uuid);
-    } else {
-        $dbPSQL->updateJob($key, $value, $uuid);
-    }
-
+	if ((is_bool($value) === true && boolval($value) === true) || $value == "TRUE") {
+		$dbPSQL->updateJob($key, true, $uuid);
+	} else if ((is_bool($value) === true && boolval($value) === false) || $value == "FALSE") {
+		$dbPSQL->updateJob($key, false, $uuid);
+	} else {
+		$dbPSQL->updateJob($key, $value, $uuid);
+	}
 }
 
 if ($arr[0] == "system_data") {
-    $tagNum = $arr[1];
-    $key = $arr[2];
-    $value = $arr[3];
+	$tagNum = $arr[1];
+	$key = $arr[2];
+	$value = $arr[3];
 
-    $dbPSQL->Pselect("SELECT tagnumber FROM system_data WHERE tagnumber = :tagnumber", array(':tagnumber' => $tagNum));
-    if (is_array($dbPSQL->get()) === FALSE) {
-        $dbPSQL->insertSystemData($tagNum);
-    }
+	$dbPSQL->Pselect("SELECT tagnumber FROM system_data WHERE tagnumber = :tagnumber", array(':tagnumber' => $tagNum));
+	if (is_array($dbPSQL->get()) === FALSE) {
+		$dbPSQL->insertSystemData($tagNum);
+	}
 
-    if ((is_bool($value) === true && boolval($value) === true) || $value == "TRUE") {
-        $dbPSQL->updateSystemData($tagNum, $key, true);
-    } else if ((is_bool($value) === true && boolval($value) === false) || $value == "FALSE") {
-        $dbPSQL->updateSystemData($tagNum, $key, false);
-    } else {
-        $dbPSQL->updateSystemData($tagNum, $key, $value);
-    }
+	if ((is_bool($value) === true && boolval($value) === true) || $value == "TRUE") {
+		$dbPSQL->updateSystemData($tagNum, $key, true);
+	} else if ((is_bool($value) === true && boolval($value) === false) || $value == "FALSE") {
+		$dbPSQL->updateSystemData($tagNum, $key, false);
+	} else {
+		$dbPSQL->updateSystemData($tagNum, $key, $value);
+	}
 }
 
 if ($arr[0] == "system-stats") {
-    $uuid = $arr[2];
-    if ($arr[1] == "cpu") {
-        $cpuSum = null;
-        $cpuLineCount = null;
-        $lines = file('/tmp/cpu-usage.txt');
-        foreach ($lines as $lineNum => $line) {
-            $cpuSum = $cpuSum + $line;
-            $cpuLineCount = $cpuLineCount + 1;
-        }
-        $cpuAvg = $cpuSum / $cpuLineCount;
-        $dbPSQL->updateJob("cpu_usage", $cpuAvg, $uuid);
-    } elseif ($arr[1] == "network") {
-        $netSum = null;
-        $netLineCount = null;
-        $lines = file('/tmp/network-usage.txt');
-        foreach ($lines as $lineNum => $line) {
-            $netSum = $netSum + $line;
-            $netLineCount = $netLineCount + 1;
-        }
-        $netSum = $netSum / 1048576 * 8;
-        if ($netLineCount > 0) {
-            $netAvg = $netSum / $netLineCount;
-        } else {
-            $netAvg = 0;
-        }
-        $dbPSQL->updateJob("network_usage", $netAvg, $uuid);
-    }
+	$uuid = $arr[2];
+	if ($arr[1] == "cpu") {
+		$cpuSum = null;
+		$cpuLineCount = null;
+		$lines = file('/tmp/cpu-usage.txt');
+		foreach ($lines as $lineNum => $line) {
+			$cpuSum = $cpuSum + $line;
+			$cpuLineCount = $cpuLineCount + 1;
+		}
+		$cpuAvg = $cpuSum / $cpuLineCount;
+		$dbPSQL->updateJob("cpu_usage", $cpuAvg, $uuid);
+	} elseif ($arr[1] == "network") {
+		$netSum = null;
+		$netLineCount = null;
+		$lines = file('/tmp/network-usage.txt');
+		foreach ($lines as $lineNum => $line) {
+			$netSum = $netSum + $line;
+			$netLineCount = $netLineCount + 1;
+		}
+		$netSum = $netSum / 1048576 * 8;
+		if ($netLineCount > 0) {
+			$netAvg = $netSum / $netLineCount;
+		} else {
+			$netAvg = 0;
+		}
+		$dbPSQL->updateJob("network_usage", $netAvg, $uuid);
+	}
 }
 
 if ($arr[0] == "remote") {
-    $tagNum = $arr[1];
-    $key = $arr[2];
-    $value = $arr[3];
+	$tagNum = $arr[1];
+	$key = $arr[2];
+	$value = $arr[3];
 
-    if ($key == "job_queued") {
-        if ($value == "0") {
-            $value = "NULL";
-        } elseif ($value == "1") {
-            $value = "data collection";
-        } elseif ($value == "2") {
-            $value = "hpEraseAndClone";
-        } elseif ($value == "3") {
-            $value = "nvmeErase";
-        } elseif ($value == "9") {
-            $value = "update";
-        } elseif ($value == "8") {
-            $value = "findmy";
-        }
-    }
+	if ($key == "job_queued") {
+		if ($value == "0") {
+			$value = "NULL";
+		} elseif ($value == "1") {
+			$value = "data collection";
+		} elseif ($value == "2") {
+			$value = "hpEraseAndClone";
+		} elseif ($value == "3") {
+			$value = "nvmeErase";
+		} elseif ($value == "9") {
+			$value = "update";
+		} elseif ($value == "8") {
+			$value = "findmy";
+		}
+	}
 
-    if ($key == "cpu_temp") {
-        $value = round(bcdiv($value, 1000, 2), 0);
-    }
+	if ($key == "cpu_temp") {
+		$value = round(bcdiv($value, 1000, 2), 0);
+	}
 
-    if ($key == "disk_temp" || $key == "max_disk_temp") {
-        if ($value > 1000) {
-            $cur = round(bcdiv($value, 1000, 2), 0);
-            $value = $cur;
-        }
-    }
+	if ($key == "disk_temp" || $key == "max_disk_temp") {
+		if ($value > 1000) {
+			$cur = round(bcdiv($value, 1000, 2), 0);
+			$value = $cur;
+		}
+	}
 
-    if ($key == "watts_now") {
-        $first = $value;
-        $firstWatts = $first / 1e6;
-        $second = $arr[4];
-        $secWatts = $second / 1e6;
+	if ($key == "watts_now") {
+	$first = $value;
+	$firstWatts = $first / 1e6;
+	$second = $arr[4];
+	$secWatts = $second / 1e6;
 
-        $value = round(($secWatts - $firstWatts), 0);
-    }
+	$value = round(($secWatts - $firstWatts), 0);
+	}
 
-    if ($value == "TRUE") {
-        $dbPSQL->updateRemote($tagNum, $key, true);
-    } else if ($value == "FALSE") {
-        $dbPSQL->updateRemote($tagNum, $key, false);
-    } else {
-        $dbPSQL->updateRemote($tagNum, $key, $value);
-    }
+	if ($value == "TRUE") {
+		$dbPSQL->updateRemote($tagNum, $key, true);
+	} else if ($value == "FALSE") {
+		$dbPSQL->updateRemote($tagNum, $key, false);
+	} else {
+		$dbPSQL->updateRemote($tagNum, $key, $value);
+	}
 }
 
 if ($arr[0] == "client_health") {
-    $tagNum = $arr[1];
-    $key = $arr[2];
-    $value = $arr[3];
+	$tagNum = $arr[1];
+	$key = $arr[2];
+	$value = $arr[3];
 
-    $dbPSQL->updateClientHealth($tagNum, $key, $value);
+	$dbPSQL->updateClientHealth($tagNum, $key, $value);
 }
 
 if ($arr[0] == "live_images") {
-    $tagNum = $arr[1];
-    $key = $arr[2];
-    $fileName = $arr[3];
+	$tagNum = $arr[1];
+	$key = $arr[2];
+	$fileName = $arr[3];
 
-    $dbPSQL->Pselect("SELECT tagnumber FROM live_images WHERE tagnumber = :tagnumber", array(':tagnumber' => $tagNum));
-    if (strFilter($dbPSQL->get()) === 1) {
-        $dbPSQL->insertLiveImages($tagNum);
-    }
+	$dbPSQL->Pselect("SELECT tagnumber FROM live_images WHERE tagnumber = :tagnumber", array(':tagnumber' => $tagNum));
+	if (strFilter($dbPSQL->get()) === 1) {
+		$dbPSQL->insertLiveImages($tagNum);
+	}
 
-  if ($arr[2] == "screenshot") {
-    $fd = fopen($fileName, 'r');
-    $rawImageData = fread($fd, filesize($fileName));
-    $imageObject = imagecreatefromstring($rawImageData);
-    imageinterlace($imageObject, true);
-    fclose($fd);
-    if ($imageObject !== false) {
-      ob_start();
-      imagejpeg($imageObject, NULL, 100);
-      $imageBuffer = ob_get_clean();
-      $imageFileConverted = base64_encode($imageBuffer);
-      $value = $imageFileConverted;
-      unset($imageBuffer);
-      imagedestroy($imageObject);
-    }
-  }
+	if ($arr[2] == "screenshot") {
+		$fd = fopen($fileName, 'r');
+		$rawImageData = fread($fd, filesize($fileName));
+		$imageObject = imagecreatefromstring($rawImageData);
+		imageinterlace($imageObject, true);
+		fclose($fd);
+		if ($imageObject !== false) {
+			ob_start();
+			imagejpeg($imageObject, NULL, 100);
+			$imageBuffer = ob_get_clean();
+			$imageFileConverted = base64_encode($imageBuffer);
+			$value = $imageFileConverted;
+			unset($imageBuffer);
+			imagedestroy($imageObject);
+		}
+	}
 
-    $dbPSQL->updateLiveImages($tagNum, "screenshot", $imageFileConverted);
-    $dbPSQL->updateLiveImages($tagNum, "time", $time);
+	$dbPSQL->updateLiveImages($tagNum, "screenshot", $imageFileConverted);
+	$dbPSQL->updateLiveImages($tagNum, "time", $time);
 }
 
 ?>

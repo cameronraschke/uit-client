@@ -12,13 +12,13 @@
 #include <sys/time.h>
 
 typedef struct {
-    const uint8_t *src_fb_data;
-    uint8_t *dest_rgb888_data;
-    int start_y;
-    int end_y;
-    int width;
-    int line_length; // Framebuffer line length (stride)
-    struct fb_var_screeninfo vinfo; // Needed for bitfield offsets
+	const uint8_t *src_fb_data;
+	uint8_t *dest_rgb888_data;
+	int start_y;
+	int end_y;
+	int width;
+	int line_length; // Framebuffer line length (stride)
+	struct fb_var_screeninfo vinfo; // Needed for bitfield offsets
 } ThreadArgs;
 
 volatile int running = 1;
