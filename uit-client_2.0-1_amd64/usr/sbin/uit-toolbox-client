@@ -460,7 +460,7 @@ function enterTag {
 
 	tagNum=$(printf '%s' "SELECT tagnumber AS result FROM locations WHERE system_serial = '${systemSerial}' AND tagnumber IS NOT NULL ORDER BY time DESC LIMIT 1" | /opt/uit-toolbox/select)
 	if [[ $tagNum != "NULL" ]]; then
-		sqlDepartment=$(printf '%s' "SELECT department AS result FROM locations WHERE system_serial = '${systemSerial}' AND department IS NOT NULL ORDER BY time DESC LIMIT 1" | /opt/uit-toolbox/select)
+		sqlDepartment=$(printf '%s' "SELECT department_name AS result FROM locations WHERE system_serial = '${systemSerial}' AND department_name IS NOT NULL ORDER BY time DESC LIMIT 1" | /opt/uit-toolbox/select)
 		UUID=""
 		UUID=$(printf '%s' "${sqlDepartment}-"; cat /proc/sys/kernel/random/uuid)
 
