@@ -20,16 +20,12 @@ func main() {
 
 	fmt.Printf("EUID: %d, PID: %d, Parent PID: %d\n", euid, pid, parentPid)
 
-	cwd := unix.Getcwd()
-	if cwdErr != nil {
-		fmt.Printf("Getcwd error: %v\n", cwdErr)
-	}
-
-	hasFP = cpu.X86.HasXMM || cpu.ARM64.HasFP
+	hasFP = cpu.X86.HasAES || cpu.ARM64.HasSHA1 || cpu.ARM64.HasSHA2 || cpu.ARM64.HasSHA3 || cpu.ARM64.HasCRC32
 	if hasFP {
-		fmt.Printf("CPU has floating point support\n")
+		fmt.Printf("CPU has encryption acceleration\n")
 	}
 
+	var statfs unix.Statfs_t
 	if err := unix.Statfs("/", &statfs); err != nil {
 		fmt.Printf("Statfs error: %v\n", err)
 	}
