@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"os"
+	"strconv"
 	"uitclient/block"
 
 	"golang.org/x/sys/cpu"
@@ -33,13 +35,40 @@ func main() {
 	blockDevices, err := block.ListBlockDevices("/dev")
 	if err != nil {
 		fmt.Printf("Error listing block devices: %v\n", err)
-	} else {
-		fmt.Printf("Block Devices:\n")
-		for _, device := range blockDevices {
-			fmt.Printf("Name: %s, Path: %s, Major: %d, Minor: %d\n",
-				device.Name, device.Path, device.Major, device.Minor)
+	}
+	if blockDevices == nil {
+		fmt.Printf("Block device list is nil\n")
+	}
+	if len(blockDevices) <= 0 {
+		fmt.Printf("No block devices found\n")
+	}
+
+	var blockDeviceSelector = make(map[int64]string)
+	fmt.Printf("Block Devices:\n")
+	for i, device := range blockDevices {
+		if device == nil {
+			fmt.Printf("Block device at index %d is nil\n", i)
+			continue
+		}
+		if device.Minor == 0 {
+			fmt.Printf("[%d] Name: %s, Path: %s, Major: %d, Minor: %d\n",
+				i, device.Name, device.Path, device.BlockDeviceType)
+			blockDeviceSelector[int64(i)] = device.Path
 		}
 	}
+
+	reader := bufio.NewReader(os.Stdin)
+	inputtedDeviceIndex, err := reader.ReadString('\n')
+	if err != nil {
+		fmt.Printf("Error reading input: %v\n", err)
+		os.Exit(1)
+	}
+	chosenDevice, err := strconv.ParseInt(inputtedDeviceIndex, 10, 0)
+	if err != nil {
+		fmt.Printf("Error parsing input to integer: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Printf("Chosen device name: %s, index: %d\n", blockDeviceSelector[chosenDevice], chosenDevice)
 	// mountDir := unix.MountDir("source", "target", "fstype", 0, "data")
 
 }
