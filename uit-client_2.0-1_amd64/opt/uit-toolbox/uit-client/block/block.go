@@ -39,6 +39,9 @@ func ListBlockDevices(devDir string) ([]*BlockDevice, error) {
 		deviceNames := make([]string, 0, 128)
 		_, _, deviceNames = unix.ParseDirent(directoryListBuffer[:directoryEntry], -1, deviceNames)
 
+		scsiOrSataMajors := []uint32{8, 65, 66, 67, 68, 69, 70, 71, 128, 129, 130, 131, 132, 133, 134, 135}
+		scsiIdeMajors := []uint32{3, 22, 33, 34, 56, 57, 88, 89, 90, 91}
+
 		for _, deviceName := range deviceNames {
 			if deviceName == "." || deviceName == ".." {
 				continue
@@ -62,11 +65,10 @@ func ListBlockDevices(devDir string) ([]*BlockDevice, error) {
 			}
 
 			diskType := "unknown"
-			scsiOrSataMajors := []uint32{8, 65, 66, 67, 68, 69, 70, 71, 128, 129, 130, 131, 132, 133, 134, 135}
+
 			if slices.Contains(scsiOrSataMajors, majorNum) && strings.HasPrefix(devicePath, "/dev/sd") {
 				diskType = "SCSI/SATA"
-			}
-			if majorNum == 9 {
+			} else if majorNum == 9 {
 				if strings.HasPrefix(devicePath, "/dev/md") {
 					diskType = "MD RAID"
 				}
@@ -74,19 +76,16 @@ func ListBlockDevices(devDir string) ([]*BlockDevice, error) {
 					strings.HasPrefix(devicePath, "/dev/nst") {
 					diskType = "SCSI Tape"
 				}
-			}
-			if majorNum == 11 {
+			} else if majorNum == 11 {
 				diskType = "SCSI CD-ROM"
-			}
-			if majorNum == 21 && strings.HasPrefix(devicePath, "/dev/sg") {
+			} else if majorNum == 21 && strings.HasPrefix(devicePath, "/dev/sg") {
 				diskType = "Generic SCSI"
-			}
-			scsiIdeMajors := []uint32{3, 22, 33, 34, 56, 57, 88, 89, 90, 91}
-			if slices.Contains(scsiIdeMajors, majorNum) && strings.HasPrefix(devicePath, "/dev/hd") {
+			} else if slices.Contains(scsiIdeMajors, majorNum) && strings.HasPrefix(devicePath, "/dev/hd") {
 				diskType = "SCSI IDE/CD-ROM"
-			}
-			if majorNum == 259 && strings.HasPrefix(devicePath, "/dev/nvme") {
+			} else if majorNum == 259 && strings.HasPrefix(devicePath, "/dev/nvme") {
 				diskType = "NVMe"
+			} else {
+				continue
 			}
 
 			devices = append(devices, &BlockDevice{

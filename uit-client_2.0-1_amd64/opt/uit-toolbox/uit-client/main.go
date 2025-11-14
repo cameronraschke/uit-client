@@ -50,8 +50,8 @@ func main() {
 			fmt.Printf("Block device at index %d is nil\n", i)
 			continue
 		}
-		if device.Minor == 0 {
-			fmt.Printf("[%d] Name: %s, Path: %s, Major: %d, Minor: %d\n",
+		if device.Major == 0 {
+			fmt.Printf("[%d] Name: %s, Path: %s, Device Type: %s\n",
 				i, device.Name, device.Path, device.BlockDeviceType)
 			blockDeviceSelector[int64(i)] = device.Path
 		}
@@ -63,7 +63,7 @@ func main() {
 		fmt.Printf("Error reading input: %v\n", err)
 		os.Exit(1)
 	}
-	chosenDevice, err := strconv.ParseInt(inputtedDeviceIndex, 10, 0)
+	chosenDevice, err := strconv.ParseInt(inputtedDeviceIndex, 10, 64)
 	if err != nil {
 		fmt.Printf("Error parsing input to integer: %v\n", err)
 		os.Exit(1)
