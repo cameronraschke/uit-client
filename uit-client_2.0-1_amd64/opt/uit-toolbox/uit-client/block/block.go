@@ -159,8 +159,13 @@ func ListBlockDevices(devDir string) ([]*BlockDevice, error) {
 			if minorNum == 0 {
 				if diskType == "SCSI/SATA" && rotating {
 					diskType = diskType + " (HDD)"
+				} else if diskType == "SCSI/SATA" && removable {
+					diskType = diskType + " (Removable)"
+				} else if diskType == "SCSI/SATA" && !rotating {
+					diskType = diskType + " (SSD)"
+				} else if diskType == "NVMe" && !rotating {
+					diskType = diskType + " (NVMe SSD)"
 				}
-				diskType = diskType + " (Whole Disk)"
 
 				devices = append(devices, &BlockDevice{
 					Name:                 deviceName,
