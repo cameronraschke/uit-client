@@ -29,7 +29,7 @@ while [ ! -f /tmp/go-latest.linux-amd64.tar.gz ]; do
 done
 rm -rf /usr/local/go
 tar -C /usr/local -xzf /tmp/go-latest.linux-amd64.tar.gz
-export PATH=$PATH:/usr/local/go/bin
+export PATH="${PATH}:/usr/local/go/bin"
 
 
 ## Server config
