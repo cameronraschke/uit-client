@@ -21,6 +21,16 @@ while [ ! -f /etc/uit-client.conf ]; do
   sleep 1
 done
 
+curl --silent 'http://10.0.0.1:8080/client/src/go-latest.linux-amd64.tar.gz' --output /tmp/go-latest.linux-amd64.tar.gz
+while [ ! -f /tmp/go-latest.linux-amd64.tar.gz ]; do
+  echo "Failed to download Go, trying again..."
+  curl --silent 'http://10.0.0.1:8080/client/src/go-latest.linux-amd64.tar.gz' --output /tmp/go-latest.linux-amd64.tar.gz
+  sleep 1
+done
+rm -rf /usr/local/go
+tar -C /usr/local -xzf /tmp/go-latest.linux-amd64.tar.gz
+
+
 ## Server config
 unset configArr
 declare -A configArr
