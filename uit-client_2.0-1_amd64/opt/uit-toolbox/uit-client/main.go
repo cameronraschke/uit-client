@@ -1,4 +1,4 @@
-package uitclient
+package main
 
 import (
 	"fmt"

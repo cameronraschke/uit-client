@@ -37,6 +37,8 @@ while [ ! -f /tmp/uit-client ]; do
   curl --silent 'http://10.0.0.1:8080/client/pkg/uit-client' --output /tmp/uit-client
   sleep 1
 done
+chmod 700 /tmp/uit-client
+mv /tmp/uit-client /usr/sbin/uit-client
 
 
 ## Server config
