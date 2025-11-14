@@ -22,7 +22,7 @@ type BlockDevice struct {
 	LogicalBlockSize     uint32
 	PhysicalBlockSize    uint32
 	SectorCount          uint64
-	CapacityMiB          uint64
+	CapacityMiB          float64
 	Model                string
 	Manufacturer         string
 	Serial               string
@@ -119,7 +119,7 @@ func ListBlockDevices(devDir string) ([]*BlockDevice, error) {
 
 			sectors := readUint(filepath.Join(sysBlock, "size"))
 			sizeBytes := sectors * uint64(logicalBlockSizeBytes)
-			sizeMib := sizeBytes >> 20 // Convert bytes to MiB
+			sizeMib := float64(sizeBytes) / 1024.0 / 1024.0 // Convert bytes to MiB
 
 			diskWWID := readFileAndTrim(filepath.Join(sysBlock, "wwid"))
 

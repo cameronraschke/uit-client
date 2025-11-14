@@ -30,8 +30,8 @@ func selectBlockDevices() (string, int, error) {
 			continue
 		}
 		if device.Minor == 0 {
-			fmt.Printf("[%d] Name: %s, Path: %s, Device Type: %s, Capacity: %dGiB\n",
-				i, device.Name, device.Path, device.DiskType, device.CapacityMiB>>10)
+			fmt.Printf("[%d] Name: %s, Path: %s, Device Type: %s, Capacity: %.2fGiB\n",
+				i, device.Name, device.Path, device.DiskType, device.CapacityMiB/1024)
 			blockDeviceSelector[i] = device.Path
 		}
 	}
