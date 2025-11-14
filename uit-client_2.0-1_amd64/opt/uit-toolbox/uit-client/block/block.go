@@ -88,13 +88,17 @@ func ListBlockDevices(devDir string) ([]*BlockDevice, error) {
 				continue
 			}
 
-			devices = append(devices, &BlockDevice{
-				Name:            deviceName,
-				Path:            devicePath,
-				Major:           majorNum,
-				Minor:           minorNum,
-				BlockDeviceType: diskType,
-			})
+			if minorNum == 0 {
+				diskType = diskType + " (Whole Disk)"
+
+				devices = append(devices, &BlockDevice{
+					Name:            deviceName,
+					Path:            devicePath,
+					Major:           majorNum,
+					Minor:           minorNum,
+					BlockDeviceType: diskType,
+				})
+			}
 		}
 	}
 	return devices, nil
