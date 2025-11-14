@@ -11,6 +11,53 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+func selectBlockDevices() (string, int, error) {
+	blockDevices, err := block.ListBlockDevices("/dev")
+	if err != nil {
+		return "", 0, fmt.Errorf("Error listing block devices: %v\n", err)
+	}
+	if blockDevices == nil {
+		return "", 0, fmt.Errorf("Block device list is nil\n")
+	}
+	if len(blockDevices) <= 0 {
+		return "", 0, fmt.Errorf("No block devices found\n")
+	}
+
+	var blockDeviceSelector = make(map[int]string)
+	for i, device := range blockDevices {
+		if device == nil {
+			fmt.Printf("Block device at index %d is nil\n", i)
+			continue
+		}
+		if device.Minor == 0 {
+			fmt.Printf("[%d] Name: %s, Path: %s, Device Type: %s, Capacity: %dGiB\n",
+				i, device.Name, device.Path, device.DiskType, device.CapacityMiB>>10)
+			blockDeviceSelector[i] = device.Path
+		}
+	}
+
+	if len(blockDeviceSelector) == 0 {
+		return "", 0, fmt.Errorf("No suitable block devices found for selection\n")
+	}
+	fmt.Printf("Total block devices found: %d\n", len(blockDeviceSelector))
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Printf("\nSelect a block device to use: ")
+	inputtedDeviceIndex, err := reader.ReadString('\n')
+	if err != nil {
+		return "", 0, fmt.Errorf("Error reading input: %v\n", err)
+	}
+	inputtedDeviceIndex = inputtedDeviceIndex[:len(inputtedDeviceIndex)-1] // Remove newline character from read
+	var chosenDevice = -1
+	chosenDevice, err = strconv.Atoi(inputtedDeviceIndex)
+	if err != nil {
+		return "", 0, fmt.Errorf("Error parsing input to integer: %v\n", err)
+	}
+	if len(blockDeviceSelector[chosenDevice]) == 0 || blockDeviceSelector[chosenDevice] == "" || chosenDevice < 0 {
+		return "", 0, fmt.Errorf("Invalid device selection: %d\n", chosenDevice)
+	}
+	return blockDeviceSelector[chosenDevice], len(blockDevices), nil
+}
+
 func main() {
 	euid := unix.Geteuid()
 	if euid > 1000 {
@@ -32,44 +79,16 @@ func main() {
 		fmt.Printf("Statfs error: %v\n", err)
 	}
 
-	blockDevices, err := block.ListBlockDevices("/dev")
+	devicePath, totalDevices, err := selectBlockDevices()
 	if err != nil {
-		fmt.Printf("Error listing block devices: %v\n", err)
-	}
-	if blockDevices == nil {
-		fmt.Printf("Block device list is nil\n")
-	}
-	if len(blockDevices) <= 0 {
-		fmt.Printf("No block devices found\n")
-	}
-	fmt.Printf("Total block devices found: %d\n", len(blockDevices))
-
-	var blockDeviceSelector = make(map[int]string)
-	for i, device := range blockDevices {
-		if device == nil {
-			fmt.Printf("Block device at index %d is nil\n", i)
-			continue
-		}
-		if device.Minor == 0 {
-			fmt.Printf("[%d] Name: %s, Path: %s, Device Type: %s\n",
-				i, device.Name, device.Path, device.BlockDeviceType)
-			blockDeviceSelector[i] = device.Path
-		}
-	}
-
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Printf("\nSelect a block device to use: ")
-	inputtedDeviceIndex, err := reader.ReadString('\n')
-	if err != nil {
-		fmt.Printf("Error reading input: %v\n", err)
+		fmt.Printf("Error selecting block device: %v\n", err)
 		os.Exit(1)
 	}
-	chosenDevice, err := strconv.Atoi(inputtedDeviceIndex)
-	if err != nil {
-		fmt.Printf("Error parsing input to integer: %v\n", err)
+	if totalDevices <= 0 {
+		fmt.Printf("No block devices found on system\n")
 		os.Exit(1)
 	}
-	fmt.Printf("Chosen device name: %s, index: %d\n", blockDeviceSelector[chosenDevice], chosenDevice)
-	// mountDir := unix.MountDir("source", "target", "fstype", 0, "data")
+
+	fmt.Errorf("Selected block device path: %s\n", devicePath)
 
 }
