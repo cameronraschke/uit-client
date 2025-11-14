@@ -212,7 +212,10 @@ func readUint(filePath string) uint64 {
 }
 
 func readUintBool(filePath string) bool {
-	return readUint(filePath) == 1
+	if readUint(filePath) == 1 {
+		return true
+	}
+	return false
 }
 
 func fileExists(filePath string) bool {
