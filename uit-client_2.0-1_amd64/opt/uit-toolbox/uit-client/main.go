@@ -20,7 +20,7 @@ func main() {
 
 	fmt.Printf("EUID: %d, PID: %d, Parent PID: %d\n", euid, pid, parentPid)
 
-	hasFP = cpu.X86.HasAES || cpu.ARM64.HasSHA1 || cpu.ARM64.HasSHA2 || cpu.ARM64.HasSHA3 || cpu.ARM64.HasCRC32
+	hasFP := cpu.X86.HasAES || cpu.ARM64.HasSHA1 || cpu.ARM64.HasSHA2 || cpu.ARM64.HasSHA3 || cpu.ARM64.HasCRC32
 	if hasFP {
 		fmt.Printf("CPU has encryption acceleration\n")
 	}
