@@ -42,15 +42,15 @@ func main() {
 	if len(blockDevices) <= 0 {
 		fmt.Printf("No block devices found\n")
 	}
+	fmt.Printf("Total block devices found: %d\n", len(blockDevices))
 
 	var blockDeviceSelector = make(map[int]string)
-	fmt.Printf("Block Devices:\n")
 	for i, device := range blockDevices {
 		if device == nil {
 			fmt.Printf("Block device at index %d is nil\n", i)
 			continue
 		}
-		if device.Major == 0 {
+		if device.Minor == 0 {
 			fmt.Printf("[%d] Name: %s, Path: %s, Device Type: %s\n",
 				i, device.Name, device.Path, device.BlockDeviceType)
 			blockDeviceSelector[i] = device.Path
@@ -58,6 +58,7 @@ func main() {
 	}
 
 	reader := bufio.NewReader(os.Stdin)
+	fmt.Printf("\nSelect a block device to use: ")
 	inputtedDeviceIndex, err := reader.ReadString('\n')
 	if err != nil {
 		fmt.Printf("Error reading input: %v\n", err)
