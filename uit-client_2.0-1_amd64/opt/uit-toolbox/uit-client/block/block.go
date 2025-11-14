@@ -97,5 +97,6 @@ func ListBlockDevices(devDir string) ([]*BlockDevice, error) {
 			})
 		}
 	}
+	fmt.Printf("Total block devices found: %d\n", len(devices))
 	return devices, nil
 }
