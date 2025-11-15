@@ -1,4 +1,4 @@
-package block
+package hardware
 
 import (
 	"fmt"
@@ -217,10 +217,7 @@ func readUint(filePath string) uint64 {
 }
 
 func readUintBool(filePath string) bool {
-	if readUint(filePath) == 1 {
-		return true
-	}
-	return false
+	return readUint(filePath) == 1
 }
 
 func fileExists(filePath string) bool {

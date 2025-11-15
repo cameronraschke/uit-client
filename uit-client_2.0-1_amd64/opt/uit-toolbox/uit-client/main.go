@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"uitclient/block"
+	"uitclient/hardware"
 
 	"golang.org/x/sys/cpu"
 	"golang.org/x/sys/unix"
 )
 
 func selectBlockDevices() (string, int, error) {
-	blockDevices, err := block.ListBlockDevices("/dev")
+	blockDevices, err := hardware.ListBlockDevices("/dev")
 	if err != nil {
 		return "", 0, fmt.Errorf("Error listing block devices: %v\n", err)
 	}
@@ -89,6 +89,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Errorf("Selected block device path: %s\n", devicePath)
+	fmt.Printf("Selected block device path: %s\n", devicePath)
 
 }
