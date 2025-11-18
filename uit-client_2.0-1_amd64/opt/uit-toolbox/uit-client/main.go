@@ -2,14 +2,18 @@ package main
 
 import (
 	"bufio"
+	"database/sql"
 	"fmt"
 	"os"
 	"strconv"
+	"uitclient/database"
 	"uitclient/hardware"
 
 	"golang.org/x/sys/cpu"
 	"golang.org/x/sys/unix"
 )
+
+var dbConn *sql.DB
 
 func selectBlockDevices() (string, int, error) {
 	blockDevices, err := hardware.ListBlockDevices("/dev")
@@ -52,6 +56,7 @@ func selectBlockDevices() (string, int, error) {
 	if err != nil {
 		return "", 0, fmt.Errorf("Error parsing input to integer: %v\n", err)
 	}
+	chosenDevice -= 1 // Adjust for zero-based index
 	if len(blockDeviceSelector[chosenDevice]) == 0 || blockDeviceSelector[chosenDevice] == "" || chosenDevice < 0 {
 		return "", 0, fmt.Errorf("Invalid device selection: %d\n", chosenDevice)
 	}
@@ -78,6 +83,20 @@ func main() {
 	if err := unix.Statfs("/", &statfs); err != nil {
 		fmt.Printf("Statfs error: %v\n", err)
 	}
+
+	fmt.Printf("Filesystem type: %x\n", statfs.Type)
+
+	fmt.Printf("Creating database connection...\n")
+	dbConn, err := database.CreateDBConnection()
+	if err != nil {
+		fmt.Printf("Error connecting to database: %v\n", err)
+		os.Exit(1)
+	}
+	if dbConn == nil {
+		fmt.Printf("Database connection is nil\n")
+		os.Exit(1)
+	}
+	fmt.Printf("Database connection established successfully\n")
 
 	devicePath, totalDevices, err := selectBlockDevices()
 	if err != nil {
