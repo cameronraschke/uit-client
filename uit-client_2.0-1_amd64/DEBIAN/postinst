@@ -88,7 +88,7 @@ for i in ${!configArr[@]}; do
       echo "File ${file} does not exist. Exiting..."
       exit 1
     fi
-  done < <(find /usr/sbin/ -type f -name 'uit-*' -print0; find /opt/uit-toolbox/ -type f -print0)
+  done < <(find /usr/sbin/ -type f -name 'uit-*' -print0; find /opt/uit-toolbox/include.php -type f; find /opt/uit-toolbox/parse; find /opt/uit-toolbox/select -print0)
 done
 
 /usr/bin/chmod 700 /usr/sbin/uit-*
