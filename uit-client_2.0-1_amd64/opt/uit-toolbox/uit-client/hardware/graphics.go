@@ -1,5 +1,10 @@
 package hardware
 
+func SetMaxBrightness(level int) error {
+	// /sys/class/backlight/<driver>/max_brightness
+	return nil
+}
+
 func HasBuiltInScreen() bool {
 	// /sys/class/graphics/fb0
 	return false
