@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"uitclient/database"
 	"uitclient/hardware"
+	"uitclient/webclient"
 
 	"golang.org/x/sys/cpu"
 	"golang.org/x/sys/unix"
@@ -74,6 +75,20 @@ func main() {
 
 	fmt.Printf("EUID: %d, PID: %d, Parent PID: %d\n", euid, pid, parentPid)
 
+	clientConfig, err := webclient.GetClientConfig()
+	if err != nil {
+		fmt.Printf("Error getting client configuration: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Printf("Client Configuration: %s\n", string(clientConfig))
+
+	systemSerial, err := hardware.GetSystemSerial()
+	if err != nil {
+		fmt.Printf("Error getting system serial: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Printf("System Serial: %s\n", systemSerial)
+
 	hasFP := cpu.X86.HasAES || cpu.ARM64.HasSHA1 || cpu.ARM64.HasSHA2 || cpu.ARM64.HasSHA3 || cpu.ARM64.HasCRC32
 	if hasFP {
 		fmt.Printf("CPU has encryption acceleration\n")
@@ -109,5 +124,4 @@ func main() {
 	}
 
 	fmt.Printf("Selected block device path: %s\n", devicePath)
-
 }

@@ -70,7 +70,7 @@ func CreateDBConnection() (*sql.DB, error) {
 		return nil, fmt.Errorf("failed to get database connection parameters: %v", err)
 	}
 
-	dbConnURL := url.URL{
+	dbConnURL := &url.URL{
 		Scheme: "postgres",
 		User:   url.UserPassword(dbUsername, dbPassword),
 		Host:   net.JoinHostPort(dbHost, dbPort),

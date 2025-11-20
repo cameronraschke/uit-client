@@ -2,10 +2,8 @@ package hardware
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"slices"
-	"strconv"
 	"strings"
 
 	"golang.org/x/sys/unix"
@@ -194,33 +192,4 @@ func ListBlockDevices(devDir string) ([]*BlockDevice, error) {
 		}
 	}
 	return devices, nil
-}
-
-func readFileAndTrim(filePath string) string {
-	fileBytes, err := os.ReadFile(filePath)
-	if err != nil {
-		return ""
-	}
-	return strings.TrimSpace(string(fileBytes))
-}
-
-func readUint(filePath string) uint64 {
-	fileBytes, err := os.ReadFile(filePath)
-	if err != nil {
-		return 0
-	}
-	value, err := strconv.ParseUint(strings.TrimSpace(string(fileBytes)), 10, 64)
-	if err != nil {
-		return 0
-	}
-	return value
-}
-
-func readUintBool(filePath string) bool {
-	return readUint(filePath) == 1
-}
-
-func fileExists(filePath string) bool {
-	_, err := os.Stat(filePath)
-	return err == nil
 }
