@@ -1,3 +1,6 @@
+//go:build linux
+// +build linux
+
 package main
 
 import (
@@ -6,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"uitclient/database"
 	"uitclient/hardware"
 	"uitclient/webclient"
@@ -29,15 +33,17 @@ func selectBlockDevices() (string, int, error) {
 	}
 
 	var blockDeviceSelector = make(map[int]string)
-	for i, device := range blockDevices {
+	printIndex := 1
+	for _, device := range blockDevices {
 		if device == nil {
-			fmt.Printf("Block device at index %d is nil\n", i)
+			fmt.Printf("Block device entry is nil, skipping\n")
 			continue
 		}
 		if device.Minor == 0 {
 			fmt.Printf("[%d] Name: %s, Path: %s, Device Type: %s, Capacity: %.2fGiB\n",
-				i, device.Name, device.Path, device.DiskType, device.CapacityMiB/1024)
-			blockDeviceSelector[i] = device.Path
+				printIndex, device.Name, device.Path, device.DiskType, device.CapacityMiB/1024)
+			blockDeviceSelector[printIndex] = device.Path
+			printIndex++
 		}
 	}
 
@@ -51,17 +57,23 @@ func selectBlockDevices() (string, int, error) {
 	if err != nil {
 		return "", 0, fmt.Errorf("Error reading input: %v\n", err)
 	}
-	inputtedDeviceIndex = inputtedDeviceIndex[:len(inputtedDeviceIndex)-1] // Remove newline character from read
+	inputtedDeviceIndex = strings.TrimSpace(inputtedDeviceIndex)
+	if inputtedDeviceIndex == "" {
+		return "", 0, fmt.Errorf("No selection entered\n")
+	}
 	var chosenDevice = -1
 	chosenDevice, err = strconv.Atoi(inputtedDeviceIndex)
 	if err != nil {
 		return "", 0, fmt.Errorf("Error parsing input to integer: %v\n", err)
 	}
-	chosenDevice -= 1 // Adjust for zero-based index
-	if len(blockDeviceSelector[chosenDevice]) == 0 || blockDeviceSelector[chosenDevice] == "" || chosenDevice < 0 {
+	if chosenDevice < 1 {
 		return "", 0, fmt.Errorf("Invalid device selection: %d\n", chosenDevice)
 	}
-	return blockDeviceSelector[chosenDevice], len(blockDevices), nil
+	path, ok := blockDeviceSelector[chosenDevice]
+	if !ok || path == "" {
+		return "", 0, fmt.Errorf("Selection %d not in list\n", chosenDevice)
+	}
+	return path, len(blockDevices), nil
 }
 
 func main() {
@@ -70,6 +82,7 @@ func main() {
 		fmt.Printf("Please run as root, current EUID: %d", euid)
 		os.Exit(1)
 	}
+	var err error
 	pid := unix.Getpid()
 	parentPid := unix.Getppid()
 
@@ -102,7 +115,7 @@ func main() {
 	fmt.Printf("Filesystem type: %x\n", statfs.Type)
 
 	fmt.Printf("Creating database connection...\n")
-	dbConn, err := database.CreateDBConnection()
+	dbConn, err = database.CreateDBConnection()
 	if err != nil {
 		fmt.Printf("Error connecting to database: %v\n", err)
 		os.Exit(1)
