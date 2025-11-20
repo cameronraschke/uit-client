@@ -4,13 +4,9 @@
 package main
 
 import (
-	"bufio"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"os"
-	"strconv"
-	"strings"
 	"uitclient/config"
 	"uitclient/hardware"
 	"uitclient/webclient"
@@ -19,99 +15,53 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-var dbConn *sql.DB
+const clearScreen = `\e[1;1H\e[2J`
 
-func selectBlockDevices() (string, int, error) {
-	blockDevices, err := hardware.ListBlockDevices("/dev")
-	if err != nil {
-		return "", 0, fmt.Errorf("Error listing block devices: %v\n", err)
-	}
-	if blockDevices == nil {
-		return "", 0, fmt.Errorf("Block device list is nil\n")
-	}
-	if len(blockDevices) <= 0 {
-		return "", 0, fmt.Errorf("No block devices found\n")
-	}
-
-	var blockDeviceSelector = make(map[int]string)
-	printIndex := 1
-	for _, device := range blockDevices {
-		if device == nil {
-			fmt.Printf("Block device entry is nil, skipping\n")
-			continue
-		}
-		if device.Minor == 0 {
-			fmt.Printf("[%d] Name: %s, Path: %s, Device Type: %s, Capacity: %.2fGiB\n",
-				printIndex, device.Name, device.Path, device.DiskType, device.CapacityMiB/1024)
-			blockDeviceSelector[printIndex] = device.Path
-			printIndex++
-		}
-	}
-
-	if len(blockDeviceSelector) == 0 {
-		return "", 0, fmt.Errorf("No suitable block devices found for selection\n")
-	}
-	fmt.Printf("Total block devices found: %d\n", len(blockDeviceSelector))
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Printf("\nSelect a block device to use: ")
-	inputtedDeviceIndex, err := reader.ReadString('\n')
-	if err != nil {
-		return "", 0, fmt.Errorf("Error reading input: %v\n", err)
-	}
-	inputtedDeviceIndex = strings.TrimSpace(inputtedDeviceIndex)
-	if inputtedDeviceIndex == "" {
-		return "", 0, fmt.Errorf("No selection entered\n")
-	}
-	var chosenDevice = -1
-	chosenDevice, err = strconv.Atoi(inputtedDeviceIndex)
-	if err != nil {
-		return "", 0, fmt.Errorf("Error parsing input to integer: %v\n", err)
-	}
-	if chosenDevice < 1 {
-		return "", 0, fmt.Errorf("Invalid device selection: %d\n", chosenDevice)
-	}
-	path, ok := blockDeviceSelector[chosenDevice]
-	if !ok || path == "" {
-		return "", 0, fmt.Errorf("Selection %d not in list\n", chosenDevice)
-	}
-	return path, len(blockDevices), nil
-}
+// const clearScreen = "\033[H\033[2J"
 
 func main() {
+	recover()
+	var err error
+	// Initial startup, checks, and configuration loading
+
+	// Clear the terminal screen
+	fmt.Printf(clearScreen)
+	fmt.Printf("Starting UIT Client...\n\n")
+
+	// Check for root privileges & PIDs
 	euid := unix.Geteuid()
 	if euid > 1000 {
 		fmt.Printf("Please run as root, current EUID: %d", euid)
 		os.Exit(1)
 	}
-	var err error
-	pid := unix.Getpid()
-	parentPid := unix.Getppid()
+	// pid := unix.Getpid()
+	// parentPid := unix.Getppid()
+	// fmt.Printf("EUID: %d, PID: %d, Parent PID: %d\n", euid, pid, parentPid)
 
-	fmt.Printf("EUID: %d, PID: %d, Parent PID: %d\n", euid, pid, parentPid)
-
+	// Fetch and initialize client configuration
 	clientConfigJson, err := webclient.GetClientConfig()
 	if err != nil {
 		fmt.Printf("Error getting client configuration: %v\n", err)
 		os.Exit(1)
 	}
-	tmpConfig := &config.ClientConfig{}
-	if err = json.Unmarshal(clientConfigJson, tmpConfig); err != nil {
+	tmpClientConfig := &config.ClientConfig{}
+	if err = json.Unmarshal(clientConfigJson, tmpClientConfig); err != nil { // Unmarshal JSON into struct
 		fmt.Printf("Error unmarshaling client configuration JSON: %v\n", err)
 		os.Exit(1)
 	}
-	err = config.InitializeClientConfig(tmpConfig)
+	err = config.InitializeClientConfig(tmpClientConfig)
 	if err != nil {
 		fmt.Printf("Error initializing client configuration: %v\n", err)
 		os.Exit(1)
 	}
 
+	// Verify client configuration loaded correctly
 	clientConfig := config.GetClientConfig()
 	if clientConfig == nil {
 		fmt.Printf("Client configuration is nil after initialization\n")
 		os.Exit(1)
 	}
-
-	fmt.Printf("Client configuration loaded: %+v\n", clientConfig)
+	fmt.Printf("Client configuration loaded successfully\n")
 
 	systemSerial, err := hardware.GetSystemSerial()
 	if err != nil {
@@ -139,13 +89,6 @@ func main() {
 	if hasFP {
 		fmt.Printf("CPU has encryption acceleration\n")
 	}
-
-	var statfs unix.Statfs_t
-	if err := unix.Statfs("/", &statfs); err != nil {
-		fmt.Printf("Statfs error: %v\n", err)
-	}
-
-	fmt.Printf("Filesystem type: %x\n", statfs.Type)
 
 	devicePath, totalDevices, err := selectBlockDevices()
 	if err != nil {

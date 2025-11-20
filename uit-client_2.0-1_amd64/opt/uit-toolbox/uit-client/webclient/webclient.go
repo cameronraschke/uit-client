@@ -7,9 +7,31 @@ import (
 	"net/url"
 )
 
+const requestRetryCount = 3
+
 type ClientLookup struct {
 	Tagnumber    int64  `json:"tagnumber"`
 	SystemSerial string `json:"system_serial"`
+}
+
+func SendGETRequest(reqURL *url.URL) (*http.Response, error) {
+	if reqURL == nil {
+		return nil, fmt.Errorf("input URL is empty")
+	}
+
+	resp, err := http.Get(reqURL.String())
+	if err != nil {
+		return nil, fmt.Errorf("failed to make GET request: %v", err)
+	}
+	defer resp.Body.Close()
+	if resp.Body == nil {
+		return nil, fmt.Errorf("response body is nil")
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("received non-OK HTTP status: %s", resp.Status)
+	}
+
+	return resp, nil
 }
 
 func CreateGETRequest(reqURL *url.URL) ([]byte, error) {
@@ -43,14 +65,25 @@ func CreateGETRequest(reqURL *url.URL) ([]byte, error) {
 		reqURL.RawQuery = queries.Encode()
 	}
 
-	resp, err := http.Get(reqURL.String())
+	var resp *http.Response
+	var err error
+	for i := range requestRetryCount {
+		if i < requestRetryCount-1 {
+			fmt.Printf("GET request attempt %d failed, retrying...\n", i+1)
+		}
+		resp, err = SendGETRequest(reqURL)
+		if err != nil {
+			continue
+		} else {
+			break
+		}
+	}
 	if err != nil {
-		return nil, fmt.Errorf("failed to make GET request: %v", err)
+		return nil, fmt.Errorf("failed to complete GET request after %d attempts: %v", requestRetryCount, err)
 	}
 	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("received non-OK HTTP status: %s", resp.Status)
+	if resp.Body == nil {
+		return nil, fmt.Errorf("response body is nil")
 	}
 
 	body, err := io.ReadAll(resp.Body)
@@ -58,6 +91,5 @@ func CreateGETRequest(reqURL *url.URL) ([]byte, error) {
 		return nil, fmt.Errorf("failed to read response body: %v", err)
 	}
 
-	//log.Printf("Received response: %s", string(body))
 	return body, nil
 }
