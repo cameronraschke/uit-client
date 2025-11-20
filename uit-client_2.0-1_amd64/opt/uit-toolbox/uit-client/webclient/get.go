@@ -1,6 +1,7 @@
 package webclient
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/url"
 )
@@ -20,9 +21,9 @@ func GetClientConfig() ([]byte, error) {
 	return resp, nil
 }
 
-func SerialLookup(serial string) ([]byte, error) {
+func SerialLookup(serial string) (int64, error) {
 	if serial == "" {
-		return nil, fmt.Errorf("serial number is empty in SerialLookup")
+		return 0, fmt.Errorf("serial number is empty in SerialLookup")
 	}
 	reqURL := &url.URL{}
 	reqURL.Scheme = "https"
@@ -33,7 +34,15 @@ func SerialLookup(serial string) ([]byte, error) {
 
 	resp, err := CreateGETRequest(reqURL)
 	if err != nil {
-		return nil, fmt.Errorf("error in SerialLookup: %v", err)
+		return 0, fmt.Errorf("error in SerialLookup: %v", err)
 	}
-	return resp, nil
+	clientLookup := &ClientLookup{}
+	if err := json.Unmarshal(resp, clientLookup); err != nil {
+		return 0, fmt.Errorf("failed to unmarshal SerialLookup response: %v", err)
+	}
+	return clientLookup.Tagnumber, nil
+}
+
+func TagnumberLookup(tagnumber int) ([]byte, error) {
+	return nil, nil
 }

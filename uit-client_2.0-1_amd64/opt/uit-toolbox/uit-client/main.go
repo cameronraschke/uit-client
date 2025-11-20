@@ -6,11 +6,12 @@ package main
 import (
 	"bufio"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
 	"strings"
-	"uitclient/database"
+	"uitclient/config"
 	"uitclient/hardware"
 	"uitclient/webclient"
 
@@ -88,19 +89,51 @@ func main() {
 
 	fmt.Printf("EUID: %d, PID: %d, Parent PID: %d\n", euid, pid, parentPid)
 
-	clientConfig, err := webclient.GetClientConfig()
+	clientConfigJson, err := webclient.GetClientConfig()
 	if err != nil {
 		fmt.Printf("Error getting client configuration: %v\n", err)
 		os.Exit(1)
 	}
-	fmt.Printf("Client Configuration: %s\n", string(clientConfig))
+	tmpConfig := &config.ClientConfig{}
+	if err = json.Unmarshal(clientConfigJson, tmpConfig); err != nil {
+		fmt.Printf("Error unmarshaling client configuration JSON: %v\n", err)
+		os.Exit(1)
+	}
+	err = config.InitializeClientConfig(tmpConfig)
+	if err != nil {
+		fmt.Printf("Error initializing client configuration: %v\n", err)
+		os.Exit(1)
+	}
+
+	clientConfig := config.GetClientConfig()
+	if clientConfig == nil {
+		fmt.Printf("Client configuration is nil after initialization\n")
+		os.Exit(1)
+	}
+
+	fmt.Printf("Client configuration loaded: %+v\n", clientConfig)
 
 	systemSerial, err := hardware.GetSystemSerial()
 	if err != nil {
 		fmt.Printf("Error getting system serial: %v\n", err)
 		os.Exit(1)
 	}
-	fmt.Printf("System Serial: %s\n", systemSerial)
+	if systemSerial == "" {
+		fmt.Printf("System serial number is empty\n")
+		os.Exit(1)
+	}
+
+	tagnumber, err := webclient.SerialLookup(systemSerial)
+	if err != nil {
+		fmt.Printf("Error looking up serial number: %v\n", err)
+		os.Exit(1)
+	}
+	if tagnumber < 1 {
+		fmt.Printf("Invalid tagnumber retrieved: %d\n", tagnumber)
+		os.Exit(1)
+	}
+
+	fmt.Printf("Tagnumber: %d, System Serial: %s\n", tagnumber, systemSerial)
 
 	hasFP := cpu.X86.HasAES || cpu.ARM64.HasSHA1 || cpu.ARM64.HasSHA2 || cpu.ARM64.HasSHA3 || cpu.ARM64.HasCRC32
 	if hasFP {
@@ -113,18 +146,6 @@ func main() {
 	}
 
 	fmt.Printf("Filesystem type: %x\n", statfs.Type)
-
-	fmt.Printf("Creating database connection...\n")
-	dbConn, err = database.CreateDBConnection()
-	if err != nil {
-		fmt.Printf("Error connecting to database: %v\n", err)
-		os.Exit(1)
-	}
-	if dbConn == nil {
-		fmt.Printf("Database connection is nil\n")
-		os.Exit(1)
-	}
-	fmt.Printf("Database connection established successfully\n")
 
 	devicePath, totalDevices, err := selectBlockDevices()
 	if err != nil {
