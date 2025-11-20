@@ -31,16 +31,6 @@ done
 # tar -C /usr/local -xzf /tmp/go-latest.linux-amd64.tar.gz
 # export PATH="${PATH}:/usr/local/go/bin"
 
-curl --silent 'http://10.0.0.1:8080/client/pkg/uit-client' --output /tmp/uit-client
-while [ ! -f /tmp/uit-client ]; do
-  echo "Failed to download Go binary, trying again..."
-  curl --silent 'http://10.0.0.1:8080/client/pkg/uit-client' --output /tmp/uit-client
-  sleep 1
-done
-chmod 700 /tmp/uit-client
-mv /tmp/uit-client /usr/sbin/uit-client
-
-
 ## Server config
 unset configArr
 declare -A configArr
@@ -75,6 +65,9 @@ configArr[UIT_WEBMASTER_NAME]=$(getConfigValue "UIT_WEBMASTER_NAME")
 
 for i in ${!configArr[@]}; do
   while IFS= read -r -d '' file; do
+		if [[ $file == "/usr/sbin/uit-client" ]]; then
+			continue
+		fi
     if [[ -f $file ]]; then
       val="${configArr[$i]}"
       [[ "$i" == "UIT_CLIENT_DB_PASSWD" ]] && printf 'DEBUG %s -> [%s] -> %s\n' "$i" "$(printf %s "$val" | xxd -p)" "$file" >&2
@@ -90,6 +83,16 @@ for i in ${!configArr[@]}; do
     fi
   done < <(find /usr/sbin/ -type f -name 'uit-*' -print0; find /opt/uit-toolbox/include.php -type f -print0; find /opt/uit-toolbox/parse -print0; find /opt/uit-toolbox/select -print0)
 done
+
+
+curl --silent 'http://10.0.0.1:8080/client/pkg/uit-client' --output /tmp/uit-client
+while [ ! -f /tmp/uit-client ]; do
+  echo "Failed to download Go binary, trying again..."
+  curl --silent 'http://10.0.0.1:8080/client/pkg/uit-client' --output /tmp/uit-client
+  sleep 1
+done
+chmod 700 /tmp/uit-client
+mv /tmp/uit-client /usr/sbin/uit-client
 
 /usr/bin/chmod 700 /usr/sbin/uit-*
 /usr/bin/chown root:root /usr/sbin/uit-*
