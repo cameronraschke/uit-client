@@ -11,13 +11,13 @@ func GetClientConfig() ([]byte, error) {
 	reqURL.Scheme = "http"
 	reqURL.Path = "/client/api/configs/uit-client"
 	queries := url.Values{}
-	queries.Add("json", "true")
+	queries.Set("json", "true")
+	reqURL.RawQuery = queries.Encode()
 
 	resp, err := CreateGETRequest(reqURL)
 	if err != nil {
 		return nil, fmt.Errorf("error in GetClientConfig: %v", err)
 	}
-
 	return resp, nil
 }
 
