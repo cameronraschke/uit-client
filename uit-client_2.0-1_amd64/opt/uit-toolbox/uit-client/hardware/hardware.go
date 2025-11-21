@@ -69,3 +69,7 @@ func GetSystemVendor() (string, error) {
 	}
 	return string(data), nil
 }
+
+func GetSystemSKU() string {
+	return string(readFileAndTrim("/sys/class/dmi/id/product_sku"))
+}
