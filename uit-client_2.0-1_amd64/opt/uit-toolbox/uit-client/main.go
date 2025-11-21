@@ -96,12 +96,12 @@ func getClientData() {
 	}
 
 	// Job data
-
-	// jobUUID, err := config.CreateNewJobUUID()
-	// if err != nil {
-	// 	fmt.Printf("Error creating new job UUID: %v\n", err)
-	// 	os.Exit(1)
-	// }
+	jobUUID, err := config.CreateNewJobUUID()
+	if err != nil {
+		fmt.Printf("Error creating new job UUID: %v\n", err)
+		os.Exit(1)
+	}
+	config.SetJobUUID(jobUUID)
 
 	config.UpdateClientData(func(clientData *config.ClientData) {
 		clientData.Serial = systemSerial
@@ -192,12 +192,29 @@ func main() {
 	fmt.Printf("Selected block device path: %s\n", devicePath)
 
 	// Update hardware information in client data
-	clientDataConfig := &config.ClientData{}
-	if err := config.InitializeClientData(clientDataConfig); err != nil {
+	cd := &config.ClientData{}
+	if err := config.InitializeClientData(cd); err != nil {
 		fmt.Printf("Error initializing client data: %v\n", err)
 		os.Exit(1)
 	}
 	getClientData()
 
+	clientData := config.GetClientData()
+	if clientData == nil {
+		fmt.Printf("Client data is nil after initialization\n")
+		os.Exit(1)
+	}
+	fmt.Printf("Network interfaces detected: %d\n", len(clientData.Hardware.Network))
+	for ifName, netData := range clientData.Hardware.Network {
+		macAddr := netData.MACAddress
+		ipAddr := netData.IPAddress
+		linkUp := "down"
+		if netData.NetworkLinkUp != nil && *netData.NetworkLinkUp {
+			linkUp = "up"
+		}
+		fmt.Printf("Interface: %s, MAC: %s, IP: %s, Link: %s\n", ifName, macAddr, ipAddr, linkUp)
+	}
 	fmt.Printf("\nUIT Client setup completed successfully.\n")
+
+	os.Exit(0)
 }
