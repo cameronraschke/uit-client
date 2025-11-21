@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"net/netip"
 	"os"
 	"uitclient/config"
 	"uitclient/hardware"
@@ -87,12 +88,24 @@ func getClientData() {
 			fmt.Printf("Error getting IP addresses for interface %s: %v\n", ifName, err)
 			continue
 		}
+
+		ipAddressSlice := []netip.Addr{}
+		for _, addr := range ipAddresses {
+			ipAddr, err := netip.ParseAddr(addr.String())
+			if err != nil {
+				fmt.Printf("Error parsing IP address %s for interface %s: %v\n", addr.String(), ifName, err)
+				continue
+			}
+			ipAddressSlice = append(ipAddressSlice, ipAddr)
+		}
+
 		linkUp := (netIf.Flags & net.FlagUp) != 0
 		networkMap[ifName] = config.NetworkHardwareData{
 			MACAddress:    macAddress,
-			IPAddress:     ipAddresses[0].String(),
 			NetworkLinkUp: &linkUp,
+			IPAddress:     ipAddressSlice,
 		}
+
 	}
 
 	// Job data

@@ -1,5 +1,7 @@
 package config
 
+import "slices"
+
 func UpdateHardwareData(mutate func(*ClientHardwareData)) {
 	UpdateUniqueClientData(func(cd *ClientData) bool {
 		if cd.Hardware == nil {
@@ -66,7 +68,7 @@ func UpdateNetworkHardware(ifName string, mutate func(*NetworkHardwareData)) {
 		originalCopy, existed := cd.Hardware.Network[ifName]
 		newCopy := originalCopy
 		mutate(&newCopy)
-		if existed && newCopy == originalCopy {
+		if existed && slices.Equal(newCopy.IPAddress, originalCopy.IPAddress) {
 			return false
 		}
 		cd.Hardware.Network[ifName] = newCopy
