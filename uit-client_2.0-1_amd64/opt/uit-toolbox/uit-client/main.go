@@ -50,6 +50,10 @@ func getClientData() {
 		fmt.Printf("Error getting system UUID: %v\n", err)
 		os.Exit(1)
 	}
+	if systemUUID == "" {
+		fmt.Printf("System UUID is empty\n")
+		os.Exit(1)
+	}
 	config.SetSystemUUID(systemUUID)
 
 	manufacturer := hardware.GetSystemManufacturer()

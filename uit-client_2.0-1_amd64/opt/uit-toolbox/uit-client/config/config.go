@@ -159,7 +159,13 @@ func SetSKU(sku string) {
 }
 
 func SetJobUUID(uid uuid.UUID) {
+	if uid == uuid.Nil {
+		return
+	}
 	UpdateUniqueClientData(func(cd *ClientData) bool {
+		if cd.JobData == nil {
+			cd.JobData = &JobData{}
+		}
 		if cd.JobData.UUID == uid {
 			return false
 		}
