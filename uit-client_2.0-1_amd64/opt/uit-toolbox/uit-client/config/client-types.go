@@ -25,7 +25,7 @@ type ClientData struct {
 	ProductFamily      string              `json:"product_family,omitempty"`
 	ProductName        string              `json:"product_name,omitempty"`
 	SKU                string              `json:"sku,omitempty"`
-	UUID               uuid.UUID           `json:"uuid,omitempty"`
+	UUID               string              `json:"uuid,omitempty"`
 	OEMStrings         map[string]string   `json:"oem_strings,omitempty"`
 	BootDuration       time.Duration       `json:"boot_duration,omitempty"`
 	ConnectedToHost    *bool               `json:"connected_to_host,omitempty"`
@@ -49,7 +49,7 @@ type RealtimeSystemData struct {
 }
 
 type JobData struct {
-	UUID               string                   `json:"uuid,omitempty"`
+	UUID               uuid.UUID                `json:"uuid,omitempty"`
 	QueuedRemotely     *bool                    `json:"queued_remotely,omitempty"`
 	Mode               string                   `json:"mode,omitempty"`
 	SelectedDisk       string                   `json:"selected_disk,omitempty"`
@@ -178,7 +178,7 @@ type MemoryHardwareData struct {
 }
 
 type NetworkHardwareData struct {
-	MACAddr       string `json:"mac_addr,omitempty"`
+	MACAddress    string `json:"mac_addr,omitempty"`
 	Type          string `json:"type,omitempty"`
 	Wired         *bool  `json:"wired,omitempty"`
 	Wireless      *bool  `json:"wireless,omitempty"`

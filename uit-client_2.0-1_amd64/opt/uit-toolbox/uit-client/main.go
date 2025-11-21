@@ -6,6 +6,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"net"
 	"os"
 	"uitclient/config"
 	"uitclient/hardware"
@@ -20,11 +21,88 @@ const clearScreen = `\e[1;1H\e[2J`
 // const clearScreen = "\033[H\033[2J"
 
 func getClientData() {
+	// System data
 	systemSerial, err := hardware.GetSystemSerial()
 	if err != nil {
 		fmt.Printf("Error getting system serial: %v\n", err)
 		os.Exit(1)
 	}
+	if systemSerial == "" {
+		fmt.Printf("System serial number is empty\n")
+		os.Exit(1)
+	}
+	config.SetSystemSerial(systemSerial)
+
+	tagnumber, err := webclient.SerialLookup(systemSerial)
+	if err != nil {
+		fmt.Printf("Error looking up serial number: %v\n", err)
+		os.Exit(1)
+	}
+	if tagnumber < 1 {
+		fmt.Printf("Invalid tagnumber retrieved: %d\n", tagnumber)
+		os.Exit(1)
+	}
+	config.SetTagnumber(tagnumber)
+
+	systemUUID, err := hardware.GetSystemUUID()
+	if err != nil {
+		fmt.Printf("Error getting system UUID: %v\n", err)
+		os.Exit(1)
+	}
+	config.SetSystemUUID(systemUUID)
+
+	manufacturer := hardware.GetSystemManufacturer()
+	config.SetManufacturer(manufacturer)
+
+	model := hardware.GetSystemModel()
+	config.SetModel(model)
+
+	sku := hardware.GetSystemSKU()
+	config.SetSKU(sku)
+
+	// Network data
+	connectedToHost := true // assumed, got client config from server
+	config.SetConnectedToHost(&connectedToHost)
+
+	networkInterfaces, err := net.Interfaces()
+	if err != nil {
+		fmt.Printf("Error getting network interfaces: %v\n", err)
+		os.Exit(1)
+	}
+
+	networkMap := make(map[string]config.NetworkHardwareData)
+	for _, netIf := range networkInterfaces {
+		ifName := netIf.Name
+		if ifName == "" {
+			fmt.Printf("Network interface has no name, skipping\n")
+			continue
+		}
+		macAddress := netIf.HardwareAddr.String()
+		if macAddress == "" {
+			fmt.Printf("Interface %s has no MAC address, skipping\n", ifName)
+			continue
+		}
+		ipAddresses, err := netIf.Addrs()
+		if err != nil {
+			fmt.Printf("Error getting IP addresses for interface %s: %v\n", ifName, err)
+			continue
+		}
+		linkUp := (netIf.Flags & net.FlagUp) != 0
+		networkMap[ifName] = config.NetworkHardwareData{
+			MACAddress:    macAddress,
+			IPAddress:     ipAddresses[0].String(),
+			NetworkLinkUp: &linkUp,
+		}
+	}
+
+	// Job data
+
+	// jobUUID, err := config.CreateNewJobUUID()
+	// if err != nil {
+	// 	fmt.Printf("Error creating new job UUID: %v\n", err)
+	// 	os.Exit(1)
+	// }
+
 	config.UpdateClientData(func(clientData *config.ClientData) {
 		clientData.Serial = systemSerial
 	})
@@ -114,6 +192,11 @@ func main() {
 	fmt.Printf("Selected block device path: %s\n", devicePath)
 
 	// Update hardware information in client data
+	clientDataConfig := &config.ClientData{}
+	if err := config.InitializeClientData(clientDataConfig); err != nil {
+		fmt.Printf("Error initializing client data: %v\n", err)
+		os.Exit(1)
+	}
 	getClientData()
 
 	fmt.Printf("\nUIT Client setup completed successfully.\n")

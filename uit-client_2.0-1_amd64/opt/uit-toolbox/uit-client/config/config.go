@@ -98,6 +98,16 @@ func SetSystemSerial(serial string) {
 	})
 }
 
+func SetSystemUUID(systemUUID string) {
+	UpdateUniqueClientData(func(cd *ClientData) bool {
+		if cd.UUID == systemUUID {
+			return false
+		}
+		cd.UUID = systemUUID
+		return true
+	})
+}
+
 func SetManufacturer(manufacturer string) {
 	UpdateUniqueClientData(func(cd *ClientData) bool {
 		if cd.Manufacturer == manufacturer {
@@ -148,12 +158,12 @@ func SetSKU(sku string) {
 	})
 }
 
-func SetUUID(uid uuid.UUID) {
+func SetJobUUID(uid uuid.UUID) {
 	UpdateUniqueClientData(func(cd *ClientData) bool {
-		if cd.UUID == uid {
+		if cd.JobData.UUID == uid {
 			return false
 		}
-		cd.UUID = uid
+		cd.JobData.UUID = uid
 		return true
 	})
 }

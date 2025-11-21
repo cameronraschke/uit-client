@@ -4,7 +4,11 @@ func GetProductFamily() string {
 	return string(readFileAndTrim("/sys/class/dmi/id/product_family"))
 }
 
-func GetProductName() string {
+func GetSystemManufacturer() string {
+	return string(readFileAndTrim("/sys/class/dmi/id/sys_vendor"))
+}
+
+func GetSystemModel() string {
 	return string(readFileAndTrim("/sys/class/dmi/id/product_name"))
 }
 

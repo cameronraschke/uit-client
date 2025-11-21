@@ -14,20 +14,12 @@ func CreateNewJobUUID() (uuid.UUID, error) {
 	return newUUID, nil
 }
 
-func SetJobUUID(uid uuid.UUID) {
+func UpdateJobData(mutate func(*JobData)) {
 	UpdateUniqueClientData(func(cd *ClientData) bool {
-		if cd.UUID == uid {
-			return false
+		if cd.JobData == nil {
+			cd.JobData = &JobData{}
 		}
-		cd.UUID = uid
+		mutate(cd.JobData) // mutate in place, already isolated by copy-on-write
 		return true
 	})
-}
-
-func GetJobUUID() uuid.UUID {
-	cd := GetClientData()
-	if cd == nil {
-		return uuid.Nil
-	}
-	return cd.UUID
 }

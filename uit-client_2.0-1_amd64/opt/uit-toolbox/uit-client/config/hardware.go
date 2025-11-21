@@ -55,7 +55,7 @@ func UpdateMemoryHardware(ramSerial string, mutate func(*MemoryHardwareData)) {
 	})
 }
 
-func UpdateNetworkHardware(macAddr string, mutate func(*NetworkHardwareData)) {
+func UpdateNetworkHardware(ifName string, mutate func(*NetworkHardwareData)) {
 	UpdateUniqueClientData(func(cd *ClientData) bool {
 		if cd.Hardware == nil {
 			cd.Hardware = &ClientHardwareData{}
@@ -63,13 +63,13 @@ func UpdateNetworkHardware(macAddr string, mutate func(*NetworkHardwareData)) {
 		if cd.Hardware.Network == nil {
 			cd.Hardware.Network = make(map[string]NetworkHardwareData)
 		}
-		originalCopy, existed := cd.Hardware.Network[macAddr]
+		originalCopy, existed := cd.Hardware.Network[ifName]
 		newCopy := originalCopy
 		mutate(&newCopy)
 		if existed && newCopy == originalCopy {
 			return false
 		}
-		cd.Hardware.Network[macAddr] = newCopy
+		cd.Hardware.Network[ifName] = newCopy
 		return true
 	})
 }
