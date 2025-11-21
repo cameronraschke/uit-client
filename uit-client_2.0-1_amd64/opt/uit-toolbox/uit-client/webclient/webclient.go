@@ -15,6 +15,7 @@ type ClientLookup struct {
 }
 
 func SendGETRequest(reqURL *url.URL) (*http.Response, error) {
+	// You have to close the body of the response after using it
 	if reqURL == nil {
 		return nil, fmt.Errorf("input URL is empty")
 	}
@@ -23,7 +24,6 @@ func SendGETRequest(reqURL *url.URL) (*http.Response, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to make GET request: %v", err)
 	}
-	defer resp.Body.Close()
 	if resp.Body == nil {
 		return nil, fmt.Errorf("response body is nil")
 	}
