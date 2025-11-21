@@ -19,6 +19,17 @@ const clearScreen = `\e[1;1H\e[2J`
 
 // const clearScreen = "\033[H\033[2J"
 
+func getClientData() {
+	systemSerial, err := hardware.GetSystemSerial()
+	if err != nil {
+		fmt.Printf("Error getting system serial: %v\n", err)
+		os.Exit(1)
+	}
+	config.UpdateClientData(func(clientData *config.ClientData) {
+		clientData.Serial = systemSerial
+	})
+}
+
 func main() {
 	recover()
 	var err error
@@ -101,4 +112,9 @@ func main() {
 	}
 
 	fmt.Printf("Selected block device path: %s\n", devicePath)
+
+	// Update hardware information in client data
+	getClientData()
+
+	fmt.Printf("\nUIT Client setup completed successfully.\n")
 }
