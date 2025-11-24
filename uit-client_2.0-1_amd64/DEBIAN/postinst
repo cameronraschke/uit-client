@@ -8,71 +8,39 @@ while [ ! -f /usr/local/share/ca-certificates/uit-web.crt ]; do
 done
 update-ca-certificates
 
-curl --silent 'http://10.0.0.1:31411/client/api/configs/uit-client' | sed 's/\\n/\n/g' | sed 's/^"//g' | sed 's/^[[:space:]]//g' > /etc/uit-client.conf
-while [ ! -f /etc/uit-client.conf ]; do
-  echo "Failed to download client config, trying again..."
-  curl --silent 'http://10.0.0.1:31411/client/api/configs/uit-client' | sed 's/\\n/\n/g' | sed 's/^"//g' | sed 's/^[[:space:]]//g' > /etc/uit-client.conf
-  sleep 1
+jsonConfig=$(curl --silent 'https://10.0.0.1:31411/client/api/configs/uit-client?json=true')
+while [ -z "$jsonConfig" ] || [[ "$jsonConfig" == *"error"* ]]; do
+	echo "Failed to download client config (json), trying again..."
+	jsonConfig=$(curl --silent 'https://10.0.0.1:31411/client/api/configs/uit-client?json=true')
+	sleep 1
 done
 
-## Server config
-unset configArr
-declare -A configArr
+configKeys=$(printf "%s" "${jsonConfig}" | jq -r 'configKeys[]')
 
-# Get config value from file
-getConfigValue() {
-  local key="$1"
-  local trim_spaces="${2:-true}"
-  local value
-  value=$(sed -n -e "s|^${key}=||p" /etc/uit-client.conf | head -n1)
-  if [[ "$trim_spaces" == "true" ]]; then
-    value="${value#"${value%%[![:space:]]*}"}"
-    value="${value%"${value##*[![:space:]]}"}"
-  fi
-  printf '%s' "$value"
-}
-
-# Load config values (values that need spaces preserved are marked with 'false')
-configArr[UIT_CLIENT_DB_USER]=$(getConfigValue "UIT_CLIENT_DB_USER")
-configArr[UIT_CLIENT_DB_PASSWD]=$(getConfigValue "UIT_CLIENT_DB_PASSWD")
-configArr[UIT_CLIENT_DB_NAME]=$(getConfigValue "UIT_CLIENT_DB_NAME")
-configArr[UIT_CLIENT_DB_HOST]=$(getConfigValue "UIT_CLIENT_DB_HOST")
-configArr[UIT_CLIENT_DB_PORT]=$(getConfigValue "UIT_CLIENT_DB_PORT")
-configArr[UIT_CLIENT_NTP_HOST]=$(getConfigValue "UIT_CLIENT_NTP_HOST")
-configArr[UIT_CLIENT_PING_HOST]=$(getConfigValue "UIT_CLIENT_PING_HOST")
-configArr[UIT_SERVER_HOSTNAME]=$(getConfigValue "UIT_SERVER_HOSTNAME")
-configArr[UIT_WEB_HTTP_HOST]=$(getConfigValue "UIT_WEB_HTTP_HOST")
-configArr[UIT_WEB_HTTP_PORT]=$(getConfigValue "UIT_WEB_HTTP_PORT")
-configArr[UIT_WEB_HTTPS_HOST]=$(getConfigValue "UIT_WEB_HTTPS_HOST")
-configArr[UIT_WEB_HTTPS_PORT]=$(getConfigValue "UIT_WEB_HTTPS_PORT")
-configArr[UIT_WEBMASTER_NAME]=$(getConfigValue "UIT_WEBMASTER_NAME")
-
-for i in ${!configArr[@]}; do
-  while IFS= read -r -d '' file; do
-		if [[ $file == "/usr/sbin/uit-client" ]]; then
-			continue
-		fi
-    if [[ -f $file ]]; then
-      val="${configArr[$i]}"
-      [[ "$i" == "UIT_CLIENT_DB_PASSWD" ]] && printf 'DEBUG %s -> [%s] -> %s\n' "$i" "$(printf %s "$val" | xxd -p)" "$file" >&2
-      val="${val//\\/\\\\}"
-      val="${val//&/\\&}"
-      val="${val//|/\\|}"
-      sed -i "s|${i}|${val}|g" "$file"
-      
-      sed -i "s|${i}|${sanitizedValue}|g" "$file"
-    else
-      echo "File ${file} does not exist. Exiting..."
-      exit 1
-    fi
-  done < <(find /usr/sbin/ -type f -name 'uit-*' -print0; find /opt/uit-toolbox/include.php -type f -print0; find /opt/uit-toolbox/parse -print0; find /opt/uit-toolbox/select -print0)
-done
+while IFS= read -r -d '' file; do
+	if [[ $file == "/usr/sbin/uit-client" ]]; then
+		continue
+	fi
+	if [[ -f $file ]]; then
+		for key in ${configKeys}; do
+			value=$(printf "%s" ${jsonConfig} | jq -r ''".${key}"'')
+			value="${value//\\/\\\\}"
+			value="${value//&/\\&}"
+			value="${value//\//\\/}"
+			value="${value//|/\\|}"
+			sed -i 's|'"${key}"'|'"${value}"'|g' "$file"
+		done
+	else
+		echo "File ${file} does not exist. Exiting..."
+		exit 1
+	fi
+done < <(find /usr/sbin/ -type f -name 'uit-*' -print0; find /opt/uit-toolbox/include.php -type f -print0; find /opt/uit-toolbox/parse -print0; find /opt/uit-toolbox/select -print0)
 
 
-curl --silent 'http://10.0.0.1:8080/client/pkg/uit-client' --output /tmp/uit-client
+curl --silent 'https://10.0.0.1:31411/client/pkg/uit-client' --output /tmp/uit-client
 while [ ! -f /tmp/uit-client ]; do
   echo "Failed to download Go binary, trying again..."
-  curl --silent 'http://10.0.0.1:8080/client/pkg/uit-client' --output /tmp/uit-client
+  curl --silent 'https://10.0.0.1:31411/client/pkg/uit-client' --output /tmp/uit-client
   sleep 1
 done
 chmod 700 /tmp/uit-client
