@@ -28,7 +28,7 @@ while IFS= read -r -d '' file; do
 			value="${value//&/\\&}"
 			value="${value//\//\\/}"
 			value="${value//|/\\|}"
-			sed -i 's|'"${key}"'|'"${value}"'|g' "$file"
+			sed -i "s|${key}|${value}|g" "$file"
 		done
 	else
 		echo "File ${file} does not exist. Exiting..."
