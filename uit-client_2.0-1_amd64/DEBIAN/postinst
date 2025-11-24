@@ -22,7 +22,7 @@ while IFS= read -r -d '' file; do
 		continue
 	fi
 	if [[ -f $file ]]; then
-		for key in ${configKeys[@]}; do
+		for key in ${configKeys}; do
 			value=$(printf "%s" ${jsonConfig} | jq -r ''".${key}"'')
 			value="${value//\\/\\\\}"
 			value="${value//&/\\&}"
@@ -30,9 +30,6 @@ while IFS= read -r -d '' file; do
 			value="${value//|/\\|}"
 			sed -i "s|${key}|${value}|g" "$file"
 		done
-	else
-		echo "File ${file} does not exist. Exiting..."
-		exit 1
 	fi
 done < <(
 	find /usr/sbin/ -type f -name 'uit-*' -print0; 
