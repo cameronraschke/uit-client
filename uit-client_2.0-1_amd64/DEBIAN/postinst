@@ -15,7 +15,7 @@ while [ -z "$jsonConfig" ] || [[ "$jsonConfig" == *"error"* ]]; do
 	sleep 1
 done
 
-configKeys=$(printf "%s" "${jsonConfig}" | jq -r 'configKeys[]')
+configKeys=$(printf "%s" "${jsonConfig}" | jq -r 'keys[]')
 
 while IFS= read -r -d '' file; do
 	if [[ $file == "/usr/sbin/uit-client" ]]; then
@@ -31,12 +31,7 @@ while IFS= read -r -d '' file; do
 			sed -i "s|${key}|${value}|g" "$file"
 		done
 	fi
-done < <(
-	find /usr/sbin/ -type f -name 'uit-*' -print0; 
-	find /opt/uit-toolbox/include.php -type f -print0; 
-	find /opt/uit-toolbox/parse -type f -print0; 
-	find /opt/uit-toolbox/select -type f -print0
-	)
+done < <(find /usr/sbin/ -type f -name 'uit-*' -print0; find /opt/uit-toolbox/include.php -type f -print0; find /opt/uit-toolbox/parse -type f -print0; find /opt/uit-toolbox/select -type f -print0)
 
 
 curl --silent 'https://10.0.0.1:31411/client/pkg/uit-client' --output /tmp/uit-client
