@@ -1,4 +1,14 @@
 #!/bin/bash
+printf '%s\n' "[Time]
+NTP=10.0.0.1" > /etc/systemd/timesyncd.conf
+
+systemctl daemon-reload &>/dev/null
+/usr/bin/timedatectl set-timezone 'America/Chicago'
+/usr/bin/timedatectl set-ntp true
+/usr/bin/timedatectl set-local-rtc false
+
+/usr/bin/chronyc add server 10.0.0.1 iburst
+/usr/bin/chronyc makestep
 
 curl --silent --show-error 'http://10.0.0.1:8080/client/certs/uit-web.crt' --output /usr/local/share/ca-certificates/uit-web.crt
 while [ ! -f /usr/local/share/ca-certificates/uit-web.crt ]; do
