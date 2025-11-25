@@ -1,17 +1,17 @@
 #!/bin/bash
 
-curl 'http://10.0.0.1:8080/client/certs/uit-web.crt' --output /usr/local/share/ca-certificates/uit-web.crt &>/dev/null
+curl --silent --show-error 'http://10.0.0.1:8080/client/certs/uit-web.crt' --output /usr/local/share/ca-certificates/uit-web.crt
 while [ ! -f /usr/local/share/ca-certificates/uit-web.crt ]; do
   echo "Failed to download web cert, trying again..."
-  curl 'http://10.0.0.1:8080/client/certs/uit-web.crt' --output /usr/local/share/ca-certificates/uit-web.crt &>/dev/null
+  curl --silent --show-error 'http://10.0.0.1:8080/client/certs/uit-web.crt' --output /usr/local/share/ca-certificates/uit-web.crt
   sleep 1
 done
 update-ca-certificates
 
-jsonConfig=$(curl --silent 'https://10.0.0.1:31411/client/api/configs/uit-client?json=true')
+jsonConfig=$(curl --silent --show-error 'https://10.0.0.1:31411/client/api/configs/uit-client?json=true')
 while [ -z "$jsonConfig" ] || [[ "$jsonConfig" == *"error"* ]]; do
 	echo "Failed to download client config (json), trying again..."
-	jsonConfig=$(curl --silent 'https://10.0.0.1:31411/client/api/configs/uit-client?json=true')
+	jsonConfig=$(curl --silent --show-error 'https://10.0.0.1:31411/client/api/configs/uit-client?json=true')
 	sleep 1
 done
 
@@ -34,10 +34,10 @@ while IFS= read -r -d '' file; do
 done < <(find /usr/sbin/ -type f -name 'uit-*' -print0; find /opt/uit-toolbox/include.php -type f -print0; find /opt/uit-toolbox/parse -type f -print0; find /opt/uit-toolbox/select -type f -print0)
 
 
-curl --silent 'https://10.0.0.1:31411/client/pkg/uit-client' --output /tmp/uit-client
+curl --silent --show-error 'https://10.0.0.1:31411/client/pkg/uit-client' --output /tmp/uit-client
 while [ ! -f /tmp/uit-client ]; do
   echo "Failed to download Go binary, trying again..."
-  curl --silent 'https://10.0.0.1:31411/client/pkg/uit-client' --output /tmp/uit-client
+  curl --silent --show-error 'https://10.0.0.1:31411/client/pkg/uit-client' --output /tmp/uit-client
   sleep 1
 done
 chmod 700 /tmp/uit-client

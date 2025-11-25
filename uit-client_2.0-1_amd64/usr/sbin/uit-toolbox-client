@@ -1836,10 +1836,15 @@ function autodetectClient {
 				systemData
 				hardwareData
 				printf '%s' "remote|${tagNum}|status|Updating..." | /opt/uit-toolbox/parse
-				rm /root/uit-toolbox-client.deb
-        curl http://10.0.0.1:8080/client/pkg/uit-toolbox-client.deb --output /root/uit-toolbox-client.deb &>/dev/null
+				if [[ -f /root/uit-toolbox-client.deb ]]; then
+					rm /root/uit-toolbox-client.deb
+				fi
+				printf '%s' "remote|${tagNum}|status|Downloading update..." | /opt/uit-toolbox/parse
+        curl --silent --show-error 'http://10.0.0.1:8080/client/pkg/uit-toolbox-client.deb' --output /root/uit-toolbox-client.deb
 				while [[ ! -f /root/uit-toolbox-client.deb ]]; do
-					curl http://10.0.0.1:8080/client/pkg/uit-toolbox-client.deb --output /root/uit-toolbox-client.deb &>/dev/null
+					printf '%s' "remote|${tagNum}|status|Retrying download..." | /opt/uit-toolbox/parse
+					echo "Package download failed, retrying download..."
+					curl --silent --show-error 'http://10.0.0.1:8080/client/pkg/uit-toolbox-client.deb' --output /root/uit-toolbox-client.deb
 					sleep 1
 				done
 				dpkg --install /root/uit-toolbox-client.deb &>/dev/null
