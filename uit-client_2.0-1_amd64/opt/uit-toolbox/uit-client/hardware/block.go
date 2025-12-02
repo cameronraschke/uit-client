@@ -8,35 +8,12 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"uitclient/config"
 
 	"golang.org/x/sys/unix"
 )
 
-type BlockDevice struct {
-	Name                 string
-	Path                 string
-	Major                uint32
-	Minor                uint32
-	DiskType             string
-	Removable            bool
-	Rotating             bool
-	LogicalBlockSize     uint32
-	PhysicalBlockSize    uint32
-	SectorCount          uint64
-	CapacityMiB          float64
-	Model                string
-	Manufacturer         string
-	Serial               string
-	WWID                 string
-	Firmware             string
-	NvmeQualifiedName    string
-	PCIeCurrentLinkSpeed string
-	PCIeCurrentLinkWidth string
-	PCIeMaxLinkSpeed     string
-	PCIeMaxLinkWidth     string
-}
-
-func ListBlockDevices(devDir string) ([]*BlockDevice, error) {
+func ListBlockDevices(devDir string) ([]*config.DiskHardwareData, error) {
 	fd, err := unix.Open(devDir, unix.O_RDONLY|unix.O_DIRECTORY|unix.O_CLOEXEC, 0)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open device directory: %v", err)
@@ -44,7 +21,7 @@ func ListBlockDevices(devDir string) ([]*BlockDevice, error) {
 	defer unix.Close(fd)
 
 	directoryListBuffer := make([]byte, 1<<13) // 8kb buffer to load in directory entries
-	var devices []*BlockDevice
+	var devices []config.DiskHardwareData
 
 	diskType := "Unknown"
 	for {
@@ -63,10 +40,13 @@ func ListBlockDevices(devDir string) ([]*BlockDevice, error) {
 		scsiIdeMajors := []uint32{3, 22, 33, 34, 56, 57, 88, 89, 90, 91}
 
 		for _, deviceName := range deviceNames {
-			if deviceName == "." || deviceName == ".." {
+			if deviceName == "." || deviceName == ".." || deviceName == "" {
 				continue
 			}
 			devicePath := filepath.Join(devDir, deviceName)
+			if !fileExists(devicePath) {
+				continue
+			}
 
 			var statData unix.Stat_t
 			if err := unix.Lstat(devicePath, &statData); err != nil {
@@ -77,14 +57,19 @@ func ListBlockDevices(devDir string) ([]*BlockDevice, error) {
 				continue
 			}
 
-			majorNum := unix.Major(uint64(statData.Rdev))
-			minorNum := unix.Minor(uint64(statData.Rdev))
+			major := unix.Major(uint64(statData.Rdev))
+			minor := unix.Minor(uint64(statData.Rdev))
 
-			if majorNum == 0 && minorNum == 0 {
+			if major == 0 && minor == 0 {
 				continue
 			}
+			majorNum := int64(major)
+			minorNum := int64(minor)
 
-			if slices.Contains(scsiOrSataMajors, majorNum) && strings.HasPrefix(devicePath, "/dev/sd") {
+			// Determine disk type based on major number and device path prefix
+			diskType = "Unknown"
+
+			if slices.Contains(scsiOrSataMajors, major) && strings.HasPrefix(devicePath, "/dev/sd") {
 				diskType = "SCSI/SATA"
 			} else if majorNum == 9 {
 				if strings.HasPrefix(devicePath, "/dev/md") {
@@ -98,7 +83,7 @@ func ListBlockDevices(devDir string) ([]*BlockDevice, error) {
 				diskType = "SCSI CD-ROM"
 			} else if majorNum == 21 && strings.HasPrefix(devicePath, "/dev/sg") {
 				diskType = "Generic SCSI"
-			} else if slices.Contains(scsiIdeMajors, majorNum) && strings.HasPrefix(devicePath, "/dev/hd") {
+			} else if slices.Contains(scsiIdeMajors, major) && strings.HasPrefix(devicePath, "/dev/hd") {
 				diskType = "SCSI IDE/CD-ROM"
 			} else if majorNum == 259 && strings.HasPrefix(devicePath, "/dev/nvme") {
 				diskType = "NVMe"
@@ -111,15 +96,31 @@ func ListBlockDevices(devDir string) ([]*BlockDevice, error) {
 			}
 
 			sysBlock := filepath.Join("/sys/class/block", deviceName)
-			removable := readUintBool(filepath.Join(sysBlock, "removable"))
-			rotating := readUintBool(filepath.Join(sysBlock, "queue", "rotational"))
-			lBlocks := readUint(filepath.Join(sysBlock, "queue", "logical_block_size"))
-			logicalBlockSizeBytes := uint32(lBlocks)
-			pBlocks := readUint(filepath.Join(sysBlock, "queue", "physical_block_size"))
-			physicalBlockSizeBytes := uint32(pBlocks)
+			removable := readUintBoolPtr(filepath.Join(sysBlock, "removable"))
 
-			sectors := readUint(filepath.Join(sysBlock, "size"))
-			sizeBytes := sectors * uint64(logicalBlockSizeBytes)
+			rotating := readUintBoolPtr(filepath.Join(sysBlock, "queue", "rotational"))
+			lBlocks := readUintPtr(filepath.Join(sysBlock, "queue", "logical_block_size"))
+			var logicalBlockSizeBytes uint32
+			if lBlocks != nil {
+				logicalBlockSizeBytes = uint32(*lBlocks)
+			} else {
+				logicalBlockSizeBytes = 512 // Default to 512 if not found
+			}
+			pBlocks := readUintPtr(filepath.Join(sysBlock, "queue", "physical_block_size"))
+			var physicalBlockSizeBytes uint32
+			if pBlocks != nil {
+				physicalBlockSizeBytes = uint32(*pBlocks)
+			} else {
+				physicalBlockSizeBytes = 512 // Default to 512 if not found
+			}
+
+			sectors := readUintPtr(filepath.Join(sysBlock, "size"))
+			var sizeBytes uint64
+			if sectors != nil {
+				sizeBytes = *sectors * uint64(logicalBlockSizeBytes)
+			} else {
+				sizeBytes = 0
+			}
 			sizeMib := float64(sizeBytes) / 1024.0 / 1024.0 // Convert bytes to MiB
 
 			diskWWID := readFileAndTrim(filepath.Join(sysBlock, "wwid"))
@@ -130,21 +131,26 @@ func ListBlockDevices(devDir string) ([]*BlockDevice, error) {
 				continue
 			}
 			diskModel := readFileAndTrim(filepath.Join(deviceSymLink, "model"))
+			if diskModel != nil {
+				trimmedModel := strings.TrimSpace(*diskModel)
+				diskModel = &trimmedModel
+			}
 			diskManufacturer := readFileAndTrim(filepath.Join(deviceSymLink, "vendor"))
 			diskSerial := ""
-			if serial := readFileAndTrim(filepath.Join(deviceSymLink, "serial")); serial != "" {
-				diskSerial = serial
-			} else if eui := readFileAndTrim(filepath.Join(devicePath, "eui")); eui != "" {
-				diskSerial = eui
-			} else if euiFallback := readFileAndTrim(filepath.Join(deviceSymLink, "eui")); euiFallback != "" {
-				diskSerial = euiFallback
+			serial := readFileAndTrim(filepath.Join(deviceSymLink, "serial"))
+			if serial != nil {
+				diskSerial = *serial
+			} else if eui := readFileAndTrim(filepath.Join(devicePath, "eui")); eui != nil {
+				diskSerial = *eui
+			} else if euiFallback := readFileAndTrim(filepath.Join(deviceSymLink, "eui")); euiFallback != nil {
+				diskSerial = *euiFallback
 			}
 
 			diskFirmware := ""
-			if firmware := readFileAndTrim(filepath.Join(deviceSymLink, "firmware_rev")); firmware != "" {
-				diskFirmware = firmware
-			} else if firmwareFallback := readFileAndTrim(filepath.Join(deviceSymLink, "rev")); firmwareFallback != "" {
-				diskFirmware = firmwareFallback
+			if firmware := readFileAndTrim(filepath.Join(deviceSymLink, "firmware_rev")); firmware != nil {
+				diskFirmware = *firmware
+			} else if firmwareFallback := readFileAndTrim(filepath.Join(deviceSymLink, "rev")); firmwareFallback != nil {
+				diskFirmware = *firmwareFallback
 			}
 
 			nvmeQualifiedName := readFileAndTrim(filepath.Join(deviceSymLink, "subsysnqn"))
@@ -158,22 +164,22 @@ func ListBlockDevices(devDir string) ([]*BlockDevice, error) {
 			pcieMaxLinkWidth := readFileAndTrim(filepath.Join(nvmeControllerSubsystemPath, "max_link_width"))
 
 			if minorNum == 0 {
-				if diskType == "SCSI/SATA" && rotating {
+				if diskType == "SCSI/SATA" && rotating != nil && *rotating {
 					diskType = diskType + " (HDD)"
-				} else if diskType == "SCSI/SATA" && removable {
+				} else if diskType == "SCSI/SATA" && removable != nil && *removable {
 					diskType = diskType + " (Removable)"
-				} else if diskType == "SCSI/SATA" && !rotating {
+				} else if diskType == "SCSI/SATA" && rotating != nil && !*rotating {
 					diskType = diskType + " (SSD)"
-				} else if diskType == "NVMe" && !rotating {
+				} else if diskType == "NVMe" && rotating != nil && !*rotating {
 					diskType = diskType + " (NVMe SSD)"
 				}
 
-				devices = append(devices, &BlockDevice{
-					Name:                 deviceName,
-					Path:                 devicePath,
-					Major:                majorNum,
-					Minor:                minorNum,
-					DiskType:             diskType,
+				devices = append(devices, config.DiskHardwareData{
+					LinuxAlias:           &deviceName,
+					LinuxDevicePath:      &devicePath,
+					LinuxMajorNumber:     &majorNum,
+					LinuxMinorNumber:     &minorNum, // always 0 here
+					InterfaceType:        &diskType, // always populated
 					Removable:            removable,
 					Rotating:             rotating,
 					LogicalBlockSize:     logicalBlockSizeBytes,

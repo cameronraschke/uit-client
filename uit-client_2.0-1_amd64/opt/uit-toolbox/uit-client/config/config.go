@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"maps"
 	"sync/atomic"
 	"time"
 
@@ -78,7 +77,10 @@ func UpdateUniqueClientData(mutate func(*ClientData) bool) {
 	clientData.Store(newSnapshot)
 }
 
-func SetTagnumber(tag int64) {
+func SetTagnumber(tag *int64) {
+	if tag == nil {
+		return
+	}
 	UpdateUniqueClientData(func(cd *ClientData) bool {
 		if cd.Tagnumber == tag {
 			return false
@@ -88,7 +90,10 @@ func SetTagnumber(tag int64) {
 	})
 }
 
-func SetSystemSerial(serial string) {
+func SetSystemSerial(serial *string) {
+	if serial == nil {
+		return
+	}
 	UpdateUniqueClientData(func(cd *ClientData) bool {
 		if cd.Serial == serial {
 			return false
@@ -98,7 +103,10 @@ func SetSystemSerial(serial string) {
 	})
 }
 
-func SetSystemUUID(systemUUID string) {
+func SetSystemUUID(systemUUID *string) {
+	if systemUUID == nil {
+		return
+	}
 	UpdateUniqueClientData(func(cd *ClientData) bool {
 		if cd.UUID == systemUUID {
 			return false
@@ -108,7 +116,10 @@ func SetSystemUUID(systemUUID string) {
 	})
 }
 
-func SetManufacturer(manufacturer string) {
+func SetManufacturer(manufacturer *string) {
+	if manufacturer == nil {
+		return
+	}
 	UpdateUniqueClientData(func(cd *ClientData) bool {
 		if cd.Manufacturer == manufacturer {
 			return false
@@ -118,7 +129,10 @@ func SetManufacturer(manufacturer string) {
 	})
 }
 
-func SetModel(model string) {
+func SetModel(model *string) {
+	if model == nil {
+		return
+	}
 	UpdateUniqueClientData(func(cd *ClientData) bool {
 		if cd.Model == model {
 			return false
@@ -128,7 +142,10 @@ func SetModel(model string) {
 	})
 }
 
-func SetProductFamily(productFamily string) {
+func SetProductFamily(productFamily *string) {
+	if productFamily == nil {
+		return
+	}
 	UpdateUniqueClientData(func(cd *ClientData) bool {
 		if cd.ProductFamily == productFamily {
 			return false
@@ -138,7 +155,10 @@ func SetProductFamily(productFamily string) {
 	})
 }
 
-func SetProductName(productName string) {
+func SetProductName(productName *string) {
+	if productName == nil {
+		return
+	}
 	UpdateUniqueClientData(func(cd *ClientData) bool {
 		if cd.ProductName == productName {
 			return false
@@ -148,7 +168,10 @@ func SetProductName(productName string) {
 	})
 }
 
-func SetSKU(sku string) {
+func SetSKU(sku *string) {
+	if sku == nil {
+		return
+	}
 	UpdateUniqueClientData(func(cd *ClientData) bool {
 		if cd.SKU == sku {
 			return false
@@ -174,19 +197,10 @@ func SetJobUUID(uid uuid.UUID) {
 	})
 }
 
-func SetOEMStrings(oemStrings map[string]string) {
-	UpdateUniqueClientData(func(cd *ClientData) bool {
-		if maps.Equal(cd.OEMStrings, oemStrings) {
-			return false
-		}
-		newMap := make(map[string]string, len(oemStrings))
-		maps.Copy(newMap, oemStrings)
-		cd.OEMStrings = newMap
-		return true
-	})
-}
-
 func SetBootDuration(duration time.Duration) {
+	if duration.Seconds() <= 0 {
+		return
+	}
 	UpdateUniqueClientData(func(cd *ClientData) bool {
 		if cd.BootDuration == duration {
 			return false
@@ -219,18 +233,18 @@ func SetConnectedToHost(connected *bool) {
 func SetTimeSynced(synced *bool) {
 	UpdateUniqueClientData(func(cd *ClientData) bool {
 		if synced == nil {
-			if cd.TimeSynced == nil {
+			if cd.NTPSynced == nil {
 				return false
 			}
-			cd.TimeSynced = nil
+			cd.NTPSynced = nil
 			return true
 		}
 		pointerVal := *synced
-		if cd.TimeSynced != nil && *cd.TimeSynced == pointerVal {
+		if cd.NTPSynced != nil && *cd.NTPSynced == pointerVal {
 			return false
 		}
 		newCopy := pointerVal
-		cd.TimeSynced = &newCopy
+		cd.NTPSynced = &newCopy
 		return true
 	})
 }

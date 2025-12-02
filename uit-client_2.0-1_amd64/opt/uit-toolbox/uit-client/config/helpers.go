@@ -77,10 +77,6 @@ func cloneClientSoftwareData(softwareData *ClientSoftwareData) *ClientSoftwareDa
 	}
 	copySoftwareData := *softwareData
 
-	if softwareData.CPU != nil {
-		cpuSoftwareDataCopy := *softwareData.CPU
-		copySoftwareData.CPU = &cpuSoftwareDataCopy
-	}
 	if softwareData.Motherboard != nil {
 		mbSoftwareDataCopy := *softwareData.Motherboard
 		copySoftwareData.Motherboard = &mbSoftwareDataCopy
@@ -130,10 +126,6 @@ func cloneClientData(clientData *ClientData) *ClientData {
 	}
 	// Copies all fields, but performs deep copy on pointer and map fields.
 	copyClientData := *clientData
-	copyClientData.OEMStrings = copyMap(clientData.OEMStrings)
-	if clientData.Hardware != nil {
-		copyClientData.Hardware = cloneClientHardwareData(clientData.Hardware)
-	}
 	if clientData.Software != nil {
 		copyClientData.Software = cloneClientSoftwareData(clientData.Software)
 	}
