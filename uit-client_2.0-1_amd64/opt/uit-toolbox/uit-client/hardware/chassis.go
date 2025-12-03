@@ -2,52 +2,75 @@ package hardware
 
 import "strconv"
 
-func GetChassisSerial() string {
-	return string(readFileAndTrim("/sys/class/dmi/id/chassis_serial"))
+func GetChassisSerial() *string {
+	return readFileAndTrim("/sys/class/dmi/id/chassis_serial")
 }
 
-func GetChassisType() string {
+func GetChassisType() *string {
 	// https://github.com/mirror/dmidecode/blob/master/dmidecode.c#L599
-	data := readUint("/sys/class/dmi/id/chassis_type")
-	switch data {
+	var data *int64
+	var notInDmiTable = "Not in DMI table"
+	data = readUintPtr("/sys/class/dmi/id/chassis_type")
+	if data == nil {
+		return &notInDmiTable
+	}
+	switch *data {
 	case 1:
-		return "Other"
+		other := "Other"
+		return &other
 	case 2:
-		return "Unknown"
+		unknown := "Unknown"
+		return &unknown
 	case 3:
-		return "Desktop"
+		desktop := "Desktop"
+		return &desktop
 	case 4:
-		return "Low Profile Desktop"
+		lowProfileDesktop := "Low Profile Desktop"
+		return &lowProfileDesktop
 	case 6:
-		return "Mini Tower"
+		miniTower := "Mini Tower"
+		return &miniTower
 	case 7:
-		return "Tower"
+		tower := "Tower"
+		return &tower
 	case 8:
-		return "Portable"
+		portable := "Portable"
+		return &portable
 	case 9:
-		return "Laptop"
+		laptop := "Laptop"
+		return &laptop
 	case 10:
-		return "Notebook"
+		notebook := "Notebook"
+		return &notebook
 	case 13:
-		return "All in One"
+		allInOne := "All in One"
+		return &allInOne
 	case 15:
-		return "Space-saving"
+		spaceSaving := "Space-saving"
+		return &spaceSaving
 	case 30:
-		return "Tablet"
+		tablet := "Tablet"
+		return &tablet
 	case 31:
-		return "Convertible"
+		convertible := "Convertible"
+		return &convertible
 	case 32:
-		return "Detachable"
+		detachable := "Detachable"
+		return &detachable
 	case 34:
-		return "Embedded PC"
+		embeddedPC := "Embedded PC"
+		return &embeddedPC
 	case 35:
-		return "Mini PC"
+		miniPC := "Mini PC"
+		return &miniPC
 	case 36:
-		return "Stick PC"
+		stickPC := "Stick PC"
+		return &stickPC
 	default:
-		if strconv.FormatUint(data, 10) != "" {
-			return "Unknown/" + strconv.FormatUint(data, 10)
+		if strconv.FormatInt(*data, 10) != "" {
+			unknownType := "Unknown/" + strconv.FormatInt(*data, 10)
+			return &unknownType
 		}
-		return "Not in DMI table"
+		return &notInDmiTable
 	}
 }

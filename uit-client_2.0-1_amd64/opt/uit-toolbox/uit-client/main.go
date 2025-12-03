@@ -28,7 +28,7 @@ func getClientData() {
 		fmt.Printf("Error getting system serial: %v\n", err)
 		os.Exit(1)
 	}
-	if systemSerial == "" {
+	if systemSerial == nil {
 		fmt.Printf("System serial number is empty\n")
 		os.Exit(1)
 	}
@@ -43,14 +43,14 @@ func getClientData() {
 		fmt.Printf("Invalid tagnumber retrieved: %d\n", tagnumber)
 		os.Exit(1)
 	}
-	config.SetTagnumber(tagnumber)
+	config.SetTagnumber(&tagnumber)
 
 	systemUUID, err := hardware.GetSystemUUID()
 	if err != nil {
 		fmt.Printf("Error getting system UUID: %v\n", err)
 		os.Exit(1)
 	}
-	if systemUUID == "" {
+	if systemUUID == nil || *systemUUID == "" {
 		fmt.Printf("System UUID is empty\n")
 		os.Exit(1)
 	}
@@ -82,8 +82,9 @@ func getClientData() {
 			fmt.Printf("Network interface has no name, skipping\n")
 			continue
 		}
-		macAddress := netIf.HardwareAddr.String()
-		if macAddress == "" {
+		tmpMacAddr := netIf.HardwareAddr.String()
+		macAddress := &tmpMacAddr
+		if macAddress == nil || *macAddress == "" {
 			fmt.Printf("Interface %s has no MAC address, skipping\n", ifName)
 			continue
 		}
@@ -174,7 +175,7 @@ func main() {
 		fmt.Printf("Error getting system serial: %v\n", err)
 		os.Exit(1)
 	}
-	if systemSerial == "" {
+	if systemSerial == nil || *systemSerial == "" {
 		fmt.Printf("System serial number is empty\n")
 		os.Exit(1)
 	}

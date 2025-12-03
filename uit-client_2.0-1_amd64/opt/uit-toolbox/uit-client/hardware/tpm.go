@@ -1,27 +1,35 @@
 package hardware
 
-func GetTPMVersion() string {
+func GetTPMVersion() *string {
 	if fileExists("/dev/tpmrm0") {
-		return "2.0"
+		version := "2.0"
+		return &version
 	}
-	data := readUint("/sys/class/tpm/tpm0/tpm_version_major")
-	switch data {
+	data := readUintPtr("/sys/class/tpm/tpm0/tpm_version_major")
+	if data == nil {
+		notPresent := "Not Present"
+		return &notPresent
+	}
+	switch *data {
 	case 2:
-		return "2.0"
+		version := "2.0"
+		return &version
 	case 1:
-		return "1.2"
+		version := "1.2"
+		return &version
 	default:
-		return "Not Present"
+		notPresent := "Not Present"
+		return &notPresent
 	}
 }
 
-func GetTPMDescription() string {
+func GetTPMDescription() *string {
 	description1 := readFileAndTrim("/sys/class/tpm/tpm0/device/firmware_node/description")
 	description2 := readFileAndTrim("/sys/class/tpm/tpm0/device/description")
-	if description1 != "" {
+	if description1 != nil && *description1 != "" {
 		return description1
-	} else if description2 != "" {
+	} else if description2 != nil && *description2 != "" {
 		return description2
 	}
-	return ""
+	return nil
 }

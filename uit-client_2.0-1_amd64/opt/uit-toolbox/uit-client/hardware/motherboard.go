@@ -1,41 +1,43 @@
 package hardware
 
-func GetMotherboardSerial() string {
-	return string(readFileAndTrim("/sys/class/dmi/id/board_serial"))
+func GetMotherboardSerial() *string {
+	return readFileAndTrim("/sys/class/dmi/id/board_serial")
 }
 
-func GetMotherboardBiosDate() string {
-	return string(readFileAndTrim("/sys/class/dmi/id/bios_date"))
+func GetMotherboardBiosDate() *string {
+	return readFileAndTrim("/sys/class/dmi/id/bios_date")
 }
 
-func GetMotherboardBiosVersion() string {
-	return string(readFileAndTrim("/sys/class/dmi/id/bios_version"))
+func GetMotherboardBiosVersion() *string {
+	return readFileAndTrim("/sys/class/dmi/id/bios_version")
 }
 
-func GetMotherboardManufacturer() string {
-	return string(readFileAndTrim("/sys/class/dmi/id/board_vendor"))
+func GetMotherboardManufacturer() *string {
+	return readFileAndTrim("/sys/class/dmi/id/board_vendor")
 }
 
-func GetMotherboardProductName() string {
-	return string(readFileAndTrim("/sys/class/dmi/id/board_name"))
+func GetMotherboardProductName() *string {
+	return readFileAndTrim("/sys/class/dmi/id/board_name")
 }
 
-func GetEmbeddedControllerVersion() string {
-	if readFileAndTrim("/sys/ec_firmware_release/dmi/id/ec_firmware_release") != "" {
-		return string(readFileAndTrim("/sys/ec_firmware_release/dmi/id/ec_firmware_release"))
-	} else if readFileAndTrim("/sys/class/dmi/id/board_ec_version") != "" {
-		return string(readFileAndTrim("/sys/class/dmi/id/board_ec_version"))
+func GetEmbeddedControllerVersion() *string {
+	if readFileAndTrim("/sys/ec_firmware_release/dmi/id/ec_firmware_release") != nil {
+		return readFileAndTrim("/sys/ec_firmware_release/dmi/id/ec_firmware_release")
+	} else if readFileAndTrim("/sys/class/dmi/id/board_ec_version") != nil {
+		return readFileAndTrim("/sys/class/dmi/id/board_ec_version")
 	}
-	return ""
+	return nil
 }
 
-func GetDellSecureBootEnabled() bool {
+func GetDellSecureBootEnabled() *bool {
 	secureBootEnabled := readFileAndTrim("/sys/class/firmware-attributes/dell-wmi-sysman/attributes/SecureBoot/current_value")  // Can be "Enabled", "Disabled"
 	secureBootMode := readFileAndTrim("/sys/class/firmware-attributes/dell-wmi-sysman/attributes/SecureBootMode/current_value") // Can be "AuditMode", "DeployedMode"
 	tpmEnabled := readFileAndTrim("/sys/class/firmware-attributes/dell-wmi-sysman/attributes/TpmSecurity/current_value")        // Can be "Enabled", "Disabled"
-	if secureBootEnabled == "Enabled" && secureBootMode == "DeployedMode" && tpmEnabled == "Enabled" {
-		return true
+	if secureBootEnabled != nil && secureBootMode != nil && tpmEnabled != nil && *secureBootEnabled == "Enabled" && *secureBootMode == "DeployedMode" && *tpmEnabled == "Enabled" {
+		trueVal := true
+		return &trueVal
 	}
 
-	return false
+	falseVal := false
+	return &falseVal
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"strings"
 )
 
 func GetClientConfig() ([]byte, error) {
@@ -21,10 +22,11 @@ func GetClientConfig() ([]byte, error) {
 	return resp, nil
 }
 
-func SerialLookup(serial string) (int64, error) {
-	if serial == "" {
+func SerialLookup(s *string) (int64, error) {
+	if s == nil || *s == "" {
 		return 0, fmt.Errorf("serial number is empty in SerialLookup")
 	}
+	serial := strings.TrimSpace(*s)
 	reqURL := &url.URL{}
 	reqURL.Scheme = "https"
 	reqURL.Path = "/api/lookup"

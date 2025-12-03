@@ -27,7 +27,7 @@ func readFileAndTrim(filePath string) *string {
 	return &trimmed
 }
 
-func readUintPtr(filePath string) *uint64 {
+func readUintPtr(filePath string) *int64 {
 	fileBytes, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil
@@ -38,7 +38,7 @@ func readUintPtr(filePath string) *uint64 {
 	if len(fileBytes) == 0 {
 		return nil
 	}
-	value, err := strconv.ParseUint(strings.TrimSpace(string(fileBytes)), 10, 64)
+	value, err := strconv.ParseInt(strings.TrimSpace(string(fileBytes)), 10, 64)
 	if err != nil {
 		return nil
 	}
@@ -51,7 +51,7 @@ func readUintPtr(filePath string) *uint64 {
 func readUintBool(filePath string) bool {
 	// Sysfs boolean-like files typically contain "0" or "1".
 	// Treat exactly "1" as true; anything else (including errors) as false.
-	return readUint(filePath) == 1
+	return readUintPtr(filePath) != nil && *readUintPtr(filePath) == 1
 }
 
 func readUintBoolPtr(filePath string) *bool {
@@ -120,10 +120,10 @@ func GetSystemVendor() (*string, error) {
 	return data, nil
 }
 
-func GetSystemSKU() (*string, error) {
+func GetSystemSKU() *string {
 	data := readFileAndTrim("/sys/class/dmi/id/product_sku")
 	if data == nil || *data == "" {
-		return nil, fmt.Errorf("system SKU does not exist")
+		return nil
 	}
-	return data, nil
+	return data
 }

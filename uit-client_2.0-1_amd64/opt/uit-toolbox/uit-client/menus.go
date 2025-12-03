@@ -31,10 +31,26 @@ func selectBlockDevices() (string, int, error) {
 			fmt.Printf("Block device entry is nil, skipping\n")
 			continue
 		}
-		if device.Minor == 0 {
+		if device.LinuxMinorNumber != nil && *device.LinuxMinorNumber == 0 {
+			if device.LinuxAlias == nil || *device.LinuxAlias == "" {
+				fmt.Printf("Block device has no alias, skipping\n")
+				continue
+			}
+			if device.LinuxDevicePath == nil || *device.LinuxDevicePath == "" {
+				fmt.Printf("Block device has no device path, skipping\n")
+				continue
+			}
+			if device.InterfaceType == nil || *device.InterfaceType == "" {
+				fmt.Printf("Block device has no interface type, skipping\n")
+				continue
+			}
+			if device.CapacityMiB != nil && *device.CapacityMiB <= 0 {
+				fmt.Printf("Block device has zero or negative capacity, skipping\n")
+				continue
+			}
 			fmt.Printf("[%d] Name: %s, Path: %s, Device Type: %s, Capacity: %.2fGiB\n",
-				printIndex, device.Name, device.Path, device.DiskType, device.CapacityMiB/1024)
-			blockDeviceSelector[printIndex] = device.Path
+				printIndex, *device.LinuxAlias, *device.LinuxDevicePath, *device.InterfaceType, *device.CapacityMiB/1024)
+			blockDeviceSelector[printIndex] = *device.LinuxDevicePath
 			printIndex++
 		}
 	}

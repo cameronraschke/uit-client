@@ -21,7 +21,7 @@ func ListBlockDevices(devDir string) ([]*config.DiskHardwareData, error) {
 	defer unix.Close(fd)
 
 	directoryListBuffer := make([]byte, 1<<13) // 8kb buffer to load in directory entries
-	var devices []config.DiskHardwareData
+	var devices []*config.DiskHardwareData
 
 	diskType := "Unknown"
 	for {
@@ -100,34 +100,42 @@ func ListBlockDevices(devDir string) ([]*config.DiskHardwareData, error) {
 
 			rotating := readUintBoolPtr(filepath.Join(sysBlock, "queue", "rotational"))
 			lBlocks := readUintPtr(filepath.Join(sysBlock, "queue", "logical_block_size"))
-			var logicalBlockSizeBytes uint32
+			var logicalBlockSizeBytes *int64
 			if lBlocks != nil {
-				logicalBlockSizeBytes = uint32(*lBlocks)
+				logicalBlockSizeBytes = lBlocks
 			} else {
-				logicalBlockSizeBytes = 512 // Default to 512 if not found
+				defaultLogicalBlockSize := int64(512)
+				logicalBlockSizeBytes = &defaultLogicalBlockSize
 			}
 			pBlocks := readUintPtr(filepath.Join(sysBlock, "queue", "physical_block_size"))
-			var physicalBlockSizeBytes uint32
+			var physicalBlockSizeBytes *int64
 			if pBlocks != nil {
-				physicalBlockSizeBytes = uint32(*pBlocks)
+				physicalBlockSizeBytes = pBlocks
 			} else {
-				physicalBlockSizeBytes = 512 // Default to 512 if not found
+				defaultPhysicalBlockSize := int64(512)
+				physicalBlockSizeBytes = &defaultPhysicalBlockSize
 			}
 
 			sectors := readUintPtr(filepath.Join(sysBlock, "size"))
-			var sizeBytes uint64
-			if sectors != nil {
-				sizeBytes = *sectors * uint64(logicalBlockSizeBytes)
+			var sizeBytes *int64
+			if sectors != nil && logicalBlockSizeBytes != nil {
+				tempSize := *sectors * *logicalBlockSizeBytes
+				sizeBytes = &tempSize
 			} else {
-				sizeBytes = 0
+				sizeBytes = nil
 			}
-			sizeMib := float64(sizeBytes) / 1024.0 / 1024.0 // Convert bytes to MiB
+
+			var sizeMib *float64
+			if sizeBytes != nil {
+				tempSizeMib := float64(*sizeBytes) / 1024.0 / 1024.0 // Convert bytes to MiB
+				sizeMib = &tempSizeMib
+			}
 
 			diskWWID := readFileAndTrim(filepath.Join(sysBlock, "wwid"))
 
 			deviceSymLink := filepath.Join(sysBlock, "device")
 			deviceRealPath, _ := filepath.EvalSymlinks(deviceSymLink)
-			if deviceRealPath == "" || deviceRealPath == "/" {
+			if deviceRealPath == "" || deviceRealPath == "/" || deviceRealPath == "." {
 				continue
 			}
 			diskModel := readFileAndTrim(filepath.Join(deviceSymLink, "model"))
@@ -136,21 +144,25 @@ func ListBlockDevices(devDir string) ([]*config.DiskHardwareData, error) {
 				diskModel = &trimmedModel
 			}
 			diskManufacturer := readFileAndTrim(filepath.Join(deviceSymLink, "vendor"))
-			diskSerial := ""
+			if diskManufacturer != nil {
+				trimmedManufacturer := strings.TrimSpace(*diskManufacturer)
+				diskManufacturer = &trimmedManufacturer
+			}
+			var diskSerial *string
 			serial := readFileAndTrim(filepath.Join(deviceSymLink, "serial"))
 			if serial != nil {
-				diskSerial = *serial
+				diskSerial = serial
 			} else if eui := readFileAndTrim(filepath.Join(devicePath, "eui")); eui != nil {
-				diskSerial = *eui
+				diskSerial = eui
 			} else if euiFallback := readFileAndTrim(filepath.Join(deviceSymLink, "eui")); euiFallback != nil {
-				diskSerial = *euiFallback
+				diskSerial = euiFallback
 			}
 
-			diskFirmware := ""
+			var diskFirmware *string
 			if firmware := readFileAndTrim(filepath.Join(deviceSymLink, "firmware_rev")); firmware != nil {
-				diskFirmware = *firmware
+				diskFirmware = firmware
 			} else if firmwareFallback := readFileAndTrim(filepath.Join(deviceSymLink, "rev")); firmwareFallback != nil {
-				diskFirmware = *firmwareFallback
+				diskFirmware = firmwareFallback
 			}
 
 			nvmeQualifiedName := readFileAndTrim(filepath.Join(deviceSymLink, "subsysnqn"))
@@ -174,7 +186,7 @@ func ListBlockDevices(devDir string) ([]*config.DiskHardwareData, error) {
 					diskType = diskType + " (NVMe SSD)"
 				}
 
-				devices = append(devices, config.DiskHardwareData{
+				devices = append(devices, &config.DiskHardwareData{
 					LinuxAlias:           &deviceName,
 					LinuxDevicePath:      &devicePath,
 					LinuxMajorNumber:     &majorNum,
