@@ -1,7 +1,6 @@
-//go:build linux
-// +build linux
+//go:build linux && amd64
 
-package hardware
+package client
 
 import (
 	"fmt"

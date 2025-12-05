@@ -1,4 +1,6 @@
-package hardware
+//go:build linux && amd64
+
+package client
 
 func GetBluetoothData() bool {
 	// /sys/class/bluetooth/hci0

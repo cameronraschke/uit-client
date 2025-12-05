@@ -1,4 +1,6 @@
-package hardware
+//go:build linux && amd64
+
+package client
 
 func GetProductFamily() *string {
 	return readFileAndTrim("/sys/class/dmi/id/product_family")

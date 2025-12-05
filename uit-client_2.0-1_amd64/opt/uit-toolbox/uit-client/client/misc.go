@@ -1,4 +1,6 @@
-package database
+//go:build linux && amd64
+
+package client
 
 import (
 	"fmt"

@@ -1,6 +1,160 @@
+//go:build linux && amd64
+
 package config
 
 import "time"
+
+func UpdateRealtimeJobQueue(mutate func(*JobQueueData)) {
+	UpdateUniqueClientData(func(cd *ClientData) bool {
+		if cd.JobData == nil {
+			cd.JobData = &JobData{}
+		}
+		if cd.JobData.Realtime == nil {
+			cd.JobData.Realtime = &JobQueueData{}
+		}
+		mutate(cd.JobData.Realtime)
+		return true
+	})
+}
+
+func SetRealtimeJobName(v *string) {
+	UpdateUniqueClientData(func(cd *ClientData) bool {
+		if cd.JobData == nil {
+			cd.JobData = &JobData{}
+		}
+		if cd.JobData.Realtime == nil {
+			cd.JobData.Realtime = &JobQueueData{}
+		}
+		return updateOptional(&cd.JobData.Realtime.JobName, v)
+	})
+}
+
+func SetRealtimeJobNameFormatted(v *string) {
+	UpdateUniqueClientData(func(cd *ClientData) bool {
+		if cd.JobData == nil {
+			cd.JobData = &JobData{}
+		}
+		if cd.JobData.Realtime == nil {
+			cd.JobData.Realtime = &JobQueueData{}
+		}
+		return updateOptional(&cd.JobData.Realtime.JobNameFormatted, v)
+	})
+}
+
+func SetRealtimeJobQueued(v *bool) {
+	UpdateUniqueClientData(func(cd *ClientData) bool {
+		if cd.JobData == nil {
+			cd.JobData = &JobData{}
+		}
+		if cd.JobData.Realtime == nil {
+			cd.JobData.Realtime = &JobQueueData{}
+		}
+		return updateOptional(&cd.JobData.Realtime.JobQueued, v)
+	})
+}
+
+func SetRealtimeJobRequiresQueue(v *bool) {
+	UpdateUniqueClientData(func(cd *ClientData) bool {
+		if cd.JobData == nil {
+			cd.JobData = &JobData{}
+		}
+		if cd.JobData.Realtime == nil {
+			cd.JobData.Realtime = &JobQueueData{}
+		}
+		return updateOptional(&cd.JobData.Realtime.JobRequiresQueue, v)
+	})
+}
+
+func SetRealtimeJobQueuePosition(v *int64) {
+	UpdateUniqueClientData(func(cd *ClientData) bool {
+		if cd.JobData == nil {
+			cd.JobData = &JobData{}
+		}
+		if cd.JobData.Realtime == nil {
+			cd.JobData.Realtime = &JobQueueData{}
+		}
+		return updateOptional(&cd.JobData.Realtime.JobQueuePosition, v)
+	})
+}
+
+func SetRealtimeJobQueuedOverride(v *bool) {
+	UpdateUniqueClientData(func(cd *ClientData) bool {
+		if cd.JobData == nil {
+			cd.JobData = &JobData{}
+		}
+		if cd.JobData.Realtime == nil {
+			cd.JobData.Realtime = &JobQueueData{}
+		}
+		return updateOptional(&cd.JobData.Realtime.JobQueuedOverride, v)
+	})
+}
+
+func SetRealtimeJobActive(v *bool) {
+	UpdateUniqueClientData(func(cd *ClientData) bool {
+		if cd.JobData == nil {
+			cd.JobData = &JobData{}
+		}
+		if cd.JobData.Realtime == nil {
+			cd.JobData.Realtime = &JobQueueData{}
+		}
+		return updateOptional(&cd.JobData.Realtime.JobActive, v)
+	})
+}
+
+func SetRealtimeJobAvailable(v *bool) {
+	UpdateUniqueClientData(func(cd *ClientData) bool {
+		if cd.JobData == nil {
+			cd.JobData = &JobData{}
+		}
+		if cd.JobData.Realtime == nil {
+			cd.JobData.Realtime = &JobQueueData{}
+		}
+		return updateOptional(&cd.JobData.Realtime.JobAvailable, v)
+	})
+}
+
+func SetRealtimeJobProgress(v *float64) {
+	UpdateUniqueClientData(func(cd *ClientData) bool {
+		if cd.JobData == nil {
+			cd.JobData = &JobData{}
+		}
+		if cd.JobData.Realtime == nil {
+			cd.JobData.Realtime = &JobQueueData{}
+		}
+		return updateOptional(&cd.JobData.Realtime.JobProgress, v)
+	})
+}
+
+func SetRealtimeJobDuration(d time.Duration) {
+	if d.Seconds() < 0 {
+		return
+	}
+	UpdateUniqueClientData(func(cd *ClientData) bool {
+		if cd.JobData == nil {
+			cd.JobData = &JobData{}
+		}
+		if cd.JobData.Realtime == nil {
+			cd.JobData.Realtime = &JobQueueData{}
+		}
+		if cd.JobData.Realtime.JobDuration == d {
+			return false
+		}
+		cd.JobData.Realtime.JobDuration = d
+		return true
+	})
+}
+
+func SetRealtimeJobStatusMessage(v *string) {
+	UpdateUniqueClientData(func(cd *ClientData) bool {
+		if cd.JobData == nil {
+			cd.JobData = &JobData{}
+		}
+		if cd.JobData.Realtime == nil {
+			cd.JobData.Realtime = &JobQueueData{}
+		}
+		return updateOptional(&cd.JobData.Realtime.JobStatusMessage, v)
+	})
+}
 
 // UpdateRealtimeSystemData mutates the realtime system subtree using copy-on-write.
 func UpdateRealtimeSystemData(mutate func(*RealtimeSystemData)) {

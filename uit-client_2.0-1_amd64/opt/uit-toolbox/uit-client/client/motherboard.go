@@ -1,4 +1,6 @@
-package hardware
+//go:build linux && amd64
+
+package client
 
 func GetMotherboardSerial() *string {
 	return readFileAndTrim("/sys/class/dmi/id/board_serial")

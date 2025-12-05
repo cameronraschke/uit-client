@@ -1,4 +1,6 @@
-package webclient
+//go:build linux && amd64
+
+package api
 
 import (
 	"encoding/json"

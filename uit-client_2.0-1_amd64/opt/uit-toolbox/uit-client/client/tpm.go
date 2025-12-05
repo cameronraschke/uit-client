@@ -1,4 +1,6 @@
-package hardware
+//go:build linux && amd64
+
+package client
 
 func GetTPMVersion() *string {
 	if fileExists("/dev/tpmrm0") {

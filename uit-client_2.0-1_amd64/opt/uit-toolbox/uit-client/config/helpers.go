@@ -1,3 +1,5 @@
+//go:build linux && amd64
+
 package config
 
 import (
@@ -5,15 +7,15 @@ import (
 	"net/netip"
 )
 
-func updateOptional[T comparable](dst **T, incoming *T) bool {
-	if incoming == nil {
+func updateOptional[T comparable](dst **T, newVal *T) bool {
+	if newVal == nil {
 		if *dst == nil {
 			return false
 		}
 		*dst = nil // Clear the destination pointer
 		return true
 	}
-	val := *incoming
+	val := *newVal // Dereference newVal to get the value
 	if *dst != nil && **dst == val {
 		return false // If values are the same, no update needed
 	}
@@ -23,7 +25,7 @@ func updateOptional[T comparable](dst **T, incoming *T) bool {
 	return true
 }
 
-func copyMap[K comparable, V any](oldMap map[K]V) map[K]V {
+func deepCopyMap[K comparable, V any](oldMap map[K]V) map[K]V {
 	if oldMap == nil {
 		return nil
 	}
@@ -33,83 +35,88 @@ func copyMap[K comparable, V any](oldMap map[K]V) map[K]V {
 }
 
 // Specialized map copy helpers
-func copyInt64Map(old map[string]int64) map[string]int64 {
-	if old == nil {
+func deepCopyInt64Map(srcMap map[string]int64) map[string]int64 {
+	if srcMap == nil {
 		return nil
 	}
-	m := make(map[string]int64, len(old))
-	maps.Copy(m, old)
-	return m
+	dstMap := make(map[string]int64, len(srcMap))
+	maps.Copy(dstMap, srcMap)
+	return dstMap
 }
 
-func copyFloat64Map(old map[string]float64) map[string]float64 {
-	if old == nil {
+func deepCopyFloat64Map(srcMap map[string]float64) map[string]float64 {
+	if srcMap == nil {
 		return nil
 	}
-	m := make(map[string]float64, len(old))
-	maps.Copy(m, old)
-	return m
+	dstMap := make(map[string]float64, len(srcMap))
+	maps.Copy(dstMap, srcMap)
+	return dstMap
 }
 
-// copyBoolPtrMap performs a deep copy of map[string]*bool while preserving tri-state semantics:
-// nil => nil, true/false => new pointer with the same value. This avoids pointer sharing across snapshots.
-func copyBoolPtrMap(old map[string]*bool) map[string]*bool {
-	if old == nil {
+// nil => nil, true/false => new pointer with the same value.
+func deepCopyBoolPtrMap(srcMap map[string]*bool) map[string]*bool {
+	if srcMap == nil {
 		return nil
 	}
-	m := make(map[string]*bool, len(old))
-	for k, v := range old {
+	dstMap := make(map[string]*bool, len(srcMap))
+	for k, v := range srcMap {
 		if v == nil {
-			m[k] = nil
+			dstMap[k] = nil
 		} else {
 			val := *v
-			vv := new(bool)
-			*vv = val
-			m[k] = vv
+			vPtr := new(bool)
+			*vPtr = val
+			dstMap[k] = vPtr
 		}
 	}
-	return m
+	return dstMap
 }
 
-// copyNetipAddrs deep-copies a slice of netip.Addr to avoid sharing backing arrays.
-func copyNetipAddrs(old []netip.Addr) []netip.Addr {
-	if old == nil {
+func deepCopyNetipAddrs(srcSlice []netip.Addr) []netip.Addr {
+	if srcSlice == nil {
 		return nil
 	}
-	out := make([]netip.Addr, len(old))
-	copy(out, old)
-	return out
+	dstSlice := make([]netip.Addr, len(srcSlice))
+	copy(dstSlice, srcSlice)
+	return dstSlice
 }
 
-func cloneClientHardwareData(hardwareData *ClientHardwareData) *ClientHardwareData {
+func deepCopyNetworkHardwareMap(srcMap map[string]NetworkHardwareData) map[string]NetworkHardwareData {
+	if srcMap == nil {
+		return nil
+	}
+	dstMap := make(map[string]NetworkHardwareData, len(srcMap))
+	for k, v := range srcMap {
+		entry := v
+		entry.IPAddress = deepCopyNetipAddrs(v.IPAddress)
+		dstMap[k] = entry
+	}
+	return dstMap
+}
+
+func deepCopyClientHardwareData(hardwareData *ClientHardwareData) *ClientHardwareData {
 	if hardwareData == nil {
 		return nil
 	}
-	copyHardwareData := *hardwareData
+	copyHardwareData := *hardwareData // Shallow copy of the struct
 
 	if hardwareData.CPU != nil {
 		cpuCopy := *hardwareData.CPU
-		cpuCopy.ThermalProbeWorking = copyBoolPtrMap(hardwareData.CPU.ThermalProbeWorking)
+		cpuCopy.ThermalProbeWorking = deepCopyBoolPtrMap(hardwareData.CPU.ThermalProbeWorking)
 		copyHardwareData.CPU = &cpuCopy
 	}
 	if hardwareData.Motherboard != nil {
 		motherboardCopy := *hardwareData.Motherboard
-		motherboardCopy.PCIELanes = copyInt64Map(hardwareData.Motherboard.PCIELanes)
-		motherboardCopy.M2Slots = copyInt64Map(hardwareData.Motherboard.M2Slots)
-		motherboardCopy.ThermalProbeWorking = copyBoolPtrMap(hardwareData.Motherboard.ThermalProbeWorking)
+		motherboardCopy.PCIELanes = deepCopyInt64Map(hardwareData.Motherboard.PCIELanes)
+		motherboardCopy.M2Slots = deepCopyInt64Map(hardwareData.Motherboard.M2Slots)
+		motherboardCopy.ThermalProbeWorking = deepCopyBoolPtrMap(hardwareData.Motherboard.ThermalProbeWorking)
 		copyHardwareData.Motherboard = &motherboardCopy
 	}
 	if hardwareData.Memory != nil {
-		copyHardwareData.Memory = copyMap(hardwareData.Memory)
+		copyHardwareData.Memory = deepCopyMap(hardwareData.Memory)
 	}
 	if hardwareData.Network != nil {
-		// Deep-copy network map and ensure IPAddress slice is copied per entry
-		newNet := make(map[string]NetworkHardwareData, len(hardwareData.Network))
-		for k, v := range hardwareData.Network {
-			entry := v
-			entry.IPAddress = copyNetipAddrs(v.IPAddress)
-			newNet[k] = entry
-		}
+		newNet := deepCopyNetworkHardwareMap(hardwareData.Network)
 		copyHardwareData.Network = newNet
 	}
 	if hardwareData.Graphics != nil {
@@ -117,7 +124,7 @@ func cloneClientHardwareData(hardwareData *ClientHardwareData) *ClientHardwareDa
 		copyHardwareData.Graphics = &copyGraphics
 	}
 	if hardwareData.Disks != nil {
-		copyHardwareData.Disks = copyMap(hardwareData.Disks)
+		copyHardwareData.Disks = deepCopyMap(hardwareData.Disks)
 	}
 	if hardwareData.Battery != nil {
 		copyBattery := *hardwareData.Battery
@@ -129,12 +136,12 @@ func cloneClientHardwareData(hardwareData *ClientHardwareData) *ClientHardwareDa
 	}
 	if hardwareData.Chassis != nil {
 		copyChassisData := *hardwareData.Chassis
-		copyChassisData.USB1Ports = copyInt64Map(hardwareData.Chassis.USB1Ports)
-		copyChassisData.USB2Ports = copyInt64Map(hardwareData.Chassis.USB2Ports)
-		copyChassisData.USB3Ports = copyInt64Map(hardwareData.Chassis.USB3Ports)
-		copyChassisData.SATAPorts = copyInt64Map(hardwareData.Chassis.SATAPorts)
-		copyChassisData.InternalFans = copyFloat64Map(hardwareData.Chassis.InternalFans)
-		copyChassisData.AudioPorts = copyInt64Map(hardwareData.Chassis.AudioPorts)
+		copyChassisData.USB1Ports = deepCopyInt64Map(hardwareData.Chassis.USB1Ports)
+		copyChassisData.USB2Ports = deepCopyInt64Map(hardwareData.Chassis.USB2Ports)
+		copyChassisData.USB3Ports = deepCopyInt64Map(hardwareData.Chassis.USB3Ports)
+		copyChassisData.SATAPorts = deepCopyInt64Map(hardwareData.Chassis.SATAPorts)
+		copyChassisData.InternalFans = deepCopyFloat64Map(hardwareData.Chassis.InternalFans)
+		copyChassisData.AudioPorts = deepCopyInt64Map(hardwareData.Chassis.AudioPorts)
 		copyHardwareData.Chassis = &copyChassisData
 	}
 	if hardwareData.PowerSupply != nil {
@@ -148,7 +155,7 @@ func cloneClientHardwareData(hardwareData *ClientHardwareData) *ClientHardwareDa
 	return &copyHardwareData
 }
 
-func cloneClientSoftwareData(softwareData *ClientSoftwareData) *ClientSoftwareData {
+func deepCopyClientSoftwareData(softwareData *ClientSoftwareData) *ClientSoftwareData {
 	if softwareData == nil {
 		return nil
 	}
@@ -161,17 +168,17 @@ func cloneClientSoftwareData(softwareData *ClientSoftwareData) *ClientSoftwareDa
 	return &copySoftwareData
 }
 
-func cloneRealtimeSystemData(realtimeData *RealtimeSystemData) *RealtimeSystemData {
+func deepCopyRealtimeSystemData(realtimeData *RealtimeSystemData) *RealtimeSystemData {
 	if realtimeData == nil {
 		return nil
 	}
 	copyRealtimeData := *realtimeData
 
 	if realtimeData.Hardware != nil {
-		copyRealtimeData.Hardware = cloneClientHardwareData(realtimeData.Hardware)
+		copyRealtimeData.Hardware = deepCopyClientHardwareData(realtimeData.Hardware)
 	}
 	if realtimeData.Software != nil {
-		copyRealtimeData.Software = cloneClientSoftwareData(realtimeData.Software)
+		copyRealtimeData.Software = deepCopyClientSoftwareData(realtimeData.Software)
 	}
 	if realtimeData.ResourceUsage != nil {
 		resourceUsageCopy := *realtimeData.ResourceUsage
@@ -180,7 +187,7 @@ func cloneRealtimeSystemData(realtimeData *RealtimeSystemData) *RealtimeSystemDa
 	return &copyRealtimeData
 }
 
-func cloneJobData(jobData *JobData) *JobData {
+func deepCopyJobData(jobData *JobData) *JobData {
 	if jobData == nil {
 		return nil
 	}
@@ -197,23 +204,23 @@ func cloneJobData(jobData *JobData) *JobData {
 	return &copyJobData
 }
 
-func cloneClientData(clientData *ClientData) *ClientData {
+func copyClientData(clientData *ClientData) *ClientData {
 	if clientData == nil {
 		return &ClientData{}
 	}
 	// Copies all fields, but performs deep copy on pointer and map fields.
 	copyClientData := *clientData
 	if clientData.Hardware != nil {
-		copyClientData.Hardware = cloneClientHardwareData(clientData.Hardware)
+		copyClientData.Hardware = deepCopyClientHardwareData(clientData.Hardware)
 	}
 	if clientData.Software != nil {
-		copyClientData.Software = cloneClientSoftwareData(clientData.Software)
+		copyClientData.Software = deepCopyClientSoftwareData(clientData.Software)
 	}
 	if clientData.RealtimeSystemData != nil {
-		copyClientData.RealtimeSystemData = cloneRealtimeSystemData(clientData.RealtimeSystemData)
+		copyClientData.RealtimeSystemData = deepCopyRealtimeSystemData(clientData.RealtimeSystemData)
 	}
 	if clientData.JobData != nil {
-		copyClientData.JobData = cloneJobData(clientData.JobData)
+		copyClientData.JobData = deepCopyJobData(clientData.JobData)
 	}
 	return &copyClientData
 }

@@ -1,7 +1,6 @@
-//go:build linux
-// +build linux
+//go:build linux && amd64
 
-package main
+package menu
 
 import (
 	"bufio"
@@ -10,9 +9,107 @@ import (
 	"strconv"
 	"strings"
 	"uitclient/client"
+
+	"golang.org/x/term"
 )
 
-func selectBlockDevices() (string, int, error) {
+const (
+	termWidth  = 80
+	termHeight = 33
+)
+
+var (
+	termFd     = int(os.Stdin.Fd())
+	menuReader = bufio.NewReader(os.Stdin)
+	menuWriter = bufio.NewWriter(os.Stdout)
+	rw         *bufio.ReadWriter
+	t          *term.Terminal
+)
+
+func InitTerminal() (oldState *term.State, err error) {
+	if term.IsTerminal(termFd) {
+		oldState, err = term.MakeRaw(termFd)
+		if err != nil {
+			fmt.Printf("Error setting terminal to raw mode: %v\n", err)
+			return nil, err
+		}
+	} else {
+		fmt.Printf("Warning: Standard input is not a terminal\n")
+	}
+	curWidth, curHeight, err := term.GetSize(termFd)
+	if err != nil {
+		fmt.Printf("Error getting terminal size: %v\n", err)
+		return nil, err
+	}
+	if curWidth < termWidth || curHeight < termHeight {
+		fmt.Printf("Warning: Terminal size is smaller than recommended (%dx%d). Current size is %dx%d.\n",
+			termWidth, termHeight, curWidth, curHeight)
+	}
+	rw = bufio.NewReadWriter(menuReader, menuWriter)
+	menuWriter.Flush()
+	t = term.NewTerminal(rw, "> ")
+	if err := t.SetSize(termWidth, termHeight); err != nil {
+		fmt.Printf("Error setting terminal size: %v\n", err)
+		return nil, err
+	}
+	Echo("\nTerminal initialized with size %dx%d\n", termWidth, termHeight)
+	return oldState, nil
+}
+
+func FlushMenu() {
+	menuWriter.Flush()
+}
+
+func Echo(format string, a ...any) {
+	fmt.Fprintf(t, format+"\n", a...)
+	FlushMenu()
+}
+
+func Read(prompt string) (string, error) {
+	t.SetPrompt(prompt)
+	input, err := t.ReadLine()
+	if err != nil {
+		return "", err
+	}
+	t.SetPrompt("> ")
+	input = strings.TrimSpace(input)
+	if input == "" {
+		return "", fmt.Errorf("no input received")
+	}
+	return input, nil
+}
+
+func ReadOneChar(prompt string) (rune, error) {
+	runeBuf := make([]rune, 1)
+	input, err := Read(prompt)
+	if err != nil {
+		Echo("Error reading input: %v", err)
+		return 0, err
+	}
+	runeBuf = []rune(input)
+	if len(runeBuf) == 0 {
+		return 0, fmt.Errorf("no input received")
+	}
+	return runeBuf[0], nil
+}
+
+func ReadOneCharLine(prompt string) (rune, error) {
+	input, err := Read(prompt)
+	if err != nil {
+		Echo("Error reading input: %v", err)
+		return 0, err
+	}
+	return []rune(input)[0], nil
+}
+
+func RestoreTerminal(oldState *term.State) {
+	fmt.Printf("\nRestoring terminal settings...\n")
+	if oldState != nil {
+		term.Restore(termFd, oldState)
+	}
+}
+
+func SelectBlockDevices() (string, int, error) {
 	blockDevices, err := client.ListBlockDevices("/dev")
 	if err != nil {
 		return "", 0, fmt.Errorf("Error listing block devices: %v\n", err)

@@ -1,3 +1,5 @@
+//go:build linux && amd64
+
 package config
 
 import (
@@ -59,7 +61,7 @@ func UpdateClientData(mutate func(*ClientData)) {
 	if currentSnapshot == nil {
 		currentSnapshot = &ClientData{}
 	}
-	newSnapshot := cloneClientData(currentSnapshot)
+	newSnapshot := copyClientData(currentSnapshot)
 	mutate(newSnapshot)
 	clientData.Store(newSnapshot)
 }
@@ -70,7 +72,7 @@ func UpdateUniqueClientData(mutate func(*ClientData) bool) {
 	if currentSnapshot == nil {
 		currentSnapshot = &ClientData{}
 	}
-	newSnapshot := cloneClientData(currentSnapshot)
+	newSnapshot := copyClientData(currentSnapshot)
 	if !mutate(newSnapshot) {
 		return
 	}

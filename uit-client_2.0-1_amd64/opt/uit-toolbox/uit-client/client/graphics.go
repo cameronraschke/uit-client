@@ -1,4 +1,6 @@
-package hardware
+//go:build linux && amd64
+
+package client
 
 func SetMaxBrightness(level int) error {
 	// /sys/class/backlight/<driver>/max_brightness

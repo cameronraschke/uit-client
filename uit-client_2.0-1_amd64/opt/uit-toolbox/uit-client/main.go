@@ -1,5 +1,4 @@
-//go:build linux
-// +build linux
+//go:build linux && amd64
 
 package main
 
@@ -9,9 +8,10 @@ import (
 	"net"
 	"net/netip"
 	"os"
+	"uitclient/api"
+	"uitclient/client"
 	"uitclient/config"
-	"uitclient/hardware"
-	"uitclient/webclient"
+	"uitclient/menu"
 
 	"golang.org/x/sys/cpu"
 	"golang.org/x/sys/unix"
@@ -23,18 +23,18 @@ const clearScreen = `\e[1;1H\e[2J`
 
 func getClientData() {
 	// System data
-	systemSerial, err := hardware.GetSystemSerial()
+	serialPtr, err := client.GetSystemSerial()
 	if err != nil {
 		fmt.Printf("Error getting system serial: %v\n", err)
 		os.Exit(1)
 	}
-	if systemSerial == nil {
+	if serialPtr == nil {
 		fmt.Printf("System serial number is empty\n")
 		os.Exit(1)
 	}
-	config.SetSystemSerial(systemSerial)
+	config.SetSystemSerial(serialPtr)
 
-	tagnumber, err := webclient.SerialLookup(systemSerial)
+	tagnumber, err := api.SerialLookup(serialPtr)
 	if err != nil {
 		fmt.Printf("Error looking up serial number: %v\n", err)
 		os.Exit(1)
@@ -45,7 +45,7 @@ func getClientData() {
 	}
 	config.SetTagnumber(&tagnumber)
 
-	systemUUID, err := hardware.GetSystemUUID()
+	systemUUID, err := client.GetSystemUUID()
 	if err != nil {
 		fmt.Printf("Error getting system UUID: %v\n", err)
 		os.Exit(1)
@@ -56,13 +56,13 @@ func getClientData() {
 	}
 	config.SetSystemUUID(systemUUID)
 
-	manufacturer := hardware.GetSystemManufacturer()
+	manufacturer := client.GetSystemManufacturer()
 	config.SetManufacturer(manufacturer)
 
-	model := hardware.GetSystemModel()
+	model := client.GetSystemModel()
 	config.SetModel(model)
 
-	sku := hardware.GetSystemSKU()
+	sku := client.GetSystemSKU()
 	config.SetSKU(sku)
 
 	// Network data
@@ -82,9 +82,9 @@ func getClientData() {
 			fmt.Printf("Network interface has no name, skipping\n")
 			continue
 		}
-		tmpMacAddr := netIf.HardwareAddr.String()
-		macAddress := &tmpMacAddr
-		if macAddress == nil || *macAddress == "" {
+		macAddress := netIf.HardwareAddr.String()
+		macAddressPtr := &macAddress
+		if *macAddressPtr == "" { // MAC address cannot be nil here, check for empty string instead
 			fmt.Printf("Interface %s has no MAC address, skipping\n", ifName)
 			continue
 		}
@@ -106,11 +106,10 @@ func getClientData() {
 
 		linkUp := (netIf.Flags & net.FlagUp) != 0
 		networkMap[ifName] = config.NetworkHardwareData{
-			MACAddress:    macAddress,
+			MACAddress:    macAddressPtr,
 			NetworkLinkUp: &linkUp,
 			IPAddress:     ipAddressSlice,
 		}
-
 	}
 
 	// Job data
@@ -122,7 +121,7 @@ func getClientData() {
 	config.SetJobUUID(jobUUID)
 
 	config.UpdateClientData(func(clientData *config.ClientData) {
-		clientData.Serial = systemSerial
+		clientData.Serial = serialPtr
 	})
 }
 
@@ -135,6 +134,19 @@ func main() {
 	fmt.Printf(clearScreen)
 	fmt.Printf("Starting UIT Client...\n\n")
 
+	oldState, err := menu.InitTerminal()
+	if err != nil {
+		fmt.Printf("Error initializing terminal: %v\n", err)
+		os.Exit(1)
+	}
+
+	defer func() {
+		if oldState != nil {
+			menu.RestoreTerminal(oldState)
+		}
+		defer menu.FlushMenu()
+	}()
+
 	// Check for root privileges & PIDs
 	euid := unix.Geteuid()
 	if euid > 1000 {
@@ -146,7 +158,7 @@ func main() {
 	// fmt.Printf("EUID: %d, PID: %d, Parent PID: %d\n", euid, pid, parentPid)
 
 	// Fetch and initialize client configuration
-	clientConfigJson, err := webclient.GetClientConfig()
+	clientConfigJson, err := api.GetClientConfig()
 	if err != nil {
 		fmt.Printf("Error getting client configuration: %v\n", err)
 		os.Exit(1)
@@ -170,17 +182,17 @@ func main() {
 	}
 	fmt.Printf("Client configuration loaded successfully\n")
 
-	systemSerial, err := hardware.GetSystemSerial()
+	serialPtr, err := client.GetSystemSerial()
 	if err != nil {
 		fmt.Printf("Error getting system serial: %v\n", err)
 		os.Exit(1)
 	}
-	if systemSerial == nil || *systemSerial == "" {
+	if serialPtr == nil || *serialPtr == "" {
 		fmt.Printf("System serial number is empty\n")
 		os.Exit(1)
 	}
 
-	tagnumber, err := webclient.SerialLookup(systemSerial)
+	tagnumber, err := api.SerialLookup(serialPtr)
 	if err != nil {
 		fmt.Printf("Error looking up serial number: %v\n", err)
 		os.Exit(1)
@@ -190,14 +202,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Printf("Tagnumber: %d, System Serial: %s\n", tagnumber, systemSerial)
+	fmt.Printf("Tagnumber: %d, System Serial: %s\n", tagnumber, *serialPtr)
 
 	hasFP := cpu.X86.HasAES || cpu.ARM64.HasSHA1 || cpu.ARM64.HasSHA2 || cpu.ARM64.HasSHA3 || cpu.ARM64.HasCRC32
 	if hasFP {
 		fmt.Printf("CPU has encryption acceleration\n")
 	}
 
-	devicePath, totalDevices, err := selectBlockDevices()
+	devicePath, totalDevices, err := menu.SelectBlockDevices()
 	if err != nil {
 		fmt.Printf("Error selecting block device: %v\n", err)
 		os.Exit(1)
@@ -209,7 +221,7 @@ func main() {
 
 	fmt.Printf("Selected block device path: %s\n", devicePath)
 
-	// Update hardware information in client data
+	// Update client information in client data
 	cd := &config.ClientData{}
 	if err := config.InitializeClientData(cd); err != nil {
 		fmt.Printf("Error initializing client data: %v\n", err)
@@ -224,13 +236,13 @@ func main() {
 	}
 	fmt.Printf("Network interfaces detected: %d\n", len(clientData.Hardware.Network))
 	for ifName, netData := range clientData.Hardware.Network {
-		macAddr := netData.MACAddress
+		macAddrPtr := netData.MACAddress
 		ipAddr := netData.IPAddress
 		linkUp := "down"
 		if netData.NetworkLinkUp != nil && *netData.NetworkLinkUp {
 			linkUp = "up"
 		}
-		fmt.Printf("Interface: %s, MAC: %s, IP: %s, Link: %s\n", ifName, macAddr, ipAddr, linkUp)
+		fmt.Printf("Interface: %s, MAC: %s, IP: %s, Link: %s\n", ifName, *macAddrPtr, ipAddr, linkUp)
 	}
 	fmt.Printf("\nUIT Client setup completed successfully.\n")
 
