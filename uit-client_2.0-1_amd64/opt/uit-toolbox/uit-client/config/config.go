@@ -78,106 +78,50 @@ func UpdateUniqueClientData(mutate func(*ClientData) bool) {
 }
 
 func SetTagnumber(tag *int64) {
-	if tag == nil {
-		return
-	}
 	UpdateUniqueClientData(func(cd *ClientData) bool {
-		if cd.Tagnumber == tag {
-			return false
-		}
-		cd.Tagnumber = tag
-		return true
+		return updateOptional(&cd.Tagnumber, tag)
 	})
 }
 
 func SetSystemSerial(serial *string) {
-	if serial == nil {
-		return
-	}
 	UpdateUniqueClientData(func(cd *ClientData) bool {
-		if cd.Serial == serial {
-			return false
-		}
-		cd.Serial = serial
-		return true
+		return updateOptional(&cd.Serial, serial)
 	})
 }
 
 func SetSystemUUID(systemUUID *string) {
-	if systemUUID == nil {
-		return
-	}
 	UpdateUniqueClientData(func(cd *ClientData) bool {
-		if cd.UUID == systemUUID {
-			return false
-		}
-		cd.UUID = systemUUID
-		return true
+		return updateOptional(&cd.UUID, systemUUID)
 	})
 }
 
 func SetManufacturer(manufacturer *string) {
-	if manufacturer == nil {
-		return
-	}
 	UpdateUniqueClientData(func(cd *ClientData) bool {
-		if cd.Manufacturer == manufacturer {
-			return false
-		}
-		cd.Manufacturer = manufacturer
-		return true
+		return updateOptional(&cd.Manufacturer, manufacturer)
 	})
 }
 
 func SetModel(model *string) {
-	if model == nil {
-		return
-	}
 	UpdateUniqueClientData(func(cd *ClientData) bool {
-		if cd.Model == model {
-			return false
-		}
-		cd.Model = model
-		return true
+		return updateOptional(&cd.Model, model)
 	})
 }
 
 func SetProductFamily(productFamily *string) {
-	if productFamily == nil {
-		return
-	}
 	UpdateUniqueClientData(func(cd *ClientData) bool {
-		if cd.ProductFamily == productFamily {
-			return false
-		}
-		cd.ProductFamily = productFamily
-		return true
+		return updateOptional(&cd.ProductFamily, productFamily)
 	})
 }
 
 func SetProductName(productName *string) {
-	if productName == nil {
-		return
-	}
 	UpdateUniqueClientData(func(cd *ClientData) bool {
-		if cd.ProductName == productName {
-			return false
-		}
-		cd.ProductName = productName
-		return true
+		return updateOptional(&cd.ProductName, productName)
 	})
 }
 
 func SetSKU(sku *string) {
-	if sku == nil {
-		return
-	}
 	UpdateUniqueClientData(func(cd *ClientData) bool {
-		if cd.SKU == sku {
-			return false
-		}
-		cd.SKU = sku
-		return true
+		return updateOptional(&cd.SKU, sku)
 	})
 }
 
@@ -212,39 +156,12 @@ func SetBootDuration(duration time.Duration) {
 
 func SetConnectedToHost(connected *bool) {
 	UpdateUniqueClientData(func(cd *ClientData) bool {
-		if connected == nil {
-			if cd.ConnectedToHost == nil {
-				return false
-			}
-			cd.ConnectedToHost = nil
-			return true
-		}
-		pointerVal := *connected
-		if cd.ConnectedToHost != nil && *cd.ConnectedToHost == pointerVal {
-			return false
-		}
-		// Store a new pointer to a copied value
-		newCopy := pointerVal
-		cd.ConnectedToHost = &newCopy
-		return true
+		return updateOptional(&cd.ConnectedToHost, connected)
 	})
 }
 
 func SetTimeSynced(synced *bool) {
 	UpdateUniqueClientData(func(cd *ClientData) bool {
-		if synced == nil {
-			if cd.NTPSynced == nil {
-				return false
-			}
-			cd.NTPSynced = nil
-			return true
-		}
-		pointerVal := *synced
-		if cd.NTPSynced != nil && *cd.NTPSynced == pointerVal {
-			return false
-		}
-		newCopy := pointerVal
-		cd.NTPSynced = &newCopy
-		return true
+		return updateOptional(&cd.NTPSynced, synced)
 	})
 }
