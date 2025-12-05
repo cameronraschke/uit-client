@@ -5,8 +5,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
-
-	"golang.org/x/sys/cpu"
+	"unicode/utf8"
 )
 
 func readFileAndTrim(filePath string) *string {
@@ -84,16 +83,11 @@ func readUintBoolPtr(filePath string) *bool {
 }
 
 func fileExists(filePath string) bool {
+	if filePath == "" || !utf8.ValidString(filePath) {
+		return false
+	}
 	_, err := os.Stat(filePath)
 	return err == nil
-}
-
-func IsARM64() bool {
-	return false
-}
-
-func IsX86_64() bool {
-	return cpu.X86.HasSSE2
 }
 
 func GetSystemSerial() (*string, error) {

@@ -43,6 +43,9 @@ func SetCurrentTimestamp(t *time.Time) {
 }
 
 func SetUptime(d time.Duration) {
+	if d.Seconds() < 0 {
+		return
+	}
 	UpdateUniqueClientData(func(cd *ClientData) bool {
 		if cd.RealtimeSystemData == nil {
 			cd.RealtimeSystemData = &RealtimeSystemData{}

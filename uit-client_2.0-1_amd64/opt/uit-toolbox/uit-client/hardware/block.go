@@ -14,6 +14,14 @@ import (
 )
 
 func ListBlockDevices(devDir string) ([]*config.DiskHardwareData, error) {
+	if !fileExists(devDir) {
+		devDir = "/dev"
+	}
+	devDir = filepath.Clean(devDir)
+	if !filepath.IsAbs(devDir) || !strings.HasPrefix(devDir, "/dev") {
+		return nil, fmt.Errorf("invalid device directory path: %s", devDir)
+	}
+
 	fd, err := unix.Open(devDir, unix.O_RDONLY|unix.O_DIRECTORY|unix.O_CLOEXEC, 0)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open device directory: %v", err)
@@ -23,6 +31,7 @@ func ListBlockDevices(devDir string) ([]*config.DiskHardwareData, error) {
 	directoryListBuffer := make([]byte, 1<<13) // 8kb buffer to load in directory entries
 	var devices []*config.DiskHardwareData
 
+	// Default to Unknown disk type
 	diskType := "Unknown"
 	for {
 		directoryEntry, err := unix.ReadDirent(fd, directoryListBuffer)
@@ -33,26 +42,35 @@ func ListBlockDevices(devDir string) ([]*config.DiskHardwareData, error) {
 			break
 		}
 
+		// deviceNames will be files (or dirs) in /dev
 		deviceNames := make([]string, 0, 128)
 		_, _, deviceNames = unix.ParseDirent(directoryListBuffer[:directoryEntry], -1, deviceNames)
 
+		// Common major numbers for SCSI & SATA
 		scsiOrSataMajors := []uint32{8, 65, 66, 67, 68, 69, 70, 71, 128, 129, 130, 131, 132, 133, 134, 135}
 		scsiIdeMajors := []uint32{3, 22, 33, 34, 56, 57, 88, 89, 90, 91}
 
 		for _, deviceName := range deviceNames {
+			deviceName = strings.TrimSpace(deviceName)
 			if deviceName == "." || deviceName == ".." || deviceName == "" {
 				continue
 			}
-			devicePath := filepath.Join(devDir, deviceName)
+			devicePath := filepath.Join(devDir, deviceName) // Join cleans, returns empty for invalid input
+			if devicePath == "" {
+				continue
+			}
+
 			if !fileExists(devicePath) {
 				continue
 			}
 
+			// Lstat for sym links without following them
 			var statData unix.Stat_t
 			if err := unix.Lstat(devicePath, &statData); err != nil {
 				continue
 			}
-			// Only select block devices - bitwise and to mask file type bits
+			// Only select block devices - bitwise AND to mask file type bits
+			// https://www.gnu.org/software/libc/manual/html_node/Testing-File-Type.html
 			if statData.Mode&unix.S_IFMT != unix.S_IFBLK {
 				continue
 			}
@@ -67,8 +85,7 @@ func ListBlockDevices(devDir string) ([]*config.DiskHardwareData, error) {
 			minorNum := int64(minor)
 
 			// Determine disk type based on major number and device path prefix
-			diskType = "Unknown"
-
+			// diskType defaults to "Unknown" at start of loop
 			if slices.Contains(scsiOrSataMajors, major) && strings.HasPrefix(devicePath, "/dev/sd") {
 				diskType = "SCSI/SATA"
 			} else if majorNum == 9 {
