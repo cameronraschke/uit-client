@@ -9,6 +9,7 @@ import (
 	"net/netip"
 	"os"
 	"uitclient/api"
+	"uitclient/cli"
 	"uitclient/client"
 	"uitclient/config"
 	"uitclient/menu"
@@ -127,25 +128,17 @@ func getClientData() {
 
 func main() {
 	recover()
-	var err error
 	// Initial startup, checks, and configuration loading
 
 	// Clear the terminal screen
 	fmt.Printf(clearScreen)
 	fmt.Printf("Starting UIT Client...\n\n")
 
-	oldState, err := menu.InitTerminal()
+	err := cli.InitTerminalWithRaw(true)
 	if err != nil {
 		fmt.Printf("Error initializing terminal: %v\n", err)
 		os.Exit(1)
 	}
-
-	defer func() {
-		if oldState != nil {
-			menu.RestoreTerminal(oldState)
-		}
-		defer menu.FlushMenu()
-	}()
 
 	// Check for root privileges & PIDs
 	euid := unix.Geteuid()
