@@ -147,6 +147,7 @@ func InitTerminalWithRaw(raw bool) (*CLI, error) {
 	if raw {
 		old, err = term.MakeRaw(termFd)
 		if err != nil {
+			return nil, err
 		}
 		// Ensure restore from the caller using the returned function
 		defer term.Restore(termFd, old)
