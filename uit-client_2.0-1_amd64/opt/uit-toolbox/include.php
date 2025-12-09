@@ -334,12 +334,13 @@ class dbPSQL {
 
 
 	// Location table
-	public function insertLocation ($time) {
+	public function insertLocation ($time, $tagNum) {
 		if (strFilter($time) === 0) {
-			$sql = "INSERT INTO locations (time) VALUES (:time)";
+			$sql = "INSERT INTO locations (time, tagnumber) VALUES (:time, :tag)";
 			$stmt = $this->pdo->prepare($sql);
 
 			$stmt->bindParam(':time', $time, PDO::PARAM_STR);
+			$stmt->bindParam(':tag', $tagNum, PDO::PARAM_INT);
 
 			if (strFilter($stmt) === 0) {
 				$stmt->execute();
