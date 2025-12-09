@@ -137,17 +137,16 @@ func cmdDemo(cli *CLI, _ []string) error {
 }
 
 // InitTerminalWithRaw controls raw mode; when raw=false, the OS echoes input
-func InitTerminalWithRaw(raw bool) error {
+func InitTerminalWithRaw(raw bool) (*CLI, error) {
 	if !term.IsTerminal(termFd) {
 		fmt.Printf("Warning: Standard input is not a terminal\n")
-		return fmt.Errorf("standard input is not a terminal")
+		return nil, fmt.Errorf("standard input is not a terminal")
 	}
 	var old *term.State
 	var err error
 	if raw {
 		old, err = term.MakeRaw(termFd)
 		if err != nil {
-			return err
 		}
 		// Ensure restore from the caller using the returned function
 		defer term.Restore(termFd, old)
@@ -187,7 +186,7 @@ func InitTerminalWithRaw(raw bool) error {
 	if err := cli.Run(); err != nil && err != io.EOF {
 		cli.Echo("Exited: %v", err)
 	}
-	return nil
+	return cli, nil
 }
 
 func (cli *CLI) ReadString(prompt string) (string, error) {

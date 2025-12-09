@@ -12,7 +12,6 @@ import (
 	"uitclient/cli"
 	"uitclient/client"
 	"uitclient/config"
-	"uitclient/menu"
 
 	"golang.org/x/sys/cpu"
 	"golang.org/x/sys/unix"
@@ -134,7 +133,7 @@ func main() {
 	fmt.Printf(clearScreen)
 	fmt.Printf("Starting UIT Client...\n\n")
 
-	err := cli.InitTerminalWithRaw(true)
+	term, err := cli.InitTerminalWithRaw(true)
 	if err != nil {
 		fmt.Printf("Error initializing terminal: %v\n", err)
 		os.Exit(1)
@@ -202,7 +201,7 @@ func main() {
 		fmt.Printf("CPU has encryption acceleration\n")
 	}
 
-	devicePath, totalDevices, err := menu.SelectBlockDevices()
+	devicePath, totalDevices, err := term.SelectBlockDevices()
 	if err != nil {
 		fmt.Printf("Error selecting block device: %v\n", err)
 		os.Exit(1)
