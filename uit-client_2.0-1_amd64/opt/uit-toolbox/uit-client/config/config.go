@@ -52,7 +52,12 @@ func InitializeClientData(data *ClientData) error {
 }
 
 func GetClientData() *ClientData {
-	return clientData.Load()
+	cd := clientData.Load()
+	if cd == nil {
+		return &ClientData{}
+	}
+	// Return an immutable snapshot (deep copy if callers might mutate)
+	return copyClientData(cd)
 }
 
 // UpdateClientData performs an unconditional copy-on-write update.
@@ -68,15 +73,16 @@ func UpdateClientData(mutate func(*ClientData)) {
 
 // UpdateUniqueClientData performs a copy-on-write update only if mutate reports change.
 func UpdateUniqueClientData(mutate func(*ClientData) bool) {
-	currentSnapshot := clientData.Load()
-	if currentSnapshot == nil {
-		currentSnapshot = &ClientData{}
+	for {
+		oldSnapshot := clientData.Load()
+		newSnapshot := copyClientData(oldSnapshot) // returns empty struct if currentSnapshot is nil
+		if !mutate(newSnapshot) {
+			return
+		}
+		if clientData.CompareAndSwap(oldSnapshot, newSnapshot) {
+			return
+		}
 	}
-	newSnapshot := copyClientData(currentSnapshot)
-	if !mutate(newSnapshot) {
-		return
-	}
-	clientData.Store(newSnapshot)
 }
 
 func SetTagnumber(tag *int64) {
