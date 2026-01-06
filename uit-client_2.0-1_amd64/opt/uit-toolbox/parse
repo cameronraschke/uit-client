@@ -149,7 +149,8 @@ if ($arr[0] == "general") {
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 		curl_setopt($ch, CURLOPT_HTTPHEADER, array(
 			'Content-Type: application/json',
-			'Content-Length: ' . strlen($body)
+			'Content-Length: ' . strlen($body),
+			'User-Agent: uit-client'
 		));
 		$response = curl_exec($ch);
 		if (curl_errno($ch)) {
