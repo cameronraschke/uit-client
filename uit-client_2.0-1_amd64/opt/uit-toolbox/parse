@@ -141,7 +141,7 @@ if ($arr[0] == "general") {
 		$value = round($value, 0);
 		$ch = curl_init();
 		$encodedUUID=curl_escape($ch, $uuid);
-		$url = "https://UIT_WEB_HTTPS_HOST:UIT_WEB_HTTPS_PORT/api/client/health/battery?uuid=" + $encodedUUID;
+		$url = "https://UIT_WEB_HTTPS_HOST:UIT_WEB_HTTPS_PORT/api/client/health/battery?uuid=" . $encodedUUID;
 		$body = json_encode(['battery_health' => $value]);
 		curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
 		curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
