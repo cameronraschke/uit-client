@@ -218,7 +218,7 @@ if ($arr[0] == "system-stats") {
 	}
 }
 
-if ($arr[0] == "remote") {
+if ($arr[0] == "job_queue") {
 	$tagNum = $arr[1];
 	$key = $arr[2];
 	$value = $arr[3];
@@ -260,11 +260,11 @@ if ($arr[0] == "remote") {
 	}
 
 	if ($value == "TRUE") {
-		$dbPSQL->updateRemote($tagNum, $key, true);
+		$dbPSQL->updateJobQueue($tagNum, $key, true);
 	} else if ($value == "FALSE") {
-		$dbPSQL->updateRemote($tagNum, $key, false);
+		$dbPSQL->updateJobQueue($tagNum, $key, false);
 	} else {
-		$dbPSQL->updateRemote($tagNum, $key, $value);
+		$dbPSQL->updateJobQueue($tagNum, $key, $value);
 	}
 }
 

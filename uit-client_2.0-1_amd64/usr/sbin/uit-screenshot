@@ -5,7 +5,7 @@ while true; do
     fbgrab - > /tmp/screenshot.png
     printf '%s' "live_images|${tagNum}|screenshot|/tmp/screenshot.png" | /opt/uit-toolbox/parse
     # Check if cancel job has been sent
-    if [[ $(echo "SELECT tagnumber AS result FROM remote WHERE tagnumber = '${tagNum}' AND (job_queued = TRUE OR job_active = TRUE)" | /opt/uit-toolbox/select) == ${tagNum} ]]; then
+    if [[ $(echo "SELECT tagnumber AS result FROM job_queue WHERE tagnumber = '${tagNum}' AND (job_queued = TRUE OR job_active = TRUE)" | /opt/uit-toolbox/select) == ${tagNum} ]]; then
         sleep 2
     else
         sleep 10

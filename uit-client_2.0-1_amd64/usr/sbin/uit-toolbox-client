@@ -144,13 +144,13 @@ systemSerial=$(dmidecode --string system-serial-number)
 ipAddr=$(ip addr | grep -C 2 'state UP' | grep 'inet' | grep -oP '10.0.0.[0-9]{1,3}/16' | sed 's/\/16//g')
 
 
-function remote {
-	job_queued=$(printf '%s' "SELECT job_queued AS result FROM remote WHERE tagnumber = '${tagNum}'" | /opt/uit-toolbox/select)
-	job_queued_override=$(printf '%s' "SELECT job_queued AS result FROM remote WHERE job_queued IN ('hpEraseAndClone', 'hpCloneOnly', 'generic-erase+clone', 'generic-clone') AND tagnumber = '${tagNum}'" | /opt/uit-toolbox/select)
-	job_queued_formatted=$(printf '%s' "SELECT (CASE WHEN job_queued = 'data collection' THEN 'data collection' WHEN job_queued = 'update' THEN 'update' WHEN job_queued = 'findmy' THEN 'playing a sound' WHEN (job_queued = 'hpEraseAndClone' OR job_queued = 'generic-erase+clone') THEN 'disk erase & clone' WHEN (job_queued = 'hpCloneOnly' OR job_queued = 'generic-clone') THEN 'disk clone' WHEN job_queued = 'nvmeErase' THEN 'disk erase' WHEN job_queued = 'nvmeVerify' THEN 'disk verify' WHEN job_queued = 'shutdown' THEN 'shutdown' WHEN job_queued = 'clean-shutdown' THEN 'shutdown' ELSE job_queued END) AS result FROM remote WHERE tagnumber = '${tagNum}'" | /opt/uit-toolbox/select) 
-	job_queued_position=$(printf '%s' "SELECT * FROM (SELECT tagnumber, ROW_NUMBER() OVER (ORDER BY tagnumber) AS result FROM (SELECT tagnumber FROM remote WHERE (job_active = FALSE OR job_active IS NULL) AND job_queued IS NOT NULL AND job_queued IN ('hpEraseAndClone', 'hpCloneOnly', 'generic-erase+clone', 'generic-clone') ORDER BY tagnumber ASC)) s1 WHERE s1.tagnumber = '${tagNum}'" | /opt/uit-toolbox/select)
-	job_active=$(printf '%s' "SELECT job_active AS result FROM remote WHERE tagnumber = '${tagNum}'" | /opt/uit-toolbox/select)
-	job_available=$(printf '%s' "SELECT COUNT(tagnumber) AS result FROM remote WHERE job_queued IN ('hpEraseAndClone', 'hpCloneOnly', 'generic-erase+clone', 'generic-clone') AND job_active = TRUE" | /opt/uit-toolbox/select)
+function fetchJobQueueData {
+	job_queued=$(printf '%s' "SELECT job_queued AS result FROM job_queue WHERE tagnumber = '${tagNum}'" | /opt/uit-toolbox/select)
+	job_queued_override=$(printf '%s' "SELECT job_queued AS result FROM job_queue WHERE job_queued IN ('hpEraseAndClone', 'hpCloneOnly', 'generic-erase+clone', 'generic-clone') AND tagnumber = '${tagNum}'" | /opt/uit-toolbox/select)
+	job_queued_formatted=$(printf '%s' "SELECT (CASE WHEN job_queued = 'data collection' THEN 'data collection' WHEN job_queued = 'update' THEN 'update' WHEN job_queued = 'findmy' THEN 'playing a sound' WHEN (job_queued = 'hpEraseAndClone' OR job_queued = 'generic-erase+clone') THEN 'disk erase & clone' WHEN (job_queued = 'hpCloneOnly' OR job_queued = 'generic-clone') THEN 'disk clone' WHEN job_queued = 'nvmeErase' THEN 'disk erase' WHEN job_queued = 'nvmeVerify' THEN 'disk verify' WHEN job_queued = 'shutdown' THEN 'shutdown' WHEN job_queued = 'clean-shutdown' THEN 'shutdown' ELSE job_queued END) AS result FROM job_queue WHERE tagnumber = '${tagNum}'" | /opt/uit-toolbox/select) 
+	job_queued_position=$(printf '%s' "SELECT * FROM (SELECT tagnumber, ROW_NUMBER() OVER (ORDER BY tagnumber) AS result FROM (SELECT tagnumber FROM job_queue WHERE (job_active = FALSE OR job_active IS NULL) AND job_queued IS NOT NULL AND job_queued IN ('hpEraseAndClone', 'hpCloneOnly', 'generic-erase+clone', 'generic-clone') ORDER BY tagnumber ASC)) s1 WHERE s1.tagnumber = '${tagNum}'" | /opt/uit-toolbox/select)
+	job_active=$(printf '%s' "SELECT job_active AS result FROM job_queue WHERE tagnumber = '${tagNum}'" | /opt/uit-toolbox/select)
+	job_available=$(printf '%s' "SELECT COUNT(tagnumber) AS result FROM job_queue WHERE job_queued IN ('hpEraseAndClone', 'hpCloneOnly', 'generic-erase+clone', 'generic-clone') AND job_active = TRUE" | /opt/uit-toolbox/select)
 }
 
 
@@ -845,7 +845,7 @@ function randPattern_Shred {
 
 
 function writeDisk_Shred {
-	printf '%s' "remote|${tagNum}|status|Erasing disk ($shredMode)" | /opt/uit-toolbox/parse
+	printf '%s' "job_queue|${tagNum}|status|Erasing disk ($shredMode)" | /opt/uit-toolbox/parse
 	if [[ -z $writeSections ]]; then
 		writeSections='1000'
 	fi
@@ -908,7 +908,7 @@ function writeDisk_Shred {
 		tput el
 		printf '%s\n' "Writing to section ${i}/${writeSections}"
 		if (( $i % 25 == 0 )); then
-			printf '%s' "remote|${tagNum}|status|Writing to section ${i}/${writeSections} ($shredMode)" | /opt/uit-toolbox/parse
+			printf '%s' "job_queue|${tagNum}|status|Writing to section ${i}/${writeSections} ($shredMode)" | /opt/uit-toolbox/parse
 		fi
 		sectorMin=$((i * sectorSize))
 		sectorMax=$((sectorMin + sectorSize))
@@ -930,7 +930,7 @@ function writeDisk_Shred {
 
 
 function vrfyDisk_Shred {
-	printf '%s' "remote|${tagNum}|status|Verifying erase ($shredMode)" | /opt/uit-toolbox/parse
+	printf '%s' "job_queue|${tagNum}|status|Verifying erase ($shredMode)" | /opt/uit-toolbox/parse
 	if [[ -z $vrfySections ]]; then
 		vrfySections='1000'
 	fi
@@ -952,10 +952,10 @@ function vrfyDisk_Shred {
 	printf '%s\n' "Looking for non-${CHAR}'s on ${CLIENTDISK}...."
 
 	if [[ $PCNTOFSECTOR == '100' ]]; then
-		printf '%s' "remote|${tagNum}|status|Verifying the entire disk" | /opt/uit-toolbox/parse
+		printf '%s' "job_queue|${tagNum}|status|Verifying the entire disk" | /opt/uit-toolbox/parse
 		if [[ $(pv /dev/${CLIENTDISK} | xxd -p | grep --quiet -m 1 "[^${CHAR}]"; printf '%s' ${PIPESTATUS[2]}) == '0' ]]; then
 		    PROCFAIL='1'
-			printf '%s' "remote|${tagNum}|status|fail - verifying erase" | /opt/uit-toolbox/parse
+			printf '%s' "job_queue|${tagNum}|status|fail - verifying erase" | /opt/uit-toolbox/parse
             read -t 10 -p "${BOLD}${RED}Verification test failed${RESET}${BOLD}. Press ${GREEN}Enter${RESET}${BOLD}..."
 			pkill --terminal tty1
 		else
@@ -971,7 +971,7 @@ function vrfyDisk_Shred {
 		tput el
 		printf '%s\n' "Verifying section ${i}/${vrfySections}"
 		if (( $i % 25 == 0 )); then
-			printf '%s' "remote|${tagNum}|status|Verifying section ${i}/${vrfySections}" | /opt/uit-toolbox/parse
+			printf '%s' "job_queue|${tagNum}|status|Verifying section ${i}/${vrfySections}" | /opt/uit-toolbox/parse
 		fi
 		sectorMin=$((i * sectorSize))
 		sectorMax=$((sectorMin + sectorSize))
@@ -984,7 +984,7 @@ function vrfyDisk_Shred {
     	if [[ $(dd if=/dev/${CLIENTDISK} bs=${BS} count=${COUNT} skip=${SKIP} iflag=fullblock status=none 2>/dev/null \
         	| xxd -p | grep --quiet -m 1 "[^${CHAR}]"; printf '%s' ${PIPESTATUS[2]}) == '0' ]]; then
             	PROCFAIL='1'
-				printf '%s' "remote|${tagNum}|status|fail - verifying erase" | /opt/uit-toolbox/parse
+				printf '%s' "job_queue|${tagNum}|status|fail - verifying erase" | /opt/uit-toolbox/parse
             	read -t 10 -p "${BOLD}${RED}Verification test failed${RESET}${BOLD}. Press ${GREEN}Enter${RESET}${BOLD}..."
 				pkill --terminal tty1
     	fi
@@ -993,32 +993,32 @@ function vrfyDisk_Shred {
 
 	printf '\n'
 	printf '%s\n' "Verifing the first sector of the disk...."
-		printf '%s' "remote|${tagNum}|status|Verifing the first sector of the disk..." | /opt/uit-toolbox/parse
+		printf '%s' "job_queue|${tagNum}|status|Verifing the first sector of the disk..." | /opt/uit-toolbox/parse
 	if [[ $(dd if=/dev/${CLIENTDISK} count=${sectorCount} skip=0 iflag=fullblock status=none 2>/dev/null \
         | xxd -p | grep --quiet -m 1 "[^${CHAR}]"; printf '%s' ${PIPESTATUS[2]}) == '0'  ]]; then
             	PROCFAIL='1'
-				printf '%s' "remote|${tagNum}|status|fail - verifying erase" | /opt/uit-toolbox/parse
+				printf '%s' "job_queue|${tagNum}|status|fail - verifying erase" | /opt/uit-toolbox/parse
             	read -t 10 -p "${BOLD}${RED}Verification test failed${RESET}${BOLD}. Press ${GREEN}Enter${RESET}${BOLD}..."
 				pkill --terminal tty1
     fi
 	printf '%s\n' "Verifing the last sector of the disk...."
-		printf '%s' "remote|${tagNum}|status|Verifing the last sector of the disk..." | /opt/uit-toolbox/parse
+		printf '%s' "job_queue|${tagNum}|status|Verifing the last sector of the disk..." | /opt/uit-toolbox/parse
     if [[ $(dd if=/dev/${CLIENTDISK} count=${sectorCount} skip=$(( ${sectorCount} - 1 )) \
 		iflag=fullblock status=none 2>/dev/null \
         | xxd -p | grep --quiet -m 1 "[^${CHAR}]"; printf '%s' ${PIPESTATUS[2]}) == '0' ]]; then
             	PROCFAIL='1'
-				printf '%s' "remote|${tagNum}|status|fail - verifying erase" | /opt/uit-toolbox/parse
+				printf '%s' "job_queue|${tagNum}|status|fail - verifying erase" | /opt/uit-toolbox/parse
 				read -t 10 -p "${BOLD}${RED}Verification test failed${RESET}${BOLD}. Press ${GREEN}Enter${RESET}${BOLD}..."
 				pkill --terminal tty1
     fi
 
     printf '%s\n' "${PCNTOFSECTOR}% of ${CLIENTDISK} has been verified."
-	printf '%s' "remote|${tagNum}|status|${PCNTOFSECTOR}% of ${CLIENTDISK} has been verified." | /opt/uit-toolbox/parse
+	printf '%s' "job_queue|${tagNum}|status|${PCNTOFSECTOR}% of ${CLIENTDISK} has been verified." | /opt/uit-toolbox/parse
 	if [[ $PROCFAIL == '0' ]]; then
 		printf '%s\n' "Test passed successfully!"
 		return 0
 	else
-		printf '%s' "remote|${tagNum}|status|fail - verifying erase" | /opt/uit-toolbox/parse
+		printf '%s' "job_queue|${tagNum}|status|fail - verifying erase" | /opt/uit-toolbox/parse
 		read -t 10 -p "${BOLD}${RED}Verification test failed${RESET}${BOLD}. Press ${GREEN}Enter${RESET}${BOLD}..."
 		pkill --terminal tty1
 	fi
@@ -1027,7 +1027,7 @@ function vrfyDisk_Shred {
 
 
 function secErase_Shred {
-	printf '%s' "remote|${tagNum}|status|Using secure erase on ${CLIENTDISK}" | /opt/uit-toolbox/parse
+	printf '%s' "job_queue|${tagNum}|status|Using secure erase on ${CLIENTDISK}" | /opt/uit-toolbox/parse
 	footer
 	if [[ $CLIENTDISK =~ $SSD_REGEX ]]; then 
 		printf '%s\n' "Using Secure Erase on ${CLIENTDISK}. This can take a while, please keep the device powered on...."
@@ -1042,7 +1042,7 @@ function secErase_Shred {
 			nvme format /dev/${CLIENTDISK:0:-2} --ses=2 --namespace-id=1 &>/dev/null
 		fi
 	else
-		printf '%s' "remote|${tagNum}|status|fail - secure erase" | /opt/uit-toolbox/parse
+		printf '%s' "job_queue|${tagNum}|status|fail - secure erase" | /opt/uit-toolbox/parse
 		read -t 10 -p "No compatible SATA or NVME drive is selected. Can't use Secure Erase on ${CLIENTDISK}."
 		pkill --terminal tty1
 	fi
@@ -1051,7 +1051,7 @@ function secErase_Shred {
 
 
 function secUnlock_Shred {
-	printf '%s' "remote|${tagNum}|status|Unlocking ${CLIENTDISK}" | /opt/uit-toolbox/parse
+	printf '%s' "job_queue|${tagNum}|status|Unlocking ${CLIENTDISK}" | /opt/uit-toolbox/parse
 	footer
 	if [[ $CLIENTDISK =~ $SSD_REGEX ]]; then 
 		printf '%s\n' "Unlocking ${CLIENTDISK}, please keep the device powered on...."
@@ -1062,7 +1062,7 @@ function secUnlock_Shred {
 	elif [[ $CLIENTDISK =~ $NVME_REGEX ]]; then
 		printf '%s\n' "NVME drives do not need to be unlocked. Continuing...."
 	else
-		printf '%s' "remote|${tagNum}|status|fail - secure unlock" | /opt/uit-toolbox/parse
+		printf '%s' "job_queue|${tagNum}|status|fail - secure unlock" | /opt/uit-toolbox/parse
 		read -t 10 -p "No compatible SATA or NVME drive is selected. Can't unlock ${CLIENTDISK}."
 		pkill --terminal tty1
 	fi
@@ -1498,7 +1498,7 @@ function clientselect_Clone {
 
 function execute_Clone {
 	printf '%s' "general|clone_image|${cloneImgName}|${UUID}" | /opt/uit-toolbox/parse
-	printf '%s' "remote|${tagNum}|status|Cloning ${cloneImgName} -> ${CLIENTDISK} ($cloneMode)" | /opt/uit-toolbox/parse
+	printf '%s' "job_queue|${tagNum}|status|Cloning ${cloneImgName} -> ${CLIENTDISK} ($cloneMode)" | /opt/uit-toolbox/parse
 	printf '%s' "0" > /root/uptime
 	printf '%s' "0" > /tmp/cpu-usage.txt
 	printf '%s' "0" > /tmp/network-usage.txt
@@ -1578,10 +1578,10 @@ function execute {
 	printf '%s' "0" > /tmp/cpu-usage.txt
 	printf '%s' "0" > /tmp/network-usage.txt
 
-	printf '%s' "remote|${tagNum}|job_active|TRUE" | /opt/uit-toolbox/parse
+	printf '%s' "job_queue|${tagNum}|job_active|TRUE" | /opt/uit-toolbox/parse
 
 	if [[ $cloneMode == "savedisk" && ($APPSELECT == "E" || $APPSELECT == "EC") ]]; then
-		printf '%s' "remote|${tagNum}|status|fail - Can't erase master image" | /opt/uit-toolbox/parse
+		printf '%s' "job_queue|${tagNum}|status|fail - Can't erase master image" | /opt/uit-toolbox/parse
 		read -t 10 -p "${BOLD}Cannot erase device and save its image.${RESET}"
 		pkill --terminal tty1
 	fi
@@ -1591,11 +1591,11 @@ function execute {
 			clientselect_Clone
 		fi
 		if [[ $job_queued != "hpEraseAndClone" ]]; then
-			printf '%s' "remote|${tagNum}|job_queued|generic-erase+clone" | /opt/uit-toolbox/parse
+			printf '%s' "job_queue|${tagNum}|job_queued|generic-erase+clone" | /opt/uit-toolbox/parse
 		fi
 		basicEraseMode_Shred
-		printf '%s' "remote|${tagNum}|clone_mode|$cloneMode" | /opt/uit-toolbox/parse
-		printf '%s' "remote|${tagNum}|erase_mode|$shredMode" | /opt/uit-toolbox/parse
+		printf '%s' "job_queue|${tagNum}|clone_mode|$cloneMode" | /opt/uit-toolbox/parse
+		printf '%s' "job_queue|${tagNum}|erase_mode|$shredMode" | /opt/uit-toolbox/parse
 		execute_Shred
 		execute_Clone
 	elif [[ $APPSELECT == "E" ]]; then
@@ -1605,23 +1605,23 @@ function execute {
 			basicEraseMode_Shred
 		fi
 		if [[ $job_queued != "nvmeErase" ]]; then
-			printf '%s' "remote|${tagNum}|job_queued|generic-erase" | /opt/uit-toolbox/parse
+			printf '%s' "job_queue|${tagNum}|job_queued|generic-erase" | /opt/uit-toolbox/parse
 		fi
-		printf '%s' "remote|${tagNum}|erase_mode|$shredMode" | /opt/uit-toolbox/parse
+		printf '%s' "job_queue|${tagNum}|erase_mode|$shredMode" | /opt/uit-toolbox/parse
 		execute_Shred
 	elif [[ $APPSELECT == "C" ]]; then
 		if [[ -z $cloneMode ]]; then
 			clientselect_Clone
 		fi
 		if [[ $job_queued != "hpCloneOnly" ]]; then
-			printf '%s' "remote|${tagNum}|job_queued|generic-clone" | /opt/uit-toolbox/parse
+			printf '%s' "job_queue|${tagNum}|job_queued|generic-clone" | /opt/uit-toolbox/parse
 		fi
-		printf '%s' "remote|${tagNum}|clone_mode|$cloneMode" | /opt/uit-toolbox/parse
+		printf '%s' "job_queue|${tagNum}|clone_mode|$cloneMode" | /opt/uit-toolbox/parse
 		execute_Clone
 	else
-		printf '%s' "remote|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
-		printf '%s' "remote|${tagNum}|job_queued|" | /opt/uit-toolbox/parse
-		printf '%s' "remote|${tagNum}|status|fail - Invalid application selected" | /opt/uit-toolbox/parse
+		printf '%s' "job_queue|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
+		printf '%s' "job_queue|${tagNum}|job_queued|" | /opt/uit-toolbox/parse
+		printf '%s' "job_queue|${tagNum}|status|fail - Invalid application selected" | /opt/uit-toolbox/parse
 		read -t 10 -p "${BOLD}${RED}Error - Invalid application selected.${RESET}"
 		pkill --terminal tty1
 	fi
@@ -1635,9 +1635,9 @@ function totaltime {
 
 
 function terminate {
-	printf '%s' "remote|${tagNum}|job_queued|" | /opt/uit-toolbox/parse
-	printf '%s' "remote|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
-	printf '%s' "remote|${tagNum}|status|Waiting for job" | /opt/uit-toolbox/parse
+	printf '%s' "job_queue|${tagNum}|job_queued|" | /opt/uit-toolbox/parse
+	printf '%s' "job_queue|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
+	printf '%s' "job_queue|${tagNum}|status|Waiting for job" | /opt/uit-toolbox/parse
 	printf '%s' "system-stats|cpu|${UUID}" | /opt/uit-toolbox/parse
 	printf '%s' "system-stats|network|${UUID}" | /opt/uit-toolbox/parse
 	printf '%s' "0" > /root/uptime
@@ -1734,8 +1734,8 @@ function terminate {
 }
 
 function resetForClientRestart {
-	printf '%s' "remote|${tagNum}|job_queued|" | /opt/uit-toolbox/parse
-	printf '%s' "remote|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
+	printf '%s' "job_queue|${tagNum}|job_queued|" | /opt/uit-toolbox/parse
+	printf '%s' "job_queue|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
 	for i in $(ps | grep 'uit-cpu' | awk '{ print $1 }'); do kill "${i}" 2>/dev/null; done
 	for i in $(ps | grep 'uit-network' | awk '{ print $1 }'); do kill "${i}" 2>/dev/null; done
 	for i in $(ps | grep 'uit-sql' | awk '{ print $1 }'); do kill "${i}" 2>/dev/null; done
@@ -1781,14 +1781,14 @@ function autodetectClient {
 		printf '\n'
 		printf '\n'
 
-		sql=$(printf '%s' "SELECT tagnumber AS result FROM remote WHERE tagnumber = '${tagNum}' AND status NOT like 'fail%'" | /opt/uit-toolbox/select)
+		sql=$(printf '%s' "SELECT tagnumber AS result FROM job_queue WHERE tagnumber = '${tagNum}' AND status NOT like 'fail%'" | /opt/uit-toolbox/select)
 		if [[ $sql == $tagNum ]]; then
-			printf '%s' "remote|${tagNum}|status|Waiting for job" | /opt/uit-toolbox/parse
+			printf '%s' "job_queue|${tagNum}|status|Waiting for job" | /opt/uit-toolbox/parse
 		fi
 
 		unattended="true"
 
-		remote
+		fetchJobQueueData
 		if [[ $job_queued != "NULL" ]]; then
 			tput cuu1
 			tput el
@@ -1798,30 +1798,30 @@ function autodetectClient {
 				printf '\n'
 				tput cuu1
 				tput el
-				remote
+				fetchJobQueueData
 				if [[ $job_queued == "NULL" ]]; then
 					break
 				fi
 				if [[ $job_queued_override == "NULL" ]]; then
-					printf '%s' "remote|${tagNum}|job_active|TRUE" | /opt/uit-toolbox/parse
+					printf '%s' "job_queue|${tagNum}|job_active|TRUE" | /opt/uit-toolbox/parse
 					break
 				fi
 				if [[ $job_available == "NULL" && $job_queued_position == 1 ]]; then
-					okay_to_go=$(printf '%s' "SELECT COUNT(tagnumber) AS result FROM remote WHERE job_queued IN ('hpEraseAndClone', 'hpCloneOnly', 'generic-erase+clone', 'generic-clone') AND job_active = TRUE" | /opt/uit-toolbox/select)
+					okay_to_go=$(printf '%s' "SELECT COUNT(tagnumber) AS result FROM job_queue WHERE job_queued IN ('hpEraseAndClone', 'hpCloneOnly', 'generic-erase+clone', 'generic-clone') AND job_active = TRUE" | /opt/uit-toolbox/select)
 					if [[ $okay_to_go == "NULL" || $okay_to_go == "0" ]]; then
-						printf '%s' "remote|${tagNum}|job_active|TRUE" | /opt/uit-toolbox/parse
+						printf '%s' "job_queue|${tagNum}|job_active|TRUE" | /opt/uit-toolbox/parse
 						break
 					fi
 				fi
 				printf '%s\n' "	${BOLD}Tagnumber ${tagNum} (${systemSerial}) is scheduled for ${job_queued_formatted} and is ${job_queued_position} in queue. Press ${BOLD}${GREEN}'q' ${RESET}${BOLD}to exit.${RESET}"
-				printf '%s' "remote|${tagNum}|status|Scheduled for ${job_queued_formatted}, ${job_queued_position} in queue." | /opt/uit-toolbox/parse
+				printf '%s' "job_queue|${tagNum}|status|Scheduled for ${job_queued_formatted}, ${job_queued_position} in queue." | /opt/uit-toolbox/parse
 				read -t 3 -N 1 input
 				if [[ $input = "q" ]] || [[ $input = "Q" ]]; then
 					printf '%s' "0" > /root/uptime
 					printf '%s' "0" > /tmp/cpu-usage.txt
 					printf '%s' "0" > /tmp/network-usage.txt
-					printf '%s' "remote|${tagNum}|job_queued|" | /opt/uit-toolbox/parse
-					printf '%s' "remote|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
+					printf '%s' "job_queue|${tagNum}|job_queued|" | /opt/uit-toolbox/parse
+					printf '%s' "job_queue|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
 					pkill --terminal tty1
 				fi
 			done
@@ -1829,20 +1829,20 @@ function autodetectClient {
 				enterTag
 				systemData
 				hardwareData
-				printf '%s' "remote|${tagNum}|status|Starting data collection" | /opt/uit-toolbox/parse
+				printf '%s' "job_queue|${tagNum}|status|Starting data collection" | /opt/uit-toolbox/parse
 				resetForClientRestart
 			elif [[ $job_queued == "update" ]]; then
 				enterTag
 				systemData
 				hardwareData
-				printf '%s' "remote|${tagNum}|status|Updating..." | /opt/uit-toolbox/parse
+				printf '%s' "job_queue|${tagNum}|status|Updating..." | /opt/uit-toolbox/parse
 				if [[ -f /root/uit-toolbox-client.deb ]]; then
 					rm /root/uit-toolbox-client.deb
 				fi
-				printf '%s' "remote|${tagNum}|status|Downloading update..." | /opt/uit-toolbox/parse
+				printf '%s' "job_queue|${tagNum}|status|Downloading update..." | /opt/uit-toolbox/parse
         curl --silent --show-error 'http://10.0.0.1:8080/client/pkg/uit-toolbox-client.deb' --output /root/uit-toolbox-client.deb
 				while [[ ! -f /root/uit-toolbox-client.deb ]]; do
-					printf '%s' "remote|${tagNum}|status|Retrying download..." | /opt/uit-toolbox/parse
+					printf '%s' "job_queue|${tagNum}|status|Retrying download..." | /opt/uit-toolbox/parse
 					echo "Package download failed, retrying download..."
 					curl --silent --show-error 'http://10.0.0.1:8080/client/pkg/uit-toolbox-client.deb' --output /root/uit-toolbox-client.deb
 					sleep 1
@@ -1850,20 +1850,20 @@ function autodetectClient {
 				dpkg --install /root/uit-toolbox-client.deb &>/dev/null
 				resetForClientRestart
 			elif [[ $job_queued == "findmy" ]]; then
-				printf '%s' "remote|${tagNum}|status|Playing sound" | /opt/uit-toolbox/parse
+				printf '%s' "job_queue|${tagNum}|status|Playing sound" | /opt/uit-toolbox/parse
 				play /root/findmy1.mp3 &> /dev/null
 				resetForClientRestart
 			elif [[ $job_queued == "hpEraseAndClone" ]]; then
 				enterTag
 				systemData
 				hardwareData
-				printf '%s' "remote|${tagNum}|status|Starting Erase + Clone job (HP)" | /opt/uit-toolbox/parse
+				printf '%s' "job_queue|${tagNum}|status|Starting Erase + Clone job (HP)" | /opt/uit-toolbox/parse
 				APPSELECT="EC"
 				ACTION="erase and clone"
 				if [[ /dev/nvme0n1 ]]; then
 					CLIENTDISK='nvme0n1'
 				else
-					printf '%s' "remote|${tagNum}|status|fail - Disk doesn't exist" | /opt/uit-toolbox/parse
+					printf '%s' "job_queue|${tagNum}|status|fail - Disk doesn't exist" | /opt/uit-toolbox/parse
 					autodetectClient
 				fi
 					printf '%s' "general|disk|${CLIENTDISK}|${UUID}" | /opt/uit-toolbox/parse
@@ -1888,13 +1888,13 @@ function autodetectClient {
 				enterTag
 				systemData
 				hardwareData
-				printf '%s' "remote|${tagNum}|status|Starting Clone only job (HP)" | /opt/uit-toolbox/parse
+				printf '%s' "job_queue|${tagNum}|status|Starting Clone only job (HP)" | /opt/uit-toolbox/parse
 				APPSELECT="C"
 				ACTION="clone"
 				if [[ /dev/nvme0n1 ]]; then
 					CLIENTDISK='nvme0n1'
 				else
-					printf '%s' "remote|${tagNum}|status|fail - disk doesn't exist" | /opt/uit-toolbox/parse
+					printf '%s' "job_queue|${tagNum}|status|fail - disk doesn't exist" | /opt/uit-toolbox/parse
 					autodetectClient
 				fi
 					printf '%s' "general|disk|${CLIENTDISK}|${UUID}" | /opt/uit-toolbox/parse
@@ -1918,11 +1918,11 @@ function autodetectClient {
 				if [[ /dev/nvme0n1 ]]; then
 					CLIENTDISK='nvme0n1'
 				else
-					printf '%s' "remote|${tagNum}|status|fail - disk doesn't exist" | /opt/uit-toolbox/parse
+					printf '%s' "job_queue|${tagNum}|status|fail - disk doesn't exist" | /opt/uit-toolbox/parse
 					autodetectClient
 				fi
 					printf '%s' "general|disk|${CLIENTDISK}|${UUID}" | /opt/uit-toolbox/parse
-				printf '%s' "remote|${tagNum}|status|Starting NVME Erase job (${CLIENTDISK})" | /opt/uit-toolbox/parse
+				printf '%s' "job_queue|${tagNum}|status|Starting NVME Erase job (${CLIENTDISK})" | /opt/uit-toolbox/parse
 				vrfySections="1000"
 				writeSections="1000"
 				PCNTOFSECTOR='10'
@@ -1946,7 +1946,7 @@ function autodetectClient {
 				enterTag
 				systemData
 				hardwareData
-				printf '%s' "remote|${tagNum}|status|Starting Verify job (${CLIENTDISK})" | /opt/uit-toolbox/parse
+				printf '%s' "job_queue|${tagNum}|status|Starting Verify job (${CLIENTDISK})" | /opt/uit-toolbox/parse
 				vrfySections=""
 				writeSections=""
 				PCNTOFSECTOR='10'
@@ -1956,7 +1956,7 @@ function autodetectClient {
 				if [[ /dev/nvme0n1 ]]; then
 					CLIENTDISK='nvme0n1'
 				else
-					printf '%s' "remote|${tagNum}|status|fail - disk doesn't exist" | /opt/uit-toolbox/parse
+					printf '%s' "job_queue|${tagNum}|status|fail - disk doesn't exist" | /opt/uit-toolbox/parse
 					autodetectClient
 				fi
 					printf '%s' "general|disk|${CLIENTDISK}|${UUID}" | /opt/uit-toolbox/parse
@@ -1974,17 +1974,17 @@ function autodetectClient {
 				printf '%s' "system-stats|network|${UUID}" | /opt/uit-toolbox/parse
 				resetForClientRestart
 			elif [[ $job_queued == "shutdown" ]]; then
-				printf '%s' "remote|${tagNum}|status|fail - Shutting down" | /opt/uit-toolbox/parse
-				printf '%s' "remote|${tagNum}|job_queued|" | /opt/uit-toolbox/parse
-				printf '%s' "remote|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
+				printf '%s' "job_queue|${tagNum}|status|fail - Shutting down" | /opt/uit-toolbox/parse
+				printf '%s' "job_queue|${tagNum}|job_queued|" | /opt/uit-toolbox/parse
+				printf '%s' "job_queue|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
 				poweroff
 			elif [[ $job_queued == "clean-shutdown" ]]; then
-				printf '%s' "remote|${tagNum}|status|Shutting down" | /opt/uit-toolbox/parse
-				printf '%s' "remote|${tagNum}|job_queued|" | /opt/uit-toolbox/parse
-				printf '%s' "remote|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
+				printf '%s' "job_queue|${tagNum}|status|Shutting down" | /opt/uit-toolbox/parse
+				printf '%s' "job_queue|${tagNum}|job_queued|" | /opt/uit-toolbox/parse
+				printf '%s' "job_queue|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
 				poweroff				
 			elif [[ $job_queued == "fail-test" ]]; then
-				printf '%s' "remote|${tagNum}|status|fail - test" | /opt/uit-toolbox/parse
+				printf '%s' "job_queue|${tagNum}|status|fail - test" | /opt/uit-toolbox/parse
 				resetForClientRestart
 			fi
 		else
@@ -2108,7 +2108,7 @@ function main {
 		pkill --terminal tty1
 	fi
 	if [[ $unattended == "false" ]]; then
-		printf '%s' "remote|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
+		printf '%s' "job_queue|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
 		terminate
 	fi
 }

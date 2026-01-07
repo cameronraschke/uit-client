@@ -373,10 +373,10 @@ class dbPSQL {
 	}
 
 
-	// Remote table
-	public function insertRemote ($tagNum) {
+	// job_queue table
+	public function insertJobQueue ($tagNum) {
 		if (strFilter($tagNum) === 0) {
-			$sql = "INSERT INTO remote (tagnumber) VALUES (:tagNum)";
+			$sql = "INSERT INTO job_queue (tagnumber) VALUES (:tagNum)";
 			$stmt = $this->pdo->prepare($sql);
 
 			if (strFilter($tagNum) === 0) {
@@ -391,10 +391,10 @@ class dbPSQL {
 		}
 	}
 
-	public function updateRemote ($tagNum, $key, $value) {
+	public function updateJobQueue ($tagNum, $key, $value) {
 		if (strFilter($tagNum) === 0 && strFilter($key) === 0) {
-			if ($this->check_tables_cols("remote", $key) === 0) {
-				$sql = "UPDATE remote SET $key = :value WHERE tagnumber = :tagNum";
+			if ($this->check_tables_cols("job_queue", $key) === 0) {
+				$sql = "UPDATE job_queue SET $key = :value WHERE tagnumber = :tagNum";
 				$stmt = $this->pdo->prepare($sql);
 
 				if (is_bool($value) === true) {
