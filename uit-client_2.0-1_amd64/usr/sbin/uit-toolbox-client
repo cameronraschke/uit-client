@@ -259,55 +259,55 @@ function diskData {
 function systemData {
 	# WiFi MAC Address
 	wifiMac=$(cat /sys/class/ieee80211/phy*/macaddress 2>/dev/null)
-	printf '%s' "system_data|${tagNum}|wifi_mac|${wifiMac}" | /opt/uit-toolbox/parse
+	printf '%s' "hardware_data|${tagNum}|wifi_mac|${wifiMac}" | /opt/uit-toolbox/parse
 
 	# System Model Name
 	tOneProductName=$(dmidecode --string system-product-name)
-	printf '%s' "system_data|${tagNum}|system_model|${tOneProductName}" | /opt/uit-toolbox/parse
+	printf '%s' "hardware_data|${tagNum}|system_model|${tOneProductName}" | /opt/uit-toolbox/parse
 
 	# System UUID
 	tOneUUID=$(dmidecode --string system-uuid)
-	printf '%s' "system_data|${tagNum}|system_uuid|${tOneUUID}" | /opt/uit-toolbox/parse
+	printf '%s' "hardware_data|${tagNum}|system_uuid|${tOneUUID}" | /opt/uit-toolbox/parse
 
 	# System SKU
 	tOneSKU=$(dmidecode --string system-sku-number)
-	printf '%s' "system_data|${tagNum}|system_sku|${tOneSKU}" | /opt/uit-toolbox/parse
+	printf '%s' "hardware_data|${tagNum}|system_sku|${tOneSKU}" | /opt/uit-toolbox/parse
 
 	# Chassis Type
 	tThreeType=$(dmidecode --string chassis-type | head -n1)
-	printf '%s' "system_data|${tagNum}|chassis_type|${tThreeType}" | /opt/uit-toolbox/parse
+	printf '%s' "hardware_data|${tagNum}|chassis_type|${tThreeType}" | /opt/uit-toolbox/parse
 
 	# CPU Manufacturer
 	tFourManufacturer=$(dmidecode --string processor-manufacturer)
-	printf '%s' "system_data|${tagNum}|cpu_manufacturer|${tFourManufacturer}" | /opt/uit-toolbox/parse
+	printf '%s' "hardware_data|${tagNum}|cpu_manufacturer|${tFourManufacturer}" | /opt/uit-toolbox/parse
 
 	# CPU Model
 	tFourVersion=$(dmidecode --string processor-version)
-	printf '%s' "system_data|${tagNum}|cpu_model|${tFourVersion}" | /opt/uit-toolbox/parse
+	printf '%s' "hardware_data|${tagNum}|cpu_model|${tFourVersion}" | /opt/uit-toolbox/parse
 
 	# CPU Max Speed
 	tFourMaxSpeed=$(dmidecode -t4 | grep 'Max Speed' | sed 's/[^0-9]//g')
-	printf '%s' "system_data|${tagNum}|cpu_maxspeed|${tFourMaxSpeed}" | /opt/uit-toolbox/parse
+	printf '%s' "hardware_data|${tagNum}|cpu_maxspeed|${tFourMaxSpeed}" | /opt/uit-toolbox/parse
 
 	# CPU Core Count
 	tFourCoreCount=$(dmidecode -t4 | grep 'Core Count' | sed 's/Core Count: //g' | sed 's/^[[:space:]]*//g')
-	printf '%s' "system_data|${tagNum}|cpu_cores|${tFourCoreCount}" | /opt/uit-toolbox/parse
+	printf '%s' "hardware_data|${tagNum}|cpu_cores|${tFourCoreCount}" | /opt/uit-toolbox/parse
 
 	# CPU Thread Count
 	tFourThreadCount=$(dmidecode -t4 | grep 'Thread Count' | sed 's/Thread Count: //g' | sed 's/^[[:space:]]*//g')
-	printf '%s' "system_data|${tagNum}|cpu_threads|${tFourThreadCount}" | /opt/uit-toolbox/parse
+	printf '%s' "hardware_data|${tagNum}|cpu_threads|${tFourThreadCount}" | /opt/uit-toolbox/parse
 
 	# Motherboard Manufacturer
 	tTwoManufacturer=$(dmidecode --string baseboard-manufacturer)
-	printf '%s' "system_data|${tagNum}|motherboard_manufacturer|${tTwoManufacturer}" | /opt/uit-toolbox/parse
+	printf '%s' "hardware_data|${tagNum}|motherboard_manufacturer|${tTwoManufacturer}" | /opt/uit-toolbox/parse
 
 	# Motherboard Serial
 	tTwoSerialNumber=$(dmidecode --string baseboard-serial-number)
-	printf '%s' "system_data|${tagNum}|motherboard_serial|${tTwoSerialNumber}" | /opt/uit-toolbox/parse
+	printf '%s' "hardware_data|${tagNum}|motherboard_serial|${tTwoSerialNumber}" | /opt/uit-toolbox/parse
 
 	# System Manufacturer
 	tOneManufacturer=$(dmidecode --string system-manufacturer)
-	printf '%s' "system_data|${tagNum}|system_manufacturer|${tOneManufacturer}" | /opt/uit-toolbox/parse
+	printf '%s' "hardware_data|${tagNum}|system_manufacturer|${tOneManufacturer}" | /opt/uit-toolbox/parse
 }
 
 function hardwareData {

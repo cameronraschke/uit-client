@@ -169,12 +169,12 @@ if ($arr[0] == "general") {
 	}
 }
 
-if ($arr[0] == "system_data") {
+if ($arr[0] == "hardware_data") {
 	$tagNum = $arr[1];
 	$key = $arr[2];
 	$value = $arr[3];
 
-	$dbPSQL->Pselect("SELECT tagnumber FROM system_data WHERE tagnumber = :tagnumber", array(':tagnumber' => $tagNum));
+	$dbPSQL->Pselect("SELECT tagnumber FROM hardware_data WHERE tagnumber = :tagnumber", array(':tagnumber' => $tagNum));
 	if (is_array($dbPSQL->get()) === FALSE) {
 		$dbPSQL->insertSystemData($tagNum);
 	}

@@ -419,7 +419,7 @@ class dbPSQL {
 	// SYSTEM_DATA table
 	public function insertSystemData ($tagNum) {
 		if (strFilter($tagNum) === 0) {
-			$sql = "INSERT INTO system_data (tagnumber) VALUES (:tagNum)";
+			$sql = "INSERT INTO hardware_data (tagnumber) VALUES (:tagNum)";
 			$stmt = $this->pdo->prepare($sql);
 
 			if (strFilter($tagNum) === 0) {
@@ -436,8 +436,8 @@ class dbPSQL {
 
 	public function updateSystemData ($tagNum, $key, $value) {
 		if (strFilter($tagNum) === 0 && strFilter($key) === 0) {
-			if ($this->check_tables_cols("system_data", $key) === 0) {
-				$sql = "UPDATE system_data SET $key = :value WHERE tagnumber = :tagNum";
+			if ($this->check_tables_cols("hardware_data", $key) === 0) {
+				$sql = "UPDATE hardware_data SET $key = :value WHERE tagnumber = :tagNum";
 				$stmt = $this->pdo->prepare($sql);
 
 
@@ -462,7 +462,7 @@ class dbPSQL {
 				$dt = new DateTimeImmutable();
 				$time = $dt->format('Y-m-d H:i:s.v');
 
-				$sql = "UPDATE system_data SET time = :clienttime WHERE tagnumber = :tagNum";
+				$sql = "UPDATE hardware_data SET time = :clienttime WHERE tagnumber = :tagNum";
 				$stmt = $this->pdo->prepare($sql);
 
 				if (strFilter($time) == 0) {
