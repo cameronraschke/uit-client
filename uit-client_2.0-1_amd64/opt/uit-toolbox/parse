@@ -341,7 +341,7 @@ if ($arr[0] === "api") {
 		$url = "https://UIT_WEB_HTTPS_HOST:UIT_WEB_HTTPS_PORT/api/client/cpu/temp";
 		$body = json_encode([
 			'tagnumber' => $tagNum,
-			'cpu_millidegrees_c' => floatval($value / 1000),
+			'cpu_millidegrees_c' => (int)$value,
 		]);
 	}
 	if ($key === "network") {
