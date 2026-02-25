@@ -156,7 +156,6 @@ if ($arr[0] == "general") {
 		if (curl_errno($ch)) {
 			echo 'Error updating battery_health: ' . curl_error($ch);
 		}
-		curl_close($ch);
 		return;
 	}
 
@@ -305,6 +304,39 @@ if ($arr[0] == "live_images") {
 
 	$dbPSQL->updateLiveImages($tagNum, "screenshot", $imageFileConverted);
 	$dbPSQL->updateLiveImages($tagNum, "time", $time);
+}
+
+if ($arr[0] === "api") {
+	$tagNum = $arr[1];
+	$key = $arr[2];
+	$value = $arr[3];
+
+	$ch = curl_init();
+	$encodedTag=curl_escape($ch, $tagNum);
+	$encodedKey=curl_escape($ch, $key);
+	$encodedValue=curl_escape($ch, $value);
+	if ($key === "mem_capacity" || $key === "mem_available") {
+		$url = "https://UIT_WEB_HTTPS_HOST:UIT_WEB_HTTPS_PORT/api/client/memory";
+	}
+	$body = json_encode([
+		'tagnumber' => $tagNum,	
+		$key => $value
+	]);
+	curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+	curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
+	curl_setopt($ch, CURLOPT_URL, $url);
+	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+	curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+		'Content-Type: application/json',
+		'Content-Length: ' . strlen($body),
+		'User-Agent: uit-client'
+	));
+	$response = curl_exec($ch);
+	if (curl_errno($ch)) {
+		echo 'Error updating battery_health: ' . curl_error($ch);
+	}
+	return;
+
 }
 
 ?>

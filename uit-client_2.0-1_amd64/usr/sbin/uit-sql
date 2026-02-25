@@ -78,6 +78,11 @@ for i in $(ls /lib/modules); do
     fi
 done
 
+# Get memory info
+memTotal=$(cat /proc/meminfo  | grep -i memTotal | awk '{ print $2 }')
+memAvailable=$(cat /proc/meminfo  | grep -i memAvailable | awk '{ print $2 }')
+echo "api|${tagNum}|mem_total|${memTotal}" | /opt/uit-toolbox/parse
+echo "api|${tagNum}|mem_available|${memAvailable}" | /opt/uit-toolbox/parse
 
 # Check if cancel job has been sent
 if [[ $(echo "SELECT job_queued AS result FROM job_queue WHERE tagnumber = '${tagNum}'" | /opt/uit-toolbox/select) == "cancel" ]]; then
