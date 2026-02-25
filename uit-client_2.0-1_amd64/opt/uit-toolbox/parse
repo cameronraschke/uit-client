@@ -328,7 +328,7 @@ if ($arr[0] === "api") {
 			'memory_capacity' => (int)$value2
 		]);
 	}
-	if ($key == "cpu_usage") {
+	if ($key === "cpu_usage") {
 		$usage = floatval($value);
 		$url = "https://UIT_WEB_HTTPS_HOST:UIT_WEB_HTTPS_PORT/api/client/cpu/usage";
 		$body = json_encode([
@@ -336,12 +336,20 @@ if ($arr[0] === "api") {
 			'cpu_usage' => floatval($value),
 		]);
 	}
-	if ($key == "cpu_temp") {
+	if ($key === "cpu_temp") {
 		$usage = floatval($value);
 		$url = "https://UIT_WEB_HTTPS_HOST:UIT_WEB_HTTPS_PORT/api/client/cpu/temp";
 		$body = json_encode([
 			'tagnumber' => $tagNum,
 			'cpu_millidegrees_c' => floatval($value / 1000),
+		]);
+	}
+	if ($key === "network") {
+		$url = "https://UIT_WEB_HTTPS_HOST:UIT_WEB_HTTPS_PORT/api/client/network/usage";
+		$body = json_encode([
+			'tagnumber' => $tagNum,
+			'network_usage' => (int)$value,
+			'link_speed' => (int)$value2
 		]);
 	}
 

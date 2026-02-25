@@ -100,6 +100,20 @@ for i in $(find /sys/class/hwmon/ -mindepth 1 -maxdepth 1); do
 done
 echo "api|${tagNum}|cpu_temp|${avgTemp}" | /opt/uit-toolbox/parse
 
+# Get network link speed
+for i in $(ip addr | awk '/state UP/ {print $2}' | sed 's/://g'); do
+	linkSpeed=$(cat /sys/class/net/${i}/speed 2>/dev/null)
+	originalTxBytes=$(cat /sys/class/net/${i}/statistics/tx_bytes)
+	originalRxBytes=$(cat /sys/class/net/${i}/statistics/rx_bytes)
+	originalBytes=$(( originalTxBytes + originalRxBytes ))
+	sleep 1
+	newTxBytes=$(cat /sys/class/net/${i}/statistics/tx_bytes)
+	newRxBytes=$(cat /sys/class/net/${i}/statistics/rx_bytes)
+	newBytes=$(( newTxBytes + newRxBytes ))
+	netUsage=$(( (newBytes - originalBytes) * 8 ))
+	echo "api|${tagNum}|network|${netUsage}|${linkSpeed}" | /opt/uit-toolbox/parse
+done
+
 # Check if cancel job has been sent
 if [[ $(echo "SELECT job_queued AS result FROM job_queue WHERE tagnumber = '${tagNum}'" | /opt/uit-toolbox/select) == "cancel" ]]; then
     echo "job_queue|${tagNum}|job_queued|" | /opt/uit-toolbox/parse
