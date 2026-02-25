@@ -138,14 +138,15 @@ done
 # Sleep before next loop
 sleep 1
 
-elapsed=0
-elapsed=$(cat /root/uptime)
-if [[ -z $elapsed ]]; then
-    elapsed=0
+clientAppUptime=$(cat /root/client_app_uptime 2>/dev/null)
+if [[ -z $clientAppUptime ]]; then
+    clientAppUptime=0
 fi
+clientAppUptime=$(( clientAppUptime + SECONDS ))
+echo "${clientAppUptime}" > /root/client_app_uptime
 
-elapsed=$(( elapsed + SECONDS ))
-echo "${elapsed}" > /root/uptime
-echo "job_queue|${tagNum}|uptime|${elapsed}" | /opt/uit-toolbox/parse
+systemUptime=$(cat /proc/uptime | awk '{print int($1)}')
+
+echo "api|${tagNum}|uptime|${clientAppUptime}|${systemUptime}" | /opt/uit-toolbox/parse
 
 done

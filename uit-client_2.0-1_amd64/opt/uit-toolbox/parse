@@ -353,6 +353,15 @@ if ($arr[0] === "api") {
 		]);
 	}
 
+	if ($key === "uptime") {
+		$url = "https://UIT_WEB_HTTPS_HOST:UIT_WEB_HTTPS_PORT/api/client/uptime";
+		$body = json_encode([
+			'tagnumber' => $tagNum,
+			'client_app_uptime' => (int)$value,
+			'system_uptime' => (int)$value2,
+		]);
+	}
+
 	curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
 	curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
 	curl_setopt($ch, CURLOPT_URL, $url);
