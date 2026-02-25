@@ -310,18 +310,24 @@ if ($arr[0] === "api") {
 	$tagNum = $arr[1];
 	$key = $arr[2];
 	$value = $arr[3];
+	if ($arr[4]) {
+		$value2 = $arr[4];
+	}
 
 	$ch = curl_init();
 	$encodedTag=curl_escape($ch, $tagNum);
 	$encodedKey=curl_escape($ch, $key);
 	$encodedValue=curl_escape($ch, $value);
-	if ($key === "mem_capacity" || $key === "mem_available") {
+	if ($key === "memory") {
+		// api|${tagNum}|memory|${memAvailable}|${memTotal}
 		$url = "https://UIT_WEB_HTTPS_HOST:UIT_WEB_HTTPS_PORT/api/client/memory";
+		$body = json_encode([
+			'tagnumber' => $tagNum,
+			'memory_usage' => $value,
+			'memory_capacity' => $value2
+		]);
 	}
-	$body = json_encode([
-		'tagnumber' => $tagNum,	
-		$key => $value
-	]);
+
 	curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
 	curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
 	curl_setopt($ch, CURLOPT_URL, $url);
