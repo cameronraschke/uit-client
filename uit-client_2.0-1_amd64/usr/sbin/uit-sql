@@ -84,6 +84,22 @@ memAvailable=$(cat /proc/meminfo  | grep -i memAvailable | awk '{ print $2 }')
 memUsage=$(( memTotal - memAvailable ))
 echo "api|${tagNum}|memory|${memUsage}|${memTotal}" | /opt/uit-toolbox/parse
 
+# Get CPU temp and usage
+cpu_usage=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | cut -d'%' -f1)
+avgTemp=0
+echo "api|${tagNum}|cpu_usage|${cpu_usage}" | /opt/uit-toolbox/parse
+for i in $(find /sys/class/hwmon/ -mindepth 1 -maxdepth 1); do
+	type=$(cat ${i}/name)
+	if [[ $type == "coretemp" ]]; then
+		cpuTemps=( $(cat ${i}/temp1_input) )
+		for temp in ${cpuTemps[@]}; do
+			avgTemp=$(( avgTemp + temp ))
+		done
+		avgTemp=$(( avgTemp / ${#cpuTemps[@]} ))
+	fi
+done
+echo "api|${tagNum}|cpu_temp|${avgTemp}" | /opt/uit-toolbox/parse
+
 # Check if cancel job has been sent
 if [[ $(echo "SELECT job_queued AS result FROM job_queue WHERE tagnumber = '${tagNum}'" | /opt/uit-toolbox/select) == "cancel" ]]; then
     echo "job_queue|${tagNum}|job_queued|" | /opt/uit-toolbox/parse

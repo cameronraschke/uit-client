@@ -318,6 +318,7 @@ if ($arr[0] === "api") {
 	$encodedTag=curl_escape($ch, $tagNum);
 	$encodedKey=curl_escape($ch, $key);
 	$encodedValue=curl_escape($ch, $value);
+
 	if ($key === "memory") {
 		// api|${tagNum}|memory|${memAvailable}|${memTotal}
 		$url = "https://UIT_WEB_HTTPS_HOST:UIT_WEB_HTTPS_PORT/api/client/memory";
@@ -325,6 +326,22 @@ if ($arr[0] === "api") {
 			'tagnumber' => $tagNum,
 			'memory_usage' => (int)$value,
 			'memory_capacity' => (int)$value2
+		]);
+	}
+	if ($key == "cpu_usage") {
+		$usage = floatval($value);
+		$url = "https://UIT_WEB_HTTPS_HOST:UIT_WEB_HTTPS_PORT/api/client/cpu/usage";
+		$body = json_encode([
+			'tagnumber' => $tagNum,
+			'cpu_usage' => floatval($value),
+		]);
+	}
+	if ($key == "cpu_temp") {
+		$usage = floatval($value);
+		$url = "https://UIT_WEB_HTTPS_HOST:UIT_WEB_HTTPS_PORT/api/client/cpu/temp";
+		$body = json_encode([
+			'tagnumber' => $tagNum,
+			'cpu_millidegrees_c' => floatval($value / 1000),
 		]);
 	}
 
