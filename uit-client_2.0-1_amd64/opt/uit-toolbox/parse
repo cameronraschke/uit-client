@@ -307,7 +307,7 @@ if ($arr[0] == "live_images") {
 }
 
 if ($arr[0] === "api") {
-	$tagNum = $arr[1];
+	$tagNum = (int)$arr[1];
 	$key = $arr[2];
 	$value = $arr[3];
 	if ($arr[4]) {
