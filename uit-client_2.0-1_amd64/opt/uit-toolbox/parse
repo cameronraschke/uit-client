@@ -323,8 +323,8 @@ if ($arr[0] === "api") {
 		$url = "https://UIT_WEB_HTTPS_HOST:UIT_WEB_HTTPS_PORT/api/client/memory";
 		$body = json_encode([
 			'tagnumber' => $tagNum,
-			'memory_usage' => $value,
-			'memory_capacity' => $value2
+			'memory_usage' => (int)$value,
+			'memory_capacity' => (int)$value2
 		]);
 	}
 
