@@ -16,9 +16,9 @@ for i in $(ps | grep 'uit-network' | awk '{ print $1 }'); do kill "${i}" 2>/dev/
 for i in $(ps | grep 'uit-sql' | awk '{ print $1 }'); do kill "${i}" 2>/dev/null; done
 for i in $(ps | grep 'uit-screenshot' | awk '{ print $1 }'); do kill "${i}" 2>/dev/null; done
 
-printf '%s' '0' > /root/client_app_uptime
-printf '%s' '0' > /tmp/cpu-usage.txt
-printf '%s' '0' > /tmp/network-usage.txt
+printf "%s" '0' > /root/client_app_uptime
+printf "%s" '0' > /tmp/cpu-usage.txt
+printf "%s" '0' > /tmp/network-usage.txt
 
 umount /home/partimag 2>/dev/null
 
@@ -83,7 +83,7 @@ printf '%s\n' "${GREEN}Done.${RESET}"
 printf '\n'
 printf '%s\n' "${BOLD}Changing brightness...${RESET}"
 maxBrightness=$(cat /sys/class/backlight/*/max_brightness)
-printf '%s' "${maxBrightness}" > /sys/class/backlight/*/brightness 2>/dev/null
+printf "%s" "${maxBrightness}" > /sys/class/backlight/*/brightness 2>/dev/null
 printf '%s\n' "${GREEN}Done.${RESET}"
 
 printf '\n'
@@ -108,7 +108,7 @@ systemctl daemon-reload &>/dev/null
 /usr/bin/chronyc add server UIT_CLIENT_NTP_HOST iburst
 /usr/bin/chronyc makestep
 
-while [[ $(printf '%s' "SELECT TO_CHAR(NOW(), 'YYYY-MM-DD HH24:MI:ss') AS result" | /opt/uit-toolbox/select) != $(date '+%Y-%m-%d %H:%M:%S') ]]; do
+while [[ $(printf "%s" "SELECT TO_CHAR(NOW(), 'YYYY-MM-DD HH24:MI:ss') AS result" | /opt/uit-toolbox/select) != $(date '+%Y-%m-%d %H:%M:%S') ]]; do
 	sleep 0.01
 done
 printf '%s\n' "${GREEN}Done.${RESET}"
@@ -145,12 +145,12 @@ ipAddr=$(ip addr | grep -C 2 'state UP' | grep 'inet' | grep -oP '10.0.0.[0-9]{1
 
 
 function fetchJobQueueData {
-	job_queued=$(printf '%s' "SELECT job_queued AS result FROM job_queue WHERE tagnumber = '${tagNum}'" | /opt/uit-toolbox/select)
-	job_queued_override=$(printf '%s' "SELECT job_queued AS result FROM job_queue WHERE job_queued IN ('hpEraseAndClone', 'hpCloneOnly', 'generic-erase+clone', 'generic-clone') AND tagnumber = '${tagNum}'" | /opt/uit-toolbox/select)
-	job_queued_formatted=$(printf '%s' "SELECT (CASE WHEN job_queued = 'data collection' THEN 'data collection' WHEN job_queued = 'update' THEN 'update' WHEN job_queued = 'findmy' THEN 'playing a sound' WHEN (job_queued = 'hpEraseAndClone' OR job_queued = 'generic-erase+clone') THEN 'disk erase & clone' WHEN (job_queued = 'hpCloneOnly' OR job_queued = 'generic-clone') THEN 'disk clone' WHEN job_queued = 'nvmeErase' THEN 'disk erase' WHEN job_queued = 'nvmeVerify' THEN 'disk verify' WHEN job_queued = 'shutdown' THEN 'shutdown' WHEN job_queued = 'clean-shutdown' THEN 'shutdown' ELSE job_queued END) AS result FROM job_queue WHERE tagnumber = '${tagNum}'" | /opt/uit-toolbox/select) 
-	job_queued_position=$(printf '%s' "SELECT * FROM (SELECT tagnumber, ROW_NUMBER() OVER (ORDER BY tagnumber) AS result FROM (SELECT tagnumber FROM job_queue WHERE (job_active = FALSE OR job_active IS NULL) AND job_queued IS NOT NULL AND job_queued IN ('hpEraseAndClone', 'hpCloneOnly', 'generic-erase+clone', 'generic-clone') ORDER BY tagnumber ASC)) s1 WHERE s1.tagnumber = '${tagNum}'" | /opt/uit-toolbox/select)
-	job_active=$(printf '%s' "SELECT job_active AS result FROM job_queue WHERE tagnumber = '${tagNum}'" | /opt/uit-toolbox/select)
-	job_available=$(printf '%s' "SELECT COUNT(tagnumber) AS result FROM job_queue WHERE job_queued IN ('hpEraseAndClone', 'hpCloneOnly', 'generic-erase+clone', 'generic-clone') AND job_active = TRUE" | /opt/uit-toolbox/select)
+	job_queued=$(printf "%s" "SELECT job_queued AS result FROM job_queue WHERE tagnumber = '${tagNum}'" | /opt/uit-toolbox/select)
+	job_queued_override=$(printf "%s" "SELECT job_queued AS result FROM job_queue WHERE job_queued IN ('hpEraseAndClone', 'hpCloneOnly', 'generic-erase+clone', 'generic-clone') AND tagnumber = '${tagNum}'" | /opt/uit-toolbox/select)
+	job_queued_formatted=$(printf "%s" "SELECT (CASE WHEN job_queued = 'data collection' THEN 'data collection' WHEN job_queued = 'update' THEN 'update' WHEN job_queued = 'findmy' THEN 'playing a sound' WHEN (job_queued = 'hpEraseAndClone' OR job_queued = 'generic-erase+clone') THEN 'disk erase & clone' WHEN (job_queued = 'hpCloneOnly' OR job_queued = 'generic-clone') THEN 'disk clone' WHEN job_queued = 'nvmeErase' THEN 'disk erase' WHEN job_queued = 'nvmeVerify' THEN 'disk verify' WHEN job_queued = 'shutdown' THEN 'shutdown' WHEN job_queued = 'clean-shutdown' THEN 'shutdown' ELSE job_queued END) AS result FROM job_queue WHERE tagnumber = '${tagNum}'" | /opt/uit-toolbox/select) 
+	job_queued_position=$(printf "%s" "SELECT * FROM (SELECT tagnumber, ROW_NUMBER() OVER (ORDER BY tagnumber) AS result FROM (SELECT tagnumber FROM job_queue WHERE (job_active = FALSE OR job_active IS NULL) AND job_queued IS NOT NULL AND job_queued IN ('hpEraseAndClone', 'hpCloneOnly', 'generic-erase+clone', 'generic-clone') ORDER BY tagnumber ASC)) s1 WHERE s1.tagnumber = '${tagNum}'" | /opt/uit-toolbox/select)
+	job_active=$(printf "%s" "SELECT job_active AS result FROM job_queue WHERE tagnumber = '${tagNum}'" | /opt/uit-toolbox/select)
+	job_available=$(printf "%s" "SELECT COUNT(tagnumber) AS result FROM job_queue WHERE job_queued IN ('hpEraseAndClone', 'hpCloneOnly', 'generic-erase+clone', 'generic-clone') AND job_active = TRUE" | /opt/uit-toolbox/select)
 }
 
 
@@ -168,89 +168,89 @@ function diskData {
 				rm /root/smartctl-data
 			fi
 			smartctl -t short -a /dev/${i} > /root/smartctl-data
-			printf '%s' "general|disk|${DISK}|${UUID}" | /opt/uit-toolbox/parse
+			printf "%s" "general|disk|${DISK}|${UUID}" | /opt/uit-toolbox/parse
 		fi
 
 
 		if [[ $DISK =~ $NVME_REGEX ]]; then
 		diskModel=$(cat /root/smartctl-data | grep '^Model Number: ' | sed 's/Model Number: *//g')
-			printf '%s' "general|disk_model|${diskModel}|${UUID}" | /opt/uit-toolbox/parse
+			printf "%s" "general|disk_model|${diskModel}|${UUID}" | /opt/uit-toolbox/parse
 		diskSerial=$(cat /root/smartctl-data | grep '^Serial Number: ' | sed 's/Serial Number: *//g')
-			printf '%s' "general|disk_serial|${diskSerial}|${UUID}" | /opt/uit-toolbox/parse
+			printf "%s" "general|disk_serial|${diskSerial}|${UUID}" | /opt/uit-toolbox/parse
 		diskFirmware=$(cat /root/smartctl-data | grep '^Firmware Version: ' | sed 's/Firmware Version: *//g')
-			printf '%s' "general|disk_firmware|${diskFirmware}|${UUID}" | /opt/uit-toolbox/parse
+			printf "%s" "general|disk_firmware|${diskFirmware}|${UUID}" | /opt/uit-toolbox/parse
 		diskTemp=$(cat /root/smartctl-data | grep '^Temperature: ' | sed 's/[^0-9]//g')
-			printf '%s' "general|disk_temp|${diskTemp}|${UUID}" | /opt/uit-toolbox/parse
+			printf "%s" "general|disk_temp|${diskTemp}|${UUID}" | /opt/uit-toolbox/parse
 		diskSize=$(( $(cat /root/smartctl-data | grep 'Size/Capacity' | sed 's/,//g' | awk '{print $4}') / 1000000000 ))
-			printf '%s' "general|disk_size|${diskSize}|${UUID}" | /opt/uit-toolbox/parse
+			printf "%s" "general|disk_size|${diskSize}|${UUID}" | /opt/uit-toolbox/parse
 		diskReadsLBA=$(cat /root/smartctl-data | grep '^Data Units Read: ' | sed 's/,//g' | awk '{print $4}')
-			printf '%s' "general|disk_reads|${diskReadsLBA}|${UUID}|nvme" | /opt/uit-toolbox/parse
+			printf "%s" "general|disk_reads|${diskReadsLBA}|${UUID}|nvme" | /opt/uit-toolbox/parse
 		diskWritesLBA=$(cat /root/smartctl-data | grep '^Data Units Written: ' | sed 's/,//g' | awk '{print $4}')
-			printf '%s' "general|disk_writes|${diskWritesLBA}|${UUID}|nvme" | /opt/uit-toolbox/parse
+			printf "%s" "general|disk_writes|${diskWritesLBA}|${UUID}|nvme" | /opt/uit-toolbox/parse
 		diskPowerOnHours=$(cat /root/smartctl-data | grep '^Power On Hours: ' | awk '{print $4}' | sed 's/,//g')
-			printf '%s' "general|disk_power_on_hours|${diskPowerOnHours}|${UUID}" | /opt/uit-toolbox/parse
+			printf "%s" "general|disk_power_on_hours|${diskPowerOnHours}|${UUID}" | /opt/uit-toolbox/parse
 		diskPowerCycles=$(cat /root/smartctl-data | grep '^Power Cycles: ' | awk '{print $3}' | sed 's/,//g')
-			printf '%s' "general|disk_power_cycles|${diskPowerCycles}|${UUID}" | /opt/uit-toolbox/parse
+			printf "%s" "general|disk_power_cycles|${diskPowerCycles}|${UUID}" | /opt/uit-toolbox/parse
 		diskType=nvme
-			printf '%s' "general|disk_type|${diskType}|${UUID}" | /opt/uit-toolbox/parse
+			printf "%s" "general|disk_type|${diskType}|${UUID}" | /opt/uit-toolbox/parse
 		# Disk errors
 		diskGenericErr=$(cat /root/smartctl-data | grep 'Error Information Log Entries:' | awk '{print $5}' | sed 's/,//g')
 		diskDataErr=$(cat /root/smartctl-data | grep 'Media and Data Integrity Errors:' | awk '{print $6}' | sed 's/,//g')
 
 		diskErrors=$(( diskGenericErr + diskDataErr ))
-			printf '%s' "general|disk_errors|${diskErrors}|${UUID}" | /opt/uit-toolbox/parse
+			printf "%s" "general|disk_errors|${diskErrors}|${UUID}" | /opt/uit-toolbox/parse
 		fi
 
 		if [[ $DISK =~ $SSD_REGEX ]]; then
 		diskModel=$(cat /root/smartctl-data | grep '^Device Model: ' | sed 's/Device Model: *//g')
-			printf '%s' "general|disk_model|${diskModel}|${UUID}" | /opt/uit-toolbox/parse
+			printf "%s" "general|disk_model|${diskModel}|${UUID}" | /opt/uit-toolbox/parse
 		diskSerial=$(cat /root/smartctl-data | grep '^Serial Number: ' | sed 's/Serial Number: *//g')
-			printf '%s' "general|disk_serial|${diskSerial}|${UUID}" | /opt/uit-toolbox/parse
+			printf "%s" "general|disk_serial|${diskSerial}|${UUID}" | /opt/uit-toolbox/parse
 		diskFirmware=$(cat /root/smartctl-data | grep '^Firmware Version: ' | sed 's/Firmware Version: *//g')
-			printf '%s' "general|disk_firmware|${diskFirmware}|${UUID}" | /opt/uit-toolbox/parse
+			printf "%s" "general|disk_firmware|${diskFirmware}|${UUID}" | /opt/uit-toolbox/parse
 		diskTemp=$(cat /root/smartctl-data | grep '194 Temperature_Celsius' | awk '{print $10}')
-			printf '%s' "general|disk_temp|${diskTemp}|${UUID}" | /opt/uit-toolbox/parse
+			printf "%s" "general|disk_temp|${diskTemp}|${UUID}" | /opt/uit-toolbox/parse
 		diskSize=$(( $(cat /root/smartctl-data | grep '^User Capacity' | sed 's/,//g' | awk '{print $3}') / 1000000000 ))
-			printf '%s' "general|disk_size|${diskSize}|${UUID}" | /opt/uit-toolbox/parse
+			printf "%s" "general|disk_size|${diskSize}|${UUID}" | /opt/uit-toolbox/parse
 
 		# Disk reads
 		diskReadsGiB=$(cat /root/smartctl-data | grep '242 Total_Reads_GiB' | awk '{print $10}')
 		if [[ -n $diskReadsGiB ]]; then
-			printf '%s' "general|disk_reads|${diskReadsGiB}|${UUID}|sata|gib" | /opt/uit-toolbox/parse
+			printf "%s" "general|disk_reads|${diskReadsGiB}|${UUID}|sata|gib" | /opt/uit-toolbox/parse
 		fi
 
 		diskReadsLBA=$(cat /root/smartctl-data | grep '242 Total_LBAs_Read' | awk '{print $10}')
 		if [[ -n $diskReadsLBA ]]; then
-			printf '%s' "general|disk_reads|${diskReadsLBA}|${UUID}|sata" | /opt/uit-toolbox/parse
+			printf "%s" "general|disk_reads|${diskReadsLBA}|${UUID}|sata" | /opt/uit-toolbox/parse
 		fi
 
 		# Disk writes
 		diskWritesGiB=$(cat /root/smartctl-data | grep '241 Total_Writes_GiB' | awk '{print $10}')
 		if [[ -n $diskWritesGiB ]]; then
-			printf '%s' "general|disk_writes|${diskWritesGiB}|${UUID}|sata|gib" | /opt/uit-toolbox/parse
+			printf "%s" "general|disk_writes|${diskWritesGiB}|${UUID}|sata|gib" | /opt/uit-toolbox/parse
 		fi
 		
 		diskWritesLBA=$(cat /root/smartctl-data | grep '241 Total_LBAs_Written' | awk '{print $10}')
 		if [[ -n $diskWritesLBA ]]; then
-			printf '%s' "general|disk_writes|${diskWritesLBA}|${UUID}|sata" | /opt/uit-toolbox/parse
+			printf "%s" "general|disk_writes|${diskWritesLBA}|${UUID}|sata" | /opt/uit-toolbox/parse
 		fi
 
 		diskType=$(lsblk --nodeps --output NAME,ROTA | grep -i "${DISK}"  | awk '{ print $2 }' | tail -n 1)
-			printf '%s' "general|disk_type|${diskType}|${UUID}" | /opt/uit-toolbox/parse
+			printf "%s" "general|disk_type|${diskType}|${UUID}" | /opt/uit-toolbox/parse
 			if [[ $diskType == "1" ]]; then
 				diskType="hdd"
 				else
 				diskType="ssd"
 			fi
 		diskPowerOnHours=$(cat /root/smartctl-data | grep '9 Power_On_Hours' | awk '{print $10}')
-			printf '%s' "general|disk_power_on_hours|${diskPowerOnHours}|${UUID}" | /opt/uit-toolbox/parse
+			printf "%s" "general|disk_power_on_hours|${diskPowerOnHours}|${UUID}" | /opt/uit-toolbox/parse
 
 		diskPowerCycles=$(cat /root/smartctl-data | grep '12 Power_Cycle_Count' | awk '{print $10}' | sed 's/,//g')
-			printf '%s' "general|disk_power_cycles|${diskPowerCycles}|${UUID}" | /opt/uit-toolbox/parse
+			printf "%s" "general|disk_power_cycles|${diskPowerCycles}|${UUID}" | /opt/uit-toolbox/parse
 
 		# Disk errors
 		diskErrors=$(cat /root/smartctl-data | grep 'ATA Error Count:' | awk '{print $4}' | sed 's/,//g')
-			printf '%s' "general|disk_errors|${diskErrors}|${UUID}" | /opt/uit-toolbox/parse
+			printf "%s" "general|disk_errors|${diskErrors}|${UUID}" | /opt/uit-toolbox/parse
 		fi
 	done
 }
@@ -259,55 +259,55 @@ function diskData {
 function systemData {
 	# WiFi MAC Address
 	wifiMac=$(cat /sys/class/ieee80211/phy*/macaddress 2>/dev/null)
-	printf '%s' "hardware_data|${tagNum}|wifi_mac|${wifiMac}" | /opt/uit-toolbox/parse
+	printf "%s" "hardware_data|${tagNum}|wifi_mac|${wifiMac}" | /opt/uit-toolbox/parse
 
 	# System Model Name
 	tOneProductName=$(dmidecode --string system-product-name)
-	printf '%s' "hardware_data|${tagNum}|system_model|${tOneProductName}" | /opt/uit-toolbox/parse
+	printf "%s" "hardware_data|${tagNum}|system_model|${tOneProductName}" | /opt/uit-toolbox/parse
 
 	# System UUID
 	tOneUUID=$(dmidecode --string system-uuid)
-	printf '%s' "hardware_data|${tagNum}|system_uuid|${tOneUUID}" | /opt/uit-toolbox/parse
+	printf "%s" "hardware_data|${tagNum}|system_uuid|${tOneUUID}" | /opt/uit-toolbox/parse
 
 	# System SKU
 	tOneSKU=$(dmidecode --string system-sku-number)
-	printf '%s' "hardware_data|${tagNum}|system_sku|${tOneSKU}" | /opt/uit-toolbox/parse
+	printf "%s" "hardware_data|${tagNum}|system_sku|${tOneSKU}" | /opt/uit-toolbox/parse
 
 	# Chassis Type
 	tThreeType=$(dmidecode --string chassis-type | head -n1)
-	printf '%s' "hardware_data|${tagNum}|chassis_type|${tThreeType}" | /opt/uit-toolbox/parse
+	printf "%s" "hardware_data|${tagNum}|chassis_type|${tThreeType}" | /opt/uit-toolbox/parse
 
 	# CPU Manufacturer
 	tFourManufacturer=$(dmidecode --string processor-manufacturer)
-	printf '%s' "hardware_data|${tagNum}|cpu_manufacturer|${tFourManufacturer}" | /opt/uit-toolbox/parse
+	printf "%s" "hardware_data|${tagNum}|cpu_manufacturer|${tFourManufacturer}" | /opt/uit-toolbox/parse
 
 	# CPU Model
 	tFourVersion=$(dmidecode --string processor-version)
-	printf '%s' "hardware_data|${tagNum}|cpu_model|${tFourVersion}" | /opt/uit-toolbox/parse
+	printf "%s" "hardware_data|${tagNum}|cpu_model|${tFourVersion}" | /opt/uit-toolbox/parse
 
 	# CPU Max Speed
 	tFourMaxSpeed=$(dmidecode -t4 | grep 'Max Speed' | sed 's/[^0-9]//g')
-	printf '%s' "hardware_data|${tagNum}|cpu_maxspeed|${tFourMaxSpeed}" | /opt/uit-toolbox/parse
+	printf "%s" "hardware_data|${tagNum}|cpu_maxspeed|${tFourMaxSpeed}" | /opt/uit-toolbox/parse
 
 	# CPU Core Count
 	tFourCoreCount=$(dmidecode -t4 | grep 'Core Count' | sed 's/Core Count: //g' | sed 's/^[[:space:]]*//g')
-	printf '%s' "hardware_data|${tagNum}|cpu_cores|${tFourCoreCount}" | /opt/uit-toolbox/parse
+	printf "%s" "hardware_data|${tagNum}|cpu_cores|${tFourCoreCount}" | /opt/uit-toolbox/parse
 
 	# CPU Thread Count
 	tFourThreadCount=$(dmidecode -t4 | grep 'Thread Count' | sed 's/Thread Count: //g' | sed 's/^[[:space:]]*//g')
-	printf '%s' "hardware_data|${tagNum}|cpu_threads|${tFourThreadCount}" | /opt/uit-toolbox/parse
+	printf "%s" "hardware_data|${tagNum}|cpu_threads|${tFourThreadCount}" | /opt/uit-toolbox/parse
 
 	# Motherboard Manufacturer
 	tTwoManufacturer=$(dmidecode --string baseboard-manufacturer)
-	printf '%s' "hardware_data|${tagNum}|motherboard_manufacturer|${tTwoManufacturer}" | /opt/uit-toolbox/parse
+	printf "%s" "hardware_data|${tagNum}|motherboard_manufacturer|${tTwoManufacturer}" | /opt/uit-toolbox/parse
 
 	# Motherboard Serial
 	tTwoSerialNumber=$(dmidecode --string baseboard-serial-number)
-	printf '%s' "hardware_data|${tagNum}|motherboard_serial|${tTwoSerialNumber}" | /opt/uit-toolbox/parse
+	printf "%s" "hardware_data|${tagNum}|motherboard_serial|${tTwoSerialNumber}" | /opt/uit-toolbox/parse
 
 	# System Manufacturer
 	tOneManufacturer=$(dmidecode --string system-manufacturer)
-	printf '%s' "hardware_data|${tagNum}|system_manufacturer|${tOneManufacturer}" | /opt/uit-toolbox/parse
+	printf "%s" "hardware_data|${tagNum}|system_manufacturer|${tOneManufacturer}" | /opt/uit-toolbox/parse
 }
 
 function hardwareData {
@@ -353,7 +353,7 @@ EOF
 printf '%s\n' "${RESET}"
 printf '%s\n' "${BOLD}Inputting data into database...${RESET}"
 fi
-	printf '%s' "general|host_connected|1|${UUID}" | /opt/uit-toolbox/parse
+	printf "%s" "general|host_connected|1|${UUID}" | /opt/uit-toolbox/parse
 	### DMI Data
 	#t0 = BIOS
 	#t1 = system
@@ -363,14 +363,14 @@ fi
 	#t22 = Battery
 	#t32 = Boot Status
 	biosVersion=$(dmidecode --string bios-version)
-		printf '%s' "general|bios_version|${biosVersion}|${UUID}" | /opt/uit-toolbox/parse
-		printf '%s' "client_health|${tagNum}|bios_version|${biosVersion}" | /opt/uit-toolbox/parse
+		printf "%s" "general|bios_version|${biosVersion}|${UUID}" | /opt/uit-toolbox/parse
+		printf "%s" "client_health|${tagNum}|bios_version|${biosVersion}" | /opt/uit-toolbox/parse
 	biosDate=$(dmidecode --string bios-release-date)
-		printf '%s' "general|bios_date|${biosDate}|${UUID}" | /opt/uit-toolbox/parse
+		printf "%s" "general|bios_date|${biosDate}|${UUID}" | /opt/uit-toolbox/parse
 	biosFirmwareRev=$(dmidecode --string firmware-revision)
-		printf '%s' "general|bios_firmware|${biosFirmwareRev}|${UUID}" | /opt/uit-toolbox/parse
+		printf "%s" "general|bios_firmware|${biosFirmwareRev}|${UUID}" | /opt/uit-toolbox/parse
 	systemSerial=$(dmidecode --string system-serial-number)
-		printf '%s' "general|system_serial|${systemSerial}|${UUID}" | /opt/uit-toolbox/parse
+		printf "%s" "general|system_serial|${systemSerial}|${UUID}" | /opt/uit-toolbox/parse
 
 	###Disk Data
 	diskData
@@ -380,16 +380,16 @@ fi
 		batChargeNow=$(cat /sys/class/power_supply/BAT0/charge_full)
 		batChargeFactory=$(cat /sys/class/power_supply/BAT0/charge_full_design)
 		batHealthPCNT=$(( batChargeNow * 100 / batChargeFactory ))
-			printf '%s' "general|battery_health|${batHealthPCNT}|${UUID}" | /opt/uit-toolbox/parse
+			printf "%s" "general|battery_health|${batHealthPCNT}|${UUID}" | /opt/uit-toolbox/parse
 		batChargeCycles=$(cat /sys/class/power_supply/BAT0/cycle_count)
-			printf '%s' "general|battery_charge_cycles|${batChargeCycles}|${UUID}" | /opt/uit-toolbox/parse
+			printf "%s" "general|battery_charge_cycles|${batChargeCycles}|${UUID}" | /opt/uit-toolbox/parse
 	elif [[ -f /sys/class/power_supply/BAT1/energy_full_design ]]; then
 		batChargeNow=$(cat /sys/class/power_supply/BAT1/energy_full)
 		batChargeFactory=$(cat /sys/class/power_supply/BAT1/energy_full_design)
 		batHealthPCNT=$(( batChargeNow * 100 / batChargeFactory ))
-			printf '%s' "general|battery_health|${batHealthPCNT}|${UUID}" | /opt/uit-toolbox/parse
+			printf "%s" "general|battery_health|${batHealthPCNT}|${UUID}" | /opt/uit-toolbox/parse
 		batChargeCycles=$(cat /sys/class/power_supply/BAT1/cycle_count)
-			printf '%s' "general|battery_charge_cycles|${batChargeCycles}|${UUID}" | /opt/uit-toolbox/parse
+			printf "%s" "general|battery_charge_cycles|${batChargeCycles}|${UUID}" | /opt/uit-toolbox/parse
 	fi
 	
 	batteryModel=$(dmidecode -t22 | grep 'Name' | sed 's/Name: //g' | sed 's/^[[:space:]]*//g')
@@ -400,10 +400,10 @@ fi
 			batteryModel=$(cat /sys/class/power_supply/BAT1/model_name)
 		fi
 	fi
-		printf '%s' "general|battery_model|${batteryModel}|${UUID}" | /opt/uit-toolbox/parse
+		printf "%s" "general|battery_model|${batteryModel}|${UUID}" | /opt/uit-toolbox/parse
 	
 	batteryCapacity=$(dmidecode -t22 | grep 'Design Capacity' | sed 's/[^0-9]//g')
-		printf '%s' "general|battery_capacity|${batteryCapacity}|${UUID}" | /opt/uit-toolbox/parse
+		printf "%s" "general|battery_capacity|${batteryCapacity}|${UUID}" | /opt/uit-toolbox/parse
 
 	batterySerial=$(dmidecode -t22 | grep 'SBDS Serial Number' | sed 's/SBDS Serial Number: //g' | sed 's/^[[:space:]]*//g')
 	if [[ -z $batterySerial ]]; then
@@ -413,34 +413,34 @@ fi
 			batterySerial=$(cat /sys/class/power_supply/BAT1/serial_number)
 		fi
 	fi
-		printf '%s' "general|battery_serial|${batterySerial}|${UUID}" | /opt/uit-toolbox/parse
+		printf "%s" "general|battery_serial|${batterySerial}|${UUID}" | /opt/uit-toolbox/parse
 
 	batteryManufacturer=$(dmidecode -t22 | grep 'SBDS Manufacture Date' | sed 's/SBDS Manufacture Date: //g' | sed 's/^[[:space:]]*//g')
-		printf '%s' "general|battery_manufacturedate|${batteryManufacturer}|${UUID}" | /opt/uit-toolbox/parse
+		printf "%s" "general|battery_manufacturedate|${batteryManufacturer}|${UUID}" | /opt/uit-toolbox/parse
 
 	###Memory Data
 	memSerial=$(dmidecode --type memory | grep -P '\tSerial Number' | sed 's/Serial Number: //g' | tr '\n' ' ' | tr '\t' ' ' | sed 's/ Not Specified //g' | sed 's/^ //g' | tr ' ' '-' | sed 's/-$//g')
-		printf '%s' "general|ram_serial|${memSerial}|${UUID}" | /opt/uit-toolbox/parse
+		printf "%s" "general|ram_serial|${memSerial}|${UUID}" | /opt/uit-toolbox/parse
 	memCapacity=$(grep '^MemTotal' /proc/meminfo | awk '{ print $2 }')
-		printf '%s' "general|ram_capacity|${memCapacity}|${UUID}" | /opt/uit-toolbox/parse
+		printf "%s" "general|ram_capacity|${memCapacity}|${UUID}" | /opt/uit-toolbox/parse
 	memSpeed=$(dmidecode --type 17 | grep '^[[:space:]]*Speed\:' | head -n1 | sed 's/[^0-9]'//g)
-		printf '%s' "general|ram_speed|${memSpeed}|${UUID}" | /opt/uit-toolbox/parse
+		printf "%s" "general|ram_speed|${memSpeed}|${UUID}" | /opt/uit-toolbox/parse
 
 	###Boot Times
 	bootTime=$(systemd-analyze | grep -oP '[0-9]+[0-9.]*' | head -n 1)
-		printf '%s' "general|boot_time|${bootTime}|${UUID}" | /opt/uit-toolbox/parse
+		printf "%s" "general|boot_time|${bootTime}|${UUID}" | /opt/uit-toolbox/parse
 
 	###CPU Info
 	for i in $(find /sys/class/hwmon/ -mindepth 1); do
     type=$(cat ${i}/name)
     if [[ $type == "coretemp" ]]; then
         cpuTemp=$(cat ${i}/temp1_input)
-		printf '%s' "general|cpu_temp|${cpuTemp}|${UUID}" | /opt/uit-toolbox/parse
+		printf "%s" "general|cpu_temp|${cpuTemp}|${UUID}" | /opt/uit-toolbox/parse
         fi
 	done
 
-	printf '%s' "system-stats|cpu|${UUID}" | /opt/uit-toolbox/parse
-	printf '%s' "system-stats|network|${UUID}" | /opt/uit-toolbox/parse
+	printf "%s" "system-stats|cpu|${UUID}" | /opt/uit-toolbox/parse
+	printf "%s" "system-stats|network|${UUID}" | /opt/uit-toolbox/parse
 }
 
 function checkNetwork {
@@ -458,13 +458,13 @@ function enterTag {
 	tput reset
 	printf '\n'
 
-	tagNum=$(printf '%s' "SELECT tagnumber AS result FROM locations WHERE system_serial = '${systemSerial}' AND tagnumber IS NOT NULL ORDER BY time DESC LIMIT 1" | /opt/uit-toolbox/select)
+	tagNum=$(printf "%s" "SELECT tagnumber AS result FROM locations WHERE system_serial = '${systemSerial}' AND tagnumber IS NOT NULL ORDER BY time DESC LIMIT 1" | /opt/uit-toolbox/select)
 	if [[ $tagNum != "NULL" ]]; then
-		sqlDepartment=$(printf '%s' "SELECT department_name AS result FROM locations WHERE system_serial = '${systemSerial}' AND department_name IS NOT NULL ORDER BY time DESC LIMIT 1" | /opt/uit-toolbox/select)
+		sqlDepartment=$(printf "%s" "SELECT department_name AS result FROM locations WHERE system_serial = '${systemSerial}' AND department_name IS NOT NULL ORDER BY time DESC LIMIT 1" | /opt/uit-toolbox/select)
 		UUID=""
-		UUID=$(printf '%s' "${sqlDepartment}-"; cat /proc/sys/kernel/random/uuid)
+		UUID=$(printf "%s" "${sqlDepartment}-"; cat /proc/sys/kernel/random/uuid)
 
-		printf '%s' "init|${UUID}|${tagNum}|${systemSerial}|${etherAddr}|${wifiMac}|$(cat /sys/class/tpm/tpm0/tpm_version_major)" | /opt/uit-toolbox/parse
+		printf "%s" "init|${UUID}|${tagNum}|${systemSerial}|${etherAddr}|${wifiMac}|$(cat /sys/class/tpm/tpm0/tpm_version_major)" | /opt/uit-toolbox/parse
 		coproc uit_cpu { uit-cpu 2>/dev/null; }
 		coproc uit_network { uit-network 2>/dev/null; }
 		coproc uit_sql { uit-sql 2>/dev/null; }
@@ -474,10 +474,10 @@ function enterTag {
 		read -p "${BOLD}Please enter the ${GREEN}6-digit tag number${RESET} ${BOLD}followed by ${GREEN}Enter${RESET}${BOLD}:${RESET} " tagNum
 		printf '\n'
 
-		UUID=$(printf '%s' "newEntry-"; cat /proc/sys/kernel/random/uuid)
+		UUID=$(printf "%s" "newEntry-"; cat /proc/sys/kernel/random/uuid)
 
-		printf '%s' "init|${UUID}|${tagNum}|${systemSerial}|${etherAddr}|${wifiMac}|$(cat /sys/class/tpm/tpm0/tpm_version_major)" | /opt/uit-toolbox/parse
-		printf '%s' "location|custom|${tagNum}|${systemSerial}|new entry|0|" | /opt/uit-toolbox/parse
+		printf "%s" "init|${UUID}|${tagNum}|${systemSerial}|${etherAddr}|${wifiMac}|$(cat /sys/class/tpm/tpm0/tpm_version_major)" | /opt/uit-toolbox/parse
+		printf "%s" "location|custom|${tagNum}|${systemSerial}|new entry|0|" | /opt/uit-toolbox/parse
 		enterTag
 	fi
 }
@@ -506,7 +506,7 @@ function jobInfo {
 
 
 function footer {
-	biosUpdatedSQL=$(printf '%s' "SELECT bios_version AS result FROM static_bios_stats WHERE system_model = '${tOneProductName}'" | /opt/uit-toolbox/select 2>/dev/null)
+	biosUpdatedSQL=$(printf "%s" "SELECT bios_version AS result FROM static_bios_stats WHERE system_model = '${tOneProductName}'" | /opt/uit-toolbox/select 2>/dev/null)
 	if [[ $biosUpdatedSQL == "NULL" ]]; then
 		biosUpdated="$(dmidecode --string bios-version)"
 	elif [[ $biosUpdatedSQL == $(dmidecode --string bios-version) ]]; then
@@ -514,7 +514,7 @@ function footer {
 	elif [[ $biosUpdatedSQL != $(dmidecode --string bios-version) ]]; then
 		biosUpdated="${RED}Needs Update${RESET}"
 	fi
-	sqlLocation=$(printf '%s' "SELECT location AS result FROM locations WHERE tagnumber = '${tagNum}' ORDER BY time DESC LIMIT 1" | /opt/uit-toolbox/select 2>/dev/null)
+	sqlLocation=$(printf "%s" "SELECT location AS result FROM locations WHERE tagnumber = '${tagNum}' ORDER BY time DESC LIMIT 1" | /opt/uit-toolbox/select 2>/dev/null)
 
 	if [[ -d /sys/class/power_supply/BAT0 ]]; then
     batCharge=0
@@ -528,7 +528,7 @@ function footer {
 		batCharge="0"
 	fi
 
-	sqlOS=$(printf '%s' "SELECT os_name AS result FROM client_health WHERE tagnumber = '${tagNum}'" | /opt/uit-toolbox/select 2>/dev/null)
+	sqlOS=$(printf "%s" "SELECT os_name AS result FROM client_health WHERE tagnumber = '${tagNum}'" | /opt/uit-toolbox/select 2>/dev/null)
 	batCharge=${GREEN}${batCharge}${RESET}
 	tput reset
 	lines=$(tput lines)
@@ -675,7 +675,7 @@ function basicEraseMode_Shred {
 			fi
 		fi
 	fi
-	printf '%s' "general|erase_mode|${RMODE}|${UUID}" | /opt/uit-toolbox/parse
+	printf "%s" "general|erase_mode|${RMODE}|${UUID}" | /opt/uit-toolbox/parse
 }
 
 
@@ -770,7 +770,7 @@ function advEraseMode_Shred {
 	footer
 	read -p "Are you sure you want to use ${BOLD}${BLUE}${RMODE}${RESET} on ${BOLD}${BLUE}${CLIENTDISK}${RESET}? Press ${BOLD}${GREEN}Enter${RESET} to continue...${RESET} "
 
-	printf '%s' "general|erase_mode|${RMODE}|${UUID}" | /opt/uit-toolbox/parse
+	printf "%s" "general|erase_mode|${RMODE}|${UUID}" | /opt/uit-toolbox/parse
 }
 
 
@@ -821,7 +821,7 @@ function diskSelect {
 	fi
 	
 	if [[ $CLIENTDISK =~ ${NVME_REGEX} || $CLIENTDISK =~ ${SSD_REGEX} ]]; then
-		printf '%s' "general|disk|${CLIENTDISK}|${UUID}" | /opt/uit-toolbox/parse
+		printf "%s" "general|disk|${CLIENTDISK}|${UUID}" | /opt/uit-toolbox/parse
 	else
 	    printf '\n'
 	    printf '%s\n' "${BOLD}${RED}Invalid disk regex check.${RESET}"
@@ -845,7 +845,7 @@ function randPattern_Shred {
 
 
 function writeDisk_Shred {
-	printf '%s' "job_queue|${tagNum}|status|Erasing disk ($shredMode)" | /opt/uit-toolbox/parse
+	printf "%s" "job_queue|${tagNum}|status|Erasing disk ($shredMode)" | /opt/uit-toolbox/parse
 	if [[ -z $writeSections ]]; then
 		writeSections='1000'
 	fi
@@ -894,7 +894,7 @@ function writeDisk_Shred {
 	sectorSize=$((diskBytes / BS / writeSections))
 
 	printf '%s\n' "Filling ${PCNTOFSECTOR}% of ${CLIENTDISK} with a stream of ${BITS}...."
-	printf '%s' "general|erase_diskpercent|${PCNTOFSECTOR}|${UUID}" | /opt/uit-toolbox/parse
+	printf "%s" "general|erase_diskpercent|${PCNTOFSECTOR}|${UUID}" | /opt/uit-toolbox/parse
 
 	if [[ $PCNTOFSECTOR == '100' ]]; then
 		${SOURCE} | (pv > /dev/${CLIENTDISK})
@@ -908,7 +908,7 @@ function writeDisk_Shred {
 		tput el
 		printf '%s\n' "Writing to section ${i}/${writeSections}"
 		if (( $i % 25 == 0 )); then
-			printf '%s' "job_queue|${tagNum}|status|Writing to section ${i}/${writeSections} ($shredMode)" | /opt/uit-toolbox/parse
+			printf "%s" "job_queue|${tagNum}|status|Writing to section ${i}/${writeSections} ($shredMode)" | /opt/uit-toolbox/parse
 		fi
 		sectorMin=$((i * sectorSize))
 		sectorMax=$((sectorMin + sectorSize))
@@ -930,7 +930,7 @@ function writeDisk_Shred {
 
 
 function vrfyDisk_Shred {
-	printf '%s' "job_queue|${tagNum}|status|Verifying erase ($shredMode)" | /opt/uit-toolbox/parse
+	printf "%s" "job_queue|${tagNum}|status|Verifying erase ($shredMode)" | /opt/uit-toolbox/parse
 	if [[ -z $vrfySections ]]; then
 		vrfySections='1000'
 	fi
@@ -952,10 +952,10 @@ function vrfyDisk_Shred {
 	printf '%s\n' "Looking for non-${CHAR}'s on ${CLIENTDISK}...."
 
 	if [[ $PCNTOFSECTOR == '100' ]]; then
-		printf '%s' "job_queue|${tagNum}|status|Verifying the entire disk" | /opt/uit-toolbox/parse
-		if [[ $(pv /dev/${CLIENTDISK} | xxd -p | grep --quiet -m 1 "[^${CHAR}]"; printf '%s' ${PIPESTATUS[2]}) == '0' ]]; then
+		printf "%s" "job_queue|${tagNum}|status|Verifying the entire disk" | /opt/uit-toolbox/parse
+		if [[ $(pv /dev/${CLIENTDISK} | xxd -p | grep --quiet -m 1 "[^${CHAR}]"; printf "%s" ${PIPESTATUS[2]}) == '0' ]]; then
 		    PROCFAIL='1'
-			printf '%s' "job_queue|${tagNum}|status|fail - verifying erase" | /opt/uit-toolbox/parse
+			printf "%s" "job_queue|${tagNum}|status|fail - verifying erase" | /opt/uit-toolbox/parse
             read -t 10 -p "${BOLD}${RED}Verification test failed${RESET}${BOLD}. Press ${GREEN}Enter${RESET}${BOLD}..."
 			pkill --terminal tty1
 		else
@@ -971,7 +971,7 @@ function vrfyDisk_Shred {
 		tput el
 		printf '%s\n' "Verifying section ${i}/${vrfySections}"
 		if (( $i % 25 == 0 )); then
-			printf '%s' "job_queue|${tagNum}|status|Verifying section ${i}/${vrfySections}" | /opt/uit-toolbox/parse
+			printf "%s" "job_queue|${tagNum}|status|Verifying section ${i}/${vrfySections}" | /opt/uit-toolbox/parse
 		fi
 		sectorMin=$((i * sectorSize))
 		sectorMax=$((sectorMin + sectorSize))
@@ -982,9 +982,9 @@ function vrfyDisk_Shred {
 
 		SKIP=$(shuf -i ${randSector}-${sectorMax} -n 1)
     	if [[ $(dd if=/dev/${CLIENTDISK} bs=${BS} count=${COUNT} skip=${SKIP} iflag=fullblock status=none 2>/dev/null \
-        	| xxd -p | grep --quiet -m 1 "[^${CHAR}]"; printf '%s' ${PIPESTATUS[2]}) == '0' ]]; then
+        	| xxd -p | grep --quiet -m 1 "[^${CHAR}]"; printf "%s" ${PIPESTATUS[2]}) == '0' ]]; then
             	PROCFAIL='1'
-				printf '%s' "job_queue|${tagNum}|status|fail - verifying erase" | /opt/uit-toolbox/parse
+				printf "%s" "job_queue|${tagNum}|status|fail - verifying erase" | /opt/uit-toolbox/parse
             	read -t 10 -p "${BOLD}${RED}Verification test failed${RESET}${BOLD}. Press ${GREEN}Enter${RESET}${BOLD}..."
 				pkill --terminal tty1
     	fi
@@ -993,32 +993,32 @@ function vrfyDisk_Shred {
 
 	printf '\n'
 	printf '%s\n' "Verifing the first sector of the disk...."
-		printf '%s' "job_queue|${tagNum}|status|Verifing the first sector of the disk..." | /opt/uit-toolbox/parse
+		printf "%s" "job_queue|${tagNum}|status|Verifing the first sector of the disk..." | /opt/uit-toolbox/parse
 	if [[ $(dd if=/dev/${CLIENTDISK} count=${sectorCount} skip=0 iflag=fullblock status=none 2>/dev/null \
-        | xxd -p | grep --quiet -m 1 "[^${CHAR}]"; printf '%s' ${PIPESTATUS[2]}) == '0'  ]]; then
+        | xxd -p | grep --quiet -m 1 "[^${CHAR}]"; printf "%s" ${PIPESTATUS[2]}) == '0'  ]]; then
             	PROCFAIL='1'
-				printf '%s' "job_queue|${tagNum}|status|fail - verifying erase" | /opt/uit-toolbox/parse
+				printf "%s" "job_queue|${tagNum}|status|fail - verifying erase" | /opt/uit-toolbox/parse
             	read -t 10 -p "${BOLD}${RED}Verification test failed${RESET}${BOLD}. Press ${GREEN}Enter${RESET}${BOLD}..."
 				pkill --terminal tty1
     fi
 	printf '%s\n' "Verifing the last sector of the disk...."
-		printf '%s' "job_queue|${tagNum}|status|Verifing the last sector of the disk..." | /opt/uit-toolbox/parse
+		printf "%s" "job_queue|${tagNum}|status|Verifing the last sector of the disk..." | /opt/uit-toolbox/parse
     if [[ $(dd if=/dev/${CLIENTDISK} count=${sectorCount} skip=$(( ${sectorCount} - 1 )) \
 		iflag=fullblock status=none 2>/dev/null \
-        | xxd -p | grep --quiet -m 1 "[^${CHAR}]"; printf '%s' ${PIPESTATUS[2]}) == '0' ]]; then
+        | xxd -p | grep --quiet -m 1 "[^${CHAR}]"; printf "%s" ${PIPESTATUS[2]}) == '0' ]]; then
             	PROCFAIL='1'
-				printf '%s' "job_queue|${tagNum}|status|fail - verifying erase" | /opt/uit-toolbox/parse
+				printf "%s" "job_queue|${tagNum}|status|fail - verifying erase" | /opt/uit-toolbox/parse
 				read -t 10 -p "${BOLD}${RED}Verification test failed${RESET}${BOLD}. Press ${GREEN}Enter${RESET}${BOLD}..."
 				pkill --terminal tty1
     fi
 
     printf '%s\n' "${PCNTOFSECTOR}% of ${CLIENTDISK} has been verified."
-	printf '%s' "job_queue|${tagNum}|status|${PCNTOFSECTOR}% of ${CLIENTDISK} has been verified." | /opt/uit-toolbox/parse
+	printf "%s" "job_queue|${tagNum}|status|${PCNTOFSECTOR}% of ${CLIENTDISK} has been verified." | /opt/uit-toolbox/parse
 	if [[ $PROCFAIL == '0' ]]; then
 		printf '%s\n' "Test passed successfully!"
 		return 0
 	else
-		printf '%s' "job_queue|${tagNum}|status|fail - verifying erase" | /opt/uit-toolbox/parse
+		printf "%s" "job_queue|${tagNum}|status|fail - verifying erase" | /opt/uit-toolbox/parse
 		read -t 10 -p "${BOLD}${RED}Verification test failed${RESET}${BOLD}. Press ${GREEN}Enter${RESET}${BOLD}..."
 		pkill --terminal tty1
 	fi
@@ -1027,7 +1027,7 @@ function vrfyDisk_Shred {
 
 
 function secErase_Shred {
-	printf '%s' "job_queue|${tagNum}|status|Using secure erase on ${CLIENTDISK}" | /opt/uit-toolbox/parse
+	printf "%s" "job_queue|${tagNum}|status|Using secure erase on ${CLIENTDISK}" | /opt/uit-toolbox/parse
 	footer
 	if [[ $CLIENTDISK =~ $SSD_REGEX ]]; then 
 		printf '%s\n' "Using Secure Erase on ${CLIENTDISK}. This can take a while, please keep the device powered on...."
@@ -1042,7 +1042,7 @@ function secErase_Shred {
 			nvme format /dev/${CLIENTDISK:0:-2} --ses=2 --namespace-id=1 &>/dev/null
 		fi
 	else
-		printf '%s' "job_queue|${tagNum}|status|fail - secure erase" | /opt/uit-toolbox/parse
+		printf "%s" "job_queue|${tagNum}|status|fail - secure erase" | /opt/uit-toolbox/parse
 		read -t 10 -p "No compatible SATA or NVME drive is selected. Can't use Secure Erase on ${CLIENTDISK}."
 		pkill --terminal tty1
 	fi
@@ -1051,7 +1051,7 @@ function secErase_Shred {
 
 
 function secUnlock_Shred {
-	printf '%s' "job_queue|${tagNum}|status|Unlocking ${CLIENTDISK}" | /opt/uit-toolbox/parse
+	printf "%s" "job_queue|${tagNum}|status|Unlocking ${CLIENTDISK}" | /opt/uit-toolbox/parse
 	footer
 	if [[ $CLIENTDISK =~ $SSD_REGEX ]]; then 
 		printf '%s\n' "Unlocking ${CLIENTDISK}, please keep the device powered on...."
@@ -1062,7 +1062,7 @@ function secUnlock_Shred {
 	elif [[ $CLIENTDISK =~ $NVME_REGEX ]]; then
 		printf '%s\n' "NVME drives do not need to be unlocked. Continuing...."
 	else
-		printf '%s' "job_queue|${tagNum}|status|fail - secure unlock" | /opt/uit-toolbox/parse
+		printf "%s" "job_queue|${tagNum}|status|fail - secure unlock" | /opt/uit-toolbox/parse
 		read -t 10 -p "No compatible SATA or NVME drive is selected. Can't unlock ${CLIENTDISK}."
 		pkill --terminal tty1
 	fi
@@ -1497,11 +1497,11 @@ function clientselect_Clone {
 
 
 function execute_Clone {
-	printf '%s' "general|clone_image|${cloneImgName}|${UUID}" | /opt/uit-toolbox/parse
-	printf '%s' "job_queue|${tagNum}|status|Cloning ${cloneImgName} -> ${CLIENTDISK} ($cloneMode)" | /opt/uit-toolbox/parse
-	printf '%s' "0" > /root/client_app_uptime
-	printf '%s' "0" > /tmp/cpu-usage.txt
-	printf '%s' "0" > /tmp/network-usage.txt
+	printf "%s" "general|clone_image|${cloneImgName}|${UUID}" | /opt/uit-toolbox/parse
+	printf "%s" "job_queue|${tagNum}|status|Cloning ${cloneImgName} -> ${CLIENTDISK} ($cloneMode)" | /opt/uit-toolbox/parse
+	printf "%s" "0" > /root/client_app_uptime
+	printf "%s" "0" > /tmp/cpu-usage.txt
+	printf "%s" "0" > /tmp/network-usage.txt
 	SECONDS=0
 	start_time=$SECONDS
 	linuxServer="UIT_CLIENT_DB_HOST"
@@ -1523,7 +1523,7 @@ function execute_Clone {
 			--skip-enc-ocs-img --skip-fsck-src-part --use-partclone -z8 ${cloneMode} ${cloneImgName} ${CLIENTDISK}
 	fi
 	cloneElapsed=$(( SECONDS - start_time))
-	printf '%s' "general|clone_time|${cloneElapsed}|${UUID}" | /opt/uit-toolbox/parse
+	printf "%s" "general|clone_time|${cloneElapsed}|${UUID}" | /opt/uit-toolbox/parse
 	umount /home/partimag 2>/dev/null
 	return
 }
@@ -1566,7 +1566,7 @@ function execute_Shred {
 			unlockMode_Shred
 		fi
 		shredElapsed=$(( SECONDS - start_time ))
-		printf '%s' "general|erase_time|${shredElapsed}|${UUID}" | /opt/uit-toolbox/parse
+		printf "%s" "general|erase_time|${shredElapsed}|${UUID}" | /opt/uit-toolbox/parse
 	fi
 	return
 }
@@ -1574,14 +1574,14 @@ function execute_Shred {
 
 
 function execute {
-	printf '%s' "0" > /root/client_app_uptime
-	printf '%s' "0" > /tmp/cpu-usage.txt
-	printf '%s' "0" > /tmp/network-usage.txt
+	printf "%s" "0" > /root/client_app_uptime
+	printf "%s" "0" > /tmp/cpu-usage.txt
+	printf "%s" "0" > /tmp/network-usage.txt
 
-	printf '%s' "job_queue|${tagNum}|job_active|TRUE" | /opt/uit-toolbox/parse
+	printf "%s" "job_queue|${tagNum}|job_active|TRUE" | /opt/uit-toolbox/parse
 
 	if [[ $cloneMode == "savedisk" && ($APPSELECT == "E" || $APPSELECT == "EC") ]]; then
-		printf '%s' "job_queue|${tagNum}|status|fail - Can't erase master image" | /opt/uit-toolbox/parse
+		printf "%s" "job_queue|${tagNum}|status|fail - Can't erase master image" | /opt/uit-toolbox/parse
 		read -t 10 -p "${BOLD}Cannot erase device and save its image.${RESET}"
 		pkill --terminal tty1
 	fi
@@ -1591,11 +1591,11 @@ function execute {
 			clientselect_Clone
 		fi
 		if [[ $job_queued != "hpEraseAndClone" ]]; then
-			printf '%s' "job_queue|${tagNum}|job_queued|generic-erase+clone" | /opt/uit-toolbox/parse
+			printf "%s" "job_queue|${tagNum}|job_queued|generic-erase+clone" | /opt/uit-toolbox/parse
 		fi
 		basicEraseMode_Shred
-		printf '%s' "job_queue|${tagNum}|clone_mode|$cloneMode" | /opt/uit-toolbox/parse
-		printf '%s' "job_queue|${tagNum}|erase_mode|$shredMode" | /opt/uit-toolbox/parse
+		printf "%s" "job_queue|${tagNum}|clone_mode|$cloneMode" | /opt/uit-toolbox/parse
+		printf "%s" "job_queue|${tagNum}|erase_mode|$shredMode" | /opt/uit-toolbox/parse
 		execute_Shred
 		execute_Clone
 	elif [[ $APPSELECT == "E" ]]; then
@@ -1605,23 +1605,23 @@ function execute {
 			basicEraseMode_Shred
 		fi
 		if [[ $job_queued != "nvmeErase" ]]; then
-			printf '%s' "job_queue|${tagNum}|job_queued|generic-erase" | /opt/uit-toolbox/parse
+			printf "%s" "job_queue|${tagNum}|job_queued|generic-erase" | /opt/uit-toolbox/parse
 		fi
-		printf '%s' "job_queue|${tagNum}|erase_mode|$shredMode" | /opt/uit-toolbox/parse
+		printf "%s" "job_queue|${tagNum}|erase_mode|$shredMode" | /opt/uit-toolbox/parse
 		execute_Shred
 	elif [[ $APPSELECT == "C" ]]; then
 		if [[ -z $cloneMode ]]; then
 			clientselect_Clone
 		fi
 		if [[ $job_queued != "hpCloneOnly" ]]; then
-			printf '%s' "job_queue|${tagNum}|job_queued|generic-clone" | /opt/uit-toolbox/parse
+			printf "%s" "job_queue|${tagNum}|job_queued|generic-clone" | /opt/uit-toolbox/parse
 		fi
-		printf '%s' "job_queue|${tagNum}|clone_mode|$cloneMode" | /opt/uit-toolbox/parse
+		printf "%s" "job_queue|${tagNum}|clone_mode|$cloneMode" | /opt/uit-toolbox/parse
 		execute_Clone
 	else
-		printf '%s' "job_queue|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
-		printf '%s' "job_queue|${tagNum}|job_queued|" | /opt/uit-toolbox/parse
-		printf '%s' "job_queue|${tagNum}|status|fail - Invalid application selected" | /opt/uit-toolbox/parse
+		printf "%s" "job_queue|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
+		printf "%s" "job_queue|${tagNum}|job_queued|" | /opt/uit-toolbox/parse
+		printf "%s" "job_queue|${tagNum}|status|fail - Invalid application selected" | /opt/uit-toolbox/parse
 		read -t 10 -p "${BOLD}${RED}Error - Invalid application selected.${RESET}"
 		pkill --terminal tty1
 	fi
@@ -1630,19 +1630,19 @@ function execute {
 
 
 function totaltime {
-	totalElapsed=$(printf '%s' $(( (shredElapsed + cloneElapsed) / 60 )))
+	totalElapsed=$(printf "%s" $(( (shredElapsed + cloneElapsed) / 60 )))
 }
 
 
 function terminate {
-	printf '%s' "job_queue|${tagNum}|job_queued|" | /opt/uit-toolbox/parse
-	printf '%s' "job_queue|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
-	printf '%s' "job_queue|${tagNum}|status|Waiting for job" | /opt/uit-toolbox/parse
-	printf '%s' "system-stats|cpu|${UUID}" | /opt/uit-toolbox/parse
-	printf '%s' "system-stats|network|${UUID}" | /opt/uit-toolbox/parse
-	printf '%s' "0" > /root/client_app_uptime
-	printf '%s' "0" > /tmp/cpu-usage.txt
-	printf '%s' "0" > /tmp/network-usage.txt
+	printf "%s" "job_queue|${tagNum}|job_queued|" | /opt/uit-toolbox/parse
+	printf "%s" "job_queue|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
+	printf "%s" "job_queue|${tagNum}|status|Waiting for job" | /opt/uit-toolbox/parse
+	printf "%s" "system-stats|cpu|${UUID}" | /opt/uit-toolbox/parse
+	printf "%s" "system-stats|network|${UUID}" | /opt/uit-toolbox/parse
+	printf "%s" "0" > /root/client_app_uptime
+	printf "%s" "0" > /tmp/cpu-usage.txt
+	printf "%s" "0" > /tmp/network-usage.txt
 	
 	footer
 	totaltime
@@ -1653,14 +1653,14 @@ function terminate {
 	for i in $(ps | grep 'uit-network' | awk '{ print $1 }'); do kill "${i}" 2>/dev/null; done
 
 
-	imgUpdate=$(printf '%s' "SELECT time AS result FROM jobstats WHERE clone_master = TRUE ORDER BY time DESC LIMIT 1" | /opt/uit-toolbox/select)
+	imgUpdate=$(printf "%s" "SELECT time AS result FROM jobstats WHERE clone_master = TRUE ORDER BY time DESC LIMIT 1" | /opt/uit-toolbox/select)
 	imgUpdate=${imgUpdate::10}
 
-	cloneNumToday=$(printf '%s' "SELECT COUNT(tagnumber) AS result FROM jobstats WHERE clone_completed = TRUE AND time > '${DATE} 00:00:00.000'" | /opt/uit-toolbox/select)
+	cloneNumToday=$(printf "%s" "SELECT COUNT(tagnumber) AS result FROM jobstats WHERE clone_completed = TRUE AND time > '${DATE} 00:00:00.000'" | /opt/uit-toolbox/select)
 
-	eraseNumToday=$(printf '%s' "SELECT COUNT(tagnumber) AS result FROM jobstats WHERE erase_completed = TRUE AND time > '${DATE} 00:00:00.000'" | /opt/uit-toolbox/select)
+	eraseNumToday=$(printf "%s" "SELECT COUNT(tagnumber) AS result FROM jobstats WHERE erase_completed = TRUE AND time > '${DATE} 00:00:00.000'" | /opt/uit-toolbox/select)
 
-	clientCloneTotal=$(printf '%s' "SELECT COUNT(tagnumber) AS result FROM jobstats WHERE clone_completed = TRUE AND tagnumber = '${tagNum}'" | /opt/uit-toolbox/select)
+	clientCloneTotal=$(printf "%s" "SELECT COUNT(tagnumber) AS result FROM jobstats WHERE clone_completed = TRUE AND tagnumber = '${tagNum}'" | /opt/uit-toolbox/select)
 
 	jobsToday=$(( cloneNumToday + eraseNumToday ))
 
@@ -1675,10 +1675,10 @@ function terminate {
 				terminateAction="Cloned"
 			fi
 
-			printf '%s' "general|clone_completed|1|${UUID}" | /opt/uit-toolbox/parse
+			printf "%s" "general|clone_completed|1|${UUID}" | /opt/uit-toolbox/parse
 
 			if [[ $APPSELECT == "EC" ]]; then
-				printf '%s' "general|erase_completed|1|${UUID}" | /opt/uit-toolbox/parse
+				printf "%s" "general|erase_completed|1|${UUID}" | /opt/uit-toolbox/parse
 			fi
 
 			terminateMessage=$(printf '%s\n' "Tag#: ${tagNum}"
@@ -1691,8 +1691,8 @@ function terminate {
 			)
 		fi
 		if [[ $cloneMode == "savedisk" ]]; then
-			printf '%s' "general|clone_master|1|${UUID}" | /opt/uit-toolbox/parse
-			printf '%s' "general|clone_completed|1|${UUID}" | /opt/uit-toolbox/parse
+			printf "%s" "general|clone_master|1|${UUID}" | /opt/uit-toolbox/parse
+			printf "%s" "general|clone_completed|1|${UUID}" | /opt/uit-toolbox/parse
 
 			terminateMessage=$(printf '%s\n' "Tag#: ${tagNum}"
 			printf '%s\n' "MAC: ${etherAddr}"
@@ -1707,7 +1707,7 @@ function terminate {
 	
 
 	if [[ $APPSELECT == "E" ]]; then
-		printf '%s' "general|erase_completed|1|${UUID}" | /opt/uit-toolbox/parse
+		printf "%s" "general|erase_completed|1|${UUID}" | /opt/uit-toolbox/parse
 
 		terminateAction="erased"
 
@@ -1734,8 +1734,8 @@ function terminate {
 }
 
 function resetForClientRestart {
-	printf '%s' "job_queue|${tagNum}|job_queued|" | /opt/uit-toolbox/parse
-	printf '%s' "job_queue|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
+	printf "%s" "job_queue|${tagNum}|job_queued|" | /opt/uit-toolbox/parse
+	printf "%s" "job_queue|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
 	for i in $(ps | grep 'uit-cpu' | awk '{ print $1 }'); do kill "${i}" 2>/dev/null; done
 	for i in $(ps | grep 'uit-network' | awk '{ print $1 }'); do kill "${i}" 2>/dev/null; done
 	for i in $(ps | grep 'uit-sql' | awk '{ print $1 }'); do kill "${i}" 2>/dev/null; done
@@ -1743,21 +1743,21 @@ function resetForClientRestart {
 	dpkg --purge uit-toolbox-client
 	rm -r /root/uit-toolbox-client*
 	rm -r /root/.ssh/known_hosts*
-	printf '%s' "0" > /root/client_app_uptime
-	printf '%s' "0" > /tmp/cpu-usage.txt
-	printf '%s' "0" > /tmp/network-usage.txt
+	printf "%s" "0" > /root/client_app_uptime
+	printf "%s" "0" > /tmp/cpu-usage.txt
+	printf "%s" "0" > /tmp/network-usage.txt
 	pkill --terminal tty1
 }
 
 function autodetectClient {
 	footer
-	if [[ $(printf '%s' "${tOneManufacturer}" | grep -i "dell") ]]; then
+	if [[ $(printf "%s" "${tOneManufacturer}" | grep -i "dell") ]]; then
 		systemManufacturer="dell"
 		cloneImgName='TechCommons-Dell-Laptops'
-		elif [[ $(printf '%s' "${tOneManufacturer}" | grep -i "hp") ]]; then
+		elif [[ $(printf "%s" "${tOneManufacturer}" | grep -i "hp") ]]; then
 			systemManufacturer="hp"
 			cloneImgName='TechCommons-HP-LaptopsLZ4'
-		elif [[ $(printf '%s' "${tOneManufacturer}" | grep -i "hewlett") ]]; then
+		elif [[ $(printf "%s" "${tOneManufacturer}" | grep -i "hewlett") ]]; then
 			systemManufacturer="hp"
 			cloneImgName='TechCommons-HP-LaptopsLZ4'
 		else
@@ -1765,9 +1765,9 @@ function autodetectClient {
 			cloneImgName='TechCommons-HP-LaptopsLZ4'
 	fi
 
-	if [[ $(printf '%s' "${tThreeType}" | grep -i "notebook") ]]; then
+	if [[ $(printf "%s" "${tThreeType}" | grep -i "notebook") ]]; then
 		chassisType="notebook"
-		elif [[ $(printf '%s' "${tThreeType}" | grep -i "desktop") ]]; then
+		elif [[ $(printf "%s" "${tThreeType}" | grep -i "desktop") ]]; then
 			chassisType="desktop"
 		else
 			chassisType="unknown"
@@ -1781,9 +1781,9 @@ function autodetectClient {
 		printf '\n'
 		printf '\n'
 
-		sql=$(printf '%s' "SELECT tagnumber AS result FROM job_queue WHERE tagnumber = '${tagNum}' AND status NOT like 'fail%'" | /opt/uit-toolbox/select)
+		sql=$(printf "%s" "SELECT tagnumber AS result FROM job_queue WHERE tagnumber = '${tagNum}' AND status NOT like 'fail%'" | /opt/uit-toolbox/select)
 		if [[ $sql == $tagNum ]]; then
-			printf '%s' "job_queue|${tagNum}|status|Waiting for job" | /opt/uit-toolbox/parse
+			printf "%s" "job_queue|${tagNum}|status|Waiting for job" | /opt/uit-toolbox/parse
 		fi
 
 		unattended="true"
@@ -1803,25 +1803,25 @@ function autodetectClient {
 					break
 				fi
 				if [[ $job_queued_override == "NULL" ]]; then
-					printf '%s' "job_queue|${tagNum}|job_active|TRUE" | /opt/uit-toolbox/parse
+					printf "%s" "job_queue|${tagNum}|job_active|TRUE" | /opt/uit-toolbox/parse
 					break
 				fi
 				if [[ $job_available == "NULL" && $job_queued_position == 1 ]]; then
-					okay_to_go=$(printf '%s' "SELECT COUNT(tagnumber) AS result FROM job_queue WHERE job_queued IN ('hpEraseAndClone', 'hpCloneOnly', 'generic-erase+clone', 'generic-clone') AND job_active = TRUE" | /opt/uit-toolbox/select)
+					okay_to_go=$(printf "%s" "SELECT COUNT(tagnumber) AS result FROM job_queue WHERE job_queued IN ('hpEraseAndClone', 'hpCloneOnly', 'generic-erase+clone', 'generic-clone') AND job_active = TRUE" | /opt/uit-toolbox/select)
 					if [[ $okay_to_go == "NULL" || $okay_to_go == "0" ]]; then
-						printf '%s' "job_queue|${tagNum}|job_active|TRUE" | /opt/uit-toolbox/parse
+						printf "%s" "job_queue|${tagNum}|job_active|TRUE" | /opt/uit-toolbox/parse
 						break
 					fi
 				fi
 				printf '%s\n' "	${BOLD}Tagnumber ${tagNum} (${systemSerial}) is scheduled for ${job_queued_formatted} and is ${job_queued_position} in queue. Press ${BOLD}${GREEN}'q' ${RESET}${BOLD}to exit.${RESET}"
-				printf '%s' "job_queue|${tagNum}|status|Scheduled for ${job_queued_formatted}, ${job_queued_position} in queue." | /opt/uit-toolbox/parse
+				printf "%s" "job_queue|${tagNum}|status|Scheduled for ${job_queued_formatted}, ${job_queued_position} in queue." | /opt/uit-toolbox/parse
 				read -t 3 -N 1 input
 				if [[ $input = "q" ]] || [[ $input = "Q" ]]; then
-					printf '%s' "0" > /root/client_app_uptime
-					printf '%s' "0" > /tmp/cpu-usage.txt
-					printf '%s' "0" > /tmp/network-usage.txt
-					printf '%s' "job_queue|${tagNum}|job_queued|" | /opt/uit-toolbox/parse
-					printf '%s' "job_queue|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
+					printf "%s" "0" > /root/client_app_uptime
+					printf "%s" "0" > /tmp/cpu-usage.txt
+					printf "%s" "0" > /tmp/network-usage.txt
+					printf "%s" "job_queue|${tagNum}|job_queued|" | /opt/uit-toolbox/parse
+					printf "%s" "job_queue|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
 					pkill --terminal tty1
 				fi
 			done
@@ -1829,20 +1829,20 @@ function autodetectClient {
 				enterTag
 				systemData
 				hardwareData
-				printf '%s' "job_queue|${tagNum}|status|Starting data collection" | /opt/uit-toolbox/parse
+				printf "%s" "job_queue|${tagNum}|status|Starting data collection" | /opt/uit-toolbox/parse
 				resetForClientRestart
 			elif [[ $job_queued == "update" ]]; then
 				enterTag
 				systemData
 				hardwareData
-				printf '%s' "job_queue|${tagNum}|status|Updating..." | /opt/uit-toolbox/parse
+				printf "%s" "job_queue|${tagNum}|status|Updating..." | /opt/uit-toolbox/parse
 				if [[ -f /root/uit-toolbox-client.deb ]]; then
 					rm /root/uit-toolbox-client.deb
 				fi
-				printf '%s' "job_queue|${tagNum}|status|Downloading update..." | /opt/uit-toolbox/parse
+				printf "%s" "job_queue|${tagNum}|status|Downloading update..." | /opt/uit-toolbox/parse
         curl --silent --show-error 'http://10.0.0.1:8080/client/pkg/uit-toolbox-client.deb' --output /root/uit-toolbox-client.deb
 				while [[ ! -f /root/uit-toolbox-client.deb ]]; do
-					printf '%s' "job_queue|${tagNum}|status|Retrying download..." | /opt/uit-toolbox/parse
+					printf "%s" "job_queue|${tagNum}|status|Retrying download..." | /opt/uit-toolbox/parse
 					echo "Package download failed, retrying download..."
 					curl --silent --show-error 'http://10.0.0.1:8080/client/pkg/uit-toolbox-client.deb' --output /root/uit-toolbox-client.deb
 					sleep 1
@@ -1850,27 +1850,27 @@ function autodetectClient {
 				dpkg --install /root/uit-toolbox-client.deb &>/dev/null
 				resetForClientRestart
 			elif [[ $job_queued == "findmy" ]]; then
-				printf '%s' "job_queue|${tagNum}|status|Playing sound" | /opt/uit-toolbox/parse
+				printf "%s" "job_queue|${tagNum}|status|Playing sound" | /opt/uit-toolbox/parse
 				play /root/findmy1.mp3 &> /dev/null
 				resetForClientRestart
 			elif [[ $job_queued == "hpEraseAndClone" ]]; then
 				enterTag
 				systemData
 				hardwareData
-				printf '%s' "job_queue|${tagNum}|status|Starting Erase + Clone job (HP)" | /opt/uit-toolbox/parse
+				printf "%s" "job_queue|${tagNum}|status|Starting Erase + Clone job (HP)" | /opt/uit-toolbox/parse
 				APPSELECT="EC"
 				ACTION="erase and clone"
 				if [[ /dev/nvme0n1 ]]; then
 					CLIENTDISK='nvme0n1'
 				else
-					printf '%s' "job_queue|${tagNum}|status|fail - Disk doesn't exist" | /opt/uit-toolbox/parse
+					printf "%s" "job_queue|${tagNum}|status|fail - Disk doesn't exist" | /opt/uit-toolbox/parse
 					autodetectClient
 				fi
-					printf '%s' "general|disk|${CLIENTDISK}|${UUID}" | /opt/uit-toolbox/parse
+					printf "%s" "general|disk|${CLIENTDISK}|${UUID}" | /opt/uit-toolbox/parse
 				cloneMode="restoredisk"
 				shredMode="autodetect"
 				RMODE="Autodetect"
-					printf '%s' "general|erase_mode|${RMODE}|${UUID}" | /opt/uit-toolbox/parse
+					printf "%s" "general|erase_mode|${RMODE}|${UUID}" | /opt/uit-toolbox/parse
 				linuxServer="UIT_CLIENT_DB_HOST"
 				linuxDNS="UIT_SERVER_HOSTNAME"
 				footer
@@ -1879,25 +1879,25 @@ function autodetectClient {
 				footer
 				execute
 				totaltime
-				printf '%s' "general|clone_completed|1|${UUID}" | /opt/uit-toolbox/parse
-				printf '%s' "general|erase_completed|1|${UUID}" | /opt/uit-toolbox/parse
-				printf '%s' "system-stats|cpu|${UUID}" | /opt/uit-toolbox/parse
-				printf '%s' "system-stats|network|${UUID}" | /opt/uit-toolbox/parse
+				printf "%s" "general|clone_completed|1|${UUID}" | /opt/uit-toolbox/parse
+				printf "%s" "general|erase_completed|1|${UUID}" | /opt/uit-toolbox/parse
+				printf "%s" "system-stats|cpu|${UUID}" | /opt/uit-toolbox/parse
+				printf "%s" "system-stats|network|${UUID}" | /opt/uit-toolbox/parse
 				resetForClientRestart
 			elif [[ $job_queued == "hpCloneOnly" ]]; then
 				enterTag
 				systemData
 				hardwareData
-				printf '%s' "job_queue|${tagNum}|status|Starting Clone only job (HP)" | /opt/uit-toolbox/parse
+				printf "%s" "job_queue|${tagNum}|status|Starting Clone only job (HP)" | /opt/uit-toolbox/parse
 				APPSELECT="C"
 				ACTION="clone"
 				if [[ /dev/nvme0n1 ]]; then
 					CLIENTDISK='nvme0n1'
 				else
-					printf '%s' "job_queue|${tagNum}|status|fail - disk doesn't exist" | /opt/uit-toolbox/parse
+					printf "%s" "job_queue|${tagNum}|status|fail - disk doesn't exist" | /opt/uit-toolbox/parse
 					autodetectClient
 				fi
-					printf '%s' "general|disk|${CLIENTDISK}|${UUID}" | /opt/uit-toolbox/parse
+					printf "%s" "general|disk|${CLIENTDISK}|${UUID}" | /opt/uit-toolbox/parse
 				cloneMode="restoredisk"
 				linuxServer="UIT_CLIENT_DB_HOST"
 				linuxDNS="UIT_SERVER_HOSTNAME"
@@ -1907,9 +1907,9 @@ function autodetectClient {
 				footer
 				execute
 				totaltime
-				printf '%s' "general|clone_completed|1|${UUID}" | /opt/uit-toolbox/parse
-				printf '%s' "system-stats|cpu|${UUID}" | /opt/uit-toolbox/parse
-				printf '%s' "system-stats|network|${UUID}" | /opt/uit-toolbox/parse
+				printf "%s" "general|clone_completed|1|${UUID}" | /opt/uit-toolbox/parse
+				printf "%s" "system-stats|cpu|${UUID}" | /opt/uit-toolbox/parse
+				printf "%s" "system-stats|network|${UUID}" | /opt/uit-toolbox/parse
 				resetForClientRestart
 			elif [[ $job_queued == "nvmeErase" ]]; then
 				enterTag
@@ -1918,11 +1918,11 @@ function autodetectClient {
 				if [[ /dev/nvme0n1 ]]; then
 					CLIENTDISK='nvme0n1'
 				else
-					printf '%s' "job_queue|${tagNum}|status|fail - disk doesn't exist" | /opt/uit-toolbox/parse
+					printf "%s" "job_queue|${tagNum}|status|fail - disk doesn't exist" | /opt/uit-toolbox/parse
 					autodetectClient
 				fi
-					printf '%s' "general|disk|${CLIENTDISK}|${UUID}" | /opt/uit-toolbox/parse
-				printf '%s' "job_queue|${tagNum}|status|Starting NVME Erase job (${CLIENTDISK})" | /opt/uit-toolbox/parse
+					printf "%s" "general|disk|${CLIENTDISK}|${UUID}" | /opt/uit-toolbox/parse
+				printf "%s" "job_queue|${tagNum}|status|Starting NVME Erase job (${CLIENTDISK})" | /opt/uit-toolbox/parse
 				vrfySections="1000"
 				writeSections="1000"
 				PCNTOFSECTOR='10'
@@ -1931,22 +1931,22 @@ function autodetectClient {
 				ACTION="erase"
 				shredMode="autodetect"
 				RMODE="Autodetect"
-					printf '%s' "general|erase_mode|${RMODE}|${UUID}" | /opt/uit-toolbox/parse
+					printf "%s" "general|erase_mode|${RMODE}|${UUID}" | /opt/uit-toolbox/parse
 				footer
 				rtcwake --mode mem --seconds 3
 				checkNetwork
 				footer
 				execute
 				totaltime
-				printf '%s' "general|erase_completed|1|${UUID}" | /opt/uit-toolbox/parse
-				printf '%s' "system-stats|cpu|${UUID}" | /opt/uit-toolbox/parse
-				printf '%s' "system-stats|network|${UUID}" | /opt/uit-toolbox/parse
+				printf "%s" "general|erase_completed|1|${UUID}" | /opt/uit-toolbox/parse
+				printf "%s" "system-stats|cpu|${UUID}" | /opt/uit-toolbox/parse
+				printf "%s" "system-stats|network|${UUID}" | /opt/uit-toolbox/parse
 				resetForClientRestart
 			elif [[ $job_queued == "nvmeVerify" ]]; then
 				enterTag
 				systemData
 				hardwareData
-				printf '%s' "job_queue|${tagNum}|status|Starting Verify job (${CLIENTDISK})" | /opt/uit-toolbox/parse
+				printf "%s" "job_queue|${tagNum}|status|Starting Verify job (${CLIENTDISK})" | /opt/uit-toolbox/parse
 				vrfySections=""
 				writeSections=""
 				PCNTOFSECTOR='10'
@@ -1956,35 +1956,35 @@ function autodetectClient {
 				if [[ /dev/nvme0n1 ]]; then
 					CLIENTDISK='nvme0n1'
 				else
-					printf '%s' "job_queue|${tagNum}|status|fail - disk doesn't exist" | /opt/uit-toolbox/parse
+					printf "%s" "job_queue|${tagNum}|status|fail - disk doesn't exist" | /opt/uit-toolbox/parse
 					autodetectClient
 				fi
-					printf '%s' "general|disk|${CLIENTDISK}|${UUID}" | /opt/uit-toolbox/parse
+					printf "%s" "general|disk|${CLIENTDISK}|${UUID}" | /opt/uit-toolbox/parse
 				shredMode="verify"
 				RMODE="Verify Mode"
-					printf '%s' "general|erase_mode|${RMODE}|${UUID}" | /opt/uit-toolbox/parse
+					printf "%s" "general|erase_mode|${RMODE}|${UUID}" | /opt/uit-toolbox/parse
 				footer
 				rtcwake --mode mem --seconds 3
 				checkNetwork
 				footer
 				execute
 				totaltime
-				printf '%s' "general|erase_completed|1|${UUID}" | /opt/uit-toolbox/parse
-				printf '%s' "system-stats|cpu|${UUID}" | /opt/uit-toolbox/parse
-				printf '%s' "system-stats|network|${UUID}" | /opt/uit-toolbox/parse
+				printf "%s" "general|erase_completed|1|${UUID}" | /opt/uit-toolbox/parse
+				printf "%s" "system-stats|cpu|${UUID}" | /opt/uit-toolbox/parse
+				printf "%s" "system-stats|network|${UUID}" | /opt/uit-toolbox/parse
 				resetForClientRestart
 			elif [[ $job_queued == "shutdown" ]]; then
-				printf '%s' "job_queue|${tagNum}|status|fail - Shutting down" | /opt/uit-toolbox/parse
-				printf '%s' "job_queue|${tagNum}|job_queued|" | /opt/uit-toolbox/parse
-				printf '%s' "job_queue|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
+				printf "%s" "job_queue|${tagNum}|status|fail - Shutting down" | /opt/uit-toolbox/parse
+				printf "%s" "job_queue|${tagNum}|job_queued|" | /opt/uit-toolbox/parse
+				printf "%s" "job_queue|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
 				poweroff
 			elif [[ $job_queued == "clean-shutdown" ]]; then
-				printf '%s' "job_queue|${tagNum}|status|Shutting down" | /opt/uit-toolbox/parse
-				printf '%s' "job_queue|${tagNum}|job_queued|" | /opt/uit-toolbox/parse
-				printf '%s' "job_queue|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
+				printf "%s" "job_queue|${tagNum}|status|Shutting down" | /opt/uit-toolbox/parse
+				printf "%s" "job_queue|${tagNum}|job_queued|" | /opt/uit-toolbox/parse
+				printf "%s" "job_queue|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
 				poweroff				
 			elif [[ $job_queued == "fail-test" ]]; then
-				printf '%s' "job_queue|${tagNum}|status|fail - test" | /opt/uit-toolbox/parse
+				printf "%s" "job_queue|${tagNum}|status|fail - test" | /opt/uit-toolbox/parse
 				resetForClientRestart
 			fi
 		else
@@ -2056,12 +2056,12 @@ function main {
 		else
 			diskSelect
 		fi
-			printf '%s' "general|disk|${CLIENTDISK}|${UUID}" | /opt/uit-toolbox/parse
+			printf "%s" "general|disk|${CLIENTDISK}|${UUID}" | /opt/uit-toolbox/parse
 		cloneMode="restoredisk"
 		cloneImgName="TechCommons-HP-LaptopsLZ4"
 		shredMode="autodetect"
 		RMODE="autodetect"
-			printf '%s' "general|erase_mode|${RMODE}|${UUID}" | /opt/uit-toolbox/parse
+			printf "%s" "general|erase_mode|${RMODE}|${UUID}" | /opt/uit-toolbox/parse
 		linuxServer="UIT_CLIENT_DB_HOST"
 		linuxDNS="UIT_SERVER_HOSTNAME"
 		powerWarning
@@ -2074,12 +2074,12 @@ function main {
 		else
 			diskSelect
 		fi
-			printf '%s' "general|disk|${CLIENTDISK}|${UUID}" | /opt/uit-toolbox/parse
+			printf "%s" "general|disk|${CLIENTDISK}|${UUID}" | /opt/uit-toolbox/parse
 		cloneMode="restoredisk"
 		cloneImgName="TechCommons-Dell-Laptops"
 		shredMode="autodetect"
 		RMODE="autodetect"
-			printf '%s' "general|erase_mode|${RMODE}|${UUID}" | /opt/uit-toolbox/parse
+			printf "%s" "general|erase_mode|${RMODE}|${UUID}" | /opt/uit-toolbox/parse
 		linuxServer="UIT_CLIENT_DB_HOST"
 		linuxDNS="UIT_SERVER_HOSTNAME"
 		powerWarning
@@ -2088,10 +2088,10 @@ function main {
 		APPSELECT="E"
 		ACTION="erase"
 		diskSelect
-			printf '%s' "general|disk|${CLIENTDISK}|${UUID}" | /opt/uit-toolbox/parse
+			printf "%s" "general|disk|${CLIENTDISK}|${UUID}" | /opt/uit-toolbox/parse
 		shredMode="autodetect"
 		RMODE="autodetect"
-			printf '%s' "general|erase_mode|${RMODE}|${UUID}" | /opt/uit-toolbox/parse
+			printf "%s" "general|erase_mode|${RMODE}|${UUID}" | /opt/uit-toolbox/parse
 		powerWarning
 		execute
 	elif [[ $mainMenuOpt == "9" ]]; then
@@ -2108,7 +2108,7 @@ function main {
 		pkill --terminal tty1
 	fi
 	if [[ $unattended == "false" ]]; then
-		printf '%s' "job_queue|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
+		printf "%s" "job_queue|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
 		terminate
 	fi
 }
