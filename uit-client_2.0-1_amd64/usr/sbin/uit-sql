@@ -6,12 +6,7 @@ tagNum=$(echo "SELECT tagnumber AS result FROM locations WHERE system_serial = '
 echo "job_queue|${tagNum}|present|$(date '+%Y-%m-%d %H:%M:%S')" | /opt/uit-toolbox/parse
 
 for i in $(find /sys/class/hwmon/ -mindepth 1); do
-    type=$(cat ${i}/name)
-    if [[ $type == "coretemp" ]]; then
-        cpuTemp=$(cat ${i}/temp1_input)
-        echo "job_queue|${tagNum}|cpu_temp|${cpuTemp}" | /opt/uit-toolbox/parse
-        fi
-    
+    type=$(cat ${i}/name)    
     if [[ $type == "BAT0" || $type == "BAT1" ]]; then
      if [[ -f ${i}/device/charge_full_design ]]; then
         battCapacityFactory=$(cat ${i}/device/charge_full_design)

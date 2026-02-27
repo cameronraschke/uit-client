@@ -105,7 +105,7 @@ if ($arr[0] == "general") {
 	$uuid = $arr[3];
 	
 
-	if ($key == "cpu_temp") {
+	if ($key == "avg_cpu_temp") {
 		$value = round(bcdiv($value, 1000, 2), 0);
 	}
 
@@ -198,7 +198,7 @@ if ($arr[0] == "system-stats") {
 			$cpuLineCount = $cpuLineCount + 1;
 		}
 		$cpuAvg = $cpuSum / $cpuLineCount;
-		$dbPSQL->updateJob("cpu_usage", $cpuAvg, $uuid);
+		$dbPSQL->updateJob("avg_cpu_usage", $cpuAvg, $uuid);
 	} elseif ($arr[1] == "network") {
 		$netSum = null;
 		$netLineCount = null;
@@ -213,7 +213,7 @@ if ($arr[0] == "system-stats") {
 		} else {
 			$netAvg = 0;
 		}
-		$dbPSQL->updateJob("network_usage", $netAvg, $uuid);
+		$dbPSQL->updateJob("avg_network_usage", $netAvg, $uuid);
 	}
 }
 
@@ -236,10 +236,6 @@ if ($arr[0] == "job_queue") {
 		} elseif ($value == "8") {
 			$value = "findmy";
 		}
-	}
-
-	if ($key == "cpu_temp") {
-		$value = round(bcdiv($value, 1000, 2), 0);
 	}
 
 	if ($key == "disk_temp" || $key == "max_disk_temp") {

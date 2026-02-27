@@ -423,8 +423,8 @@ fi
 		printf "%s" "general|ram_serial|${memSerial}|${UUID}" | /opt/uit-toolbox/parse
 	memCapacity=$(grep '^MemTotal' /proc/meminfo | awk '{ print $2 }')
 		printf "%s" "general|ram_capacity|${memCapacity}|${UUID}" | /opt/uit-toolbox/parse
-	memSpeed=$(dmidecode --type 17 | grep '^[[:space:]]*Speed\:' | head -n1 | sed 's/[^0-9]'//g)
-		printf "%s" "general|ram_speed|${memSpeed}|${UUID}" | /opt/uit-toolbox/parse
+	memSpeed=$(dmidecode --type 17 | grep '^[[:space:]]*Speed\:' | head -n1 | sed 's/[^0-9]//g')
+		printf "%s" "general|memory_speed_mhz|${memSpeed}|${UUID}" | /opt/uit-toolbox/parse
 
 	###Boot Times
 	bootTime=$(systemd-analyze | grep -oP '[0-9]+[0-9.]*' | head -n 1)
@@ -435,7 +435,7 @@ fi
     type=$(cat ${i}/name)
     if [[ $type == "coretemp" ]]; then
         cpuTemp=$(cat ${i}/temp1_input)
-		printf "%s" "general|cpu_temp|${cpuTemp}|${UUID}" | /opt/uit-toolbox/parse
+		printf "%s" "general|avg_cpu_temp|${cpuTemp}|${UUID}" | /opt/uit-toolbox/parse
         fi
 	done
 
