@@ -362,6 +362,14 @@ if ($arr[0] === "api") {
 		]);
 	}
 
+	if ($key === "last_hardware_check") {
+		$url = "https://UIT_WEB_HTTPS_HOST:UIT_WEB_HTTPS_PORT/api/client/health/last_hardware_check";
+		$body = json_encode([
+			'tagnumber' => $tagNum,
+			'last_hardware_check' => time()
+		]);
+	}
+
 	curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
 	curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
 	curl_setopt($ch, CURLOPT_URL, $url);

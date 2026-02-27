@@ -468,7 +468,7 @@ function enterTag {
 		coproc uit_cpu { uit-cpu 2>/dev/null; }
 		coproc uit_network { uit-network 2>/dev/null; }
 		coproc uit_sql { uit-sql 2>/dev/null; }
-		coproc uit_sql { uit-screenshot 2>/dev/null; }
+		coproc uit_screenshot { uit-screenshot 2>/dev/null; }
 		return
 	else
 		read -p "${BOLD}Please enter the ${GREEN}6-digit tag number${RESET} ${BOLD}followed by ${GREEN}Enter${RESET}${BOLD}:${RESET} " tagNum
@@ -2046,6 +2046,7 @@ function main {
 	enterTag
 	systemData
 	hardwareData
+	printf "%s" "api|${tagNum}|last_hardware_check|${CURRENT_TIME}|time_placeholder" | /opt/uit-toolbox/parse
 	tput reset
 	autodetectClient
 	if [[ $mainMenuOpt == "1" ]]; then
