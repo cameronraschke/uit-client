@@ -366,7 +366,7 @@ if ($arr[0] === "api") {
 		$url = "https://UIT_WEB_HTTPS_HOST:UIT_WEB_HTTPS_PORT/api/client/health/last_hardware_check";
 		$body = json_encode([
 			'tagnumber' => $tagNum,
-			'last_hardware_check' => time()
+			'last_hardware_check' => DateTimeInterface::RFC3339
 		]);
 	}
 
