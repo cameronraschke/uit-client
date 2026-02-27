@@ -16,10 +16,26 @@ type ClientLookup struct {
 	SystemSerial string `json:"system_serial"`
 }
 
-func SendGETRequest(reqURL *url.URL) (*http.Response, error) {
-	// You have to close the body of the response after using it
+func GetData(reqURL *url.URL) ([]byte, error) {
 	if reqURL == nil {
-		return nil, fmt.Errorf("input URL is empty")
+		return nil, fmt.Errorf("input URL is nil")
+	}
+
+	if reqURL.Scheme == "" {
+		reqURL.Scheme = "https"
+	}
+
+	if reqURL.Host == "" {
+		reqURL.Host = "10.0.0.1"
+	}
+
+	switch reqURL.Scheme {
+	case "https":
+		reqURL.Host = reqURL.Host + ":31411"
+	case "http":
+		reqURL.Host = reqURL.Host + ":8080"
+	default:
+		reqURL.Host = reqURL.Host + ":31411"
 	}
 
 	resp, err := http.Get(reqURL.String())
@@ -29,63 +45,9 @@ func SendGETRequest(reqURL *url.URL) (*http.Response, error) {
 	if resp.Body == nil {
 		return nil, fmt.Errorf("response body is nil")
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("received non-OK HTTP status: %s", resp.Status)
-	}
-
-	return resp, nil
-}
-
-func CreateGETRequest(reqURL *url.URL) ([]byte, error) {
-	if reqURL == nil {
-		return nil, fmt.Errorf("input URL is nil")
-	}
-
-	if reqURL.Host == "" {
-		reqURL.Host = "10.0.0.1"
-	}
-
-	switch reqURL.Scheme {
-	case "https":
-		reqURL.Scheme = "https"
-		reqURL.Host = reqURL.Host + ":31411"
-	case "http":
-		reqURL.Scheme = "http"
-		reqURL.Host = reqURL.Host + ":8080"
-	default:
-		reqURL.Scheme = "https"
-		reqURL.Host = reqURL.Host + ":31411"
-	}
-
-	queries := reqURL.Query()
-	if queries != nil {
-		for key, values := range reqURL.Query() {
-			for _, value := range values {
-				queries.Add(key, value)
-			}
-		}
-		reqURL.RawQuery = queries.Encode()
-	}
-
-	var resp *http.Response
-	var err error
-	for i := range requestRetryCount {
-		if i < requestRetryCount-1 {
-			fmt.Printf("GET request attempt %d failed, retrying...\n", i+1)
-		}
-		resp, err = SendGETRequest(reqURL)
-		if err != nil {
-			continue
-		} else {
-			break
-		}
-	}
-	if err != nil {
-		return nil, fmt.Errorf("failed to complete GET request after %d attempts: %v", requestRetryCount, err)
-	}
-	defer resp.Body.Close()
-	if resp.Body == nil {
-		return nil, fmt.Errorf("response body is nil")
 	}
 
 	body, err := io.ReadAll(resp.Body)

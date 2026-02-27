@@ -7,7 +7,7 @@ func GetTPMVersion() *string {
 		version := "2.0"
 		return &version
 	}
-	data := readUintPtr("/sys/class/tpm/tpm0/tpm_version_major")
+	data := ReadUintPtr("/sys/class/tpm/tpm0/tpm_version_major")
 	if data == nil {
 		notPresent := "Not Present"
 		return &notPresent
@@ -26,8 +26,8 @@ func GetTPMVersion() *string {
 }
 
 func GetTPMDescription() *string {
-	description1 := readFileAndTrim("/sys/class/tpm/tpm0/device/firmware_node/description")
-	description2 := readFileAndTrim("/sys/class/tpm/tpm0/device/description")
+	description1 := ReadFileAndTrim("/sys/class/tpm/tpm0/device/firmware_node/description")
+	description2 := ReadFileAndTrim("/sys/class/tpm/tpm0/device/description")
 	if description1 != nil && *description1 != "" {
 		return description1
 	} else if description2 != nil && *description2 != "" {

@@ -7,12 +7,12 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
-	"uitclient/config"
+	"uitclient/types"
 
 	"golang.org/x/sys/unix"
 )
 
-func ListBlockDevices(devDir string) ([]*config.DiskHardwareData, error) {
+func ListBlockDevices(devDir string) ([]*types.DiskHardwareData, error) {
 	if !fileExists(devDir) {
 		devDir = "/dev"
 	}
@@ -28,7 +28,7 @@ func ListBlockDevices(devDir string) ([]*config.DiskHardwareData, error) {
 	defer unix.Close(fd)
 
 	directoryListBuffer := make([]byte, 1<<13) // 8kb buffer to load in directory entries
-	var devices []*config.DiskHardwareData
+	var devices []*types.DiskHardwareData
 
 	// Default to Unknown disk type
 	diskType := "Unknown"
@@ -112,10 +112,10 @@ func ListBlockDevices(devDir string) ([]*config.DiskHardwareData, error) {
 			}
 
 			sysBlock := filepath.Join("/sys/class/block", deviceName)
-			removable := readUintBoolPtr(filepath.Join(sysBlock, "removable"))
+			removable := ReadUintBoolPtr(filepath.Join(sysBlock, "removable"))
 
-			rotating := readUintBoolPtr(filepath.Join(sysBlock, "queue", "rotational"))
-			lBlocks := readUintPtr(filepath.Join(sysBlock, "queue", "logical_block_size"))
+			rotating := ReadUintBoolPtr(filepath.Join(sysBlock, "queue", "rotational"))
+			lBlocks := ReadUintPtr(filepath.Join(sysBlock, "queue", "logical_block_size"))
 			var logicalBlockSizeBytes *int64
 			if lBlocks != nil {
 				logicalBlockSizeBytes = lBlocks
@@ -123,7 +123,7 @@ func ListBlockDevices(devDir string) ([]*config.DiskHardwareData, error) {
 				defaultLogicalBlockSize := int64(512)
 				logicalBlockSizeBytes = &defaultLogicalBlockSize
 			}
-			pBlocks := readUintPtr(filepath.Join(sysBlock, "queue", "physical_block_size"))
+			pBlocks := ReadUintPtr(filepath.Join(sysBlock, "queue", "physical_block_size"))
 			var physicalBlockSizeBytes *int64
 			if pBlocks != nil {
 				physicalBlockSizeBytes = pBlocks
@@ -132,7 +132,7 @@ func ListBlockDevices(devDir string) ([]*config.DiskHardwareData, error) {
 				physicalBlockSizeBytes = &defaultPhysicalBlockSize
 			}
 
-			sectors := readUintPtr(filepath.Join(sysBlock, "size"))
+			sectors := ReadUintPtr(filepath.Join(sysBlock, "size"))
 			var sizeBytes *int64
 			if sectors != nil && logicalBlockSizeBytes != nil {
 				tempSize := *sectors * *logicalBlockSizeBytes
@@ -147,49 +147,49 @@ func ListBlockDevices(devDir string) ([]*config.DiskHardwareData, error) {
 				sizeMib = &tempSizeMib
 			}
 
-			diskWWID := readFileAndTrim(filepath.Join(sysBlock, "wwid"))
+			diskWWID := ReadFileAndTrim(filepath.Join(sysBlock, "wwid"))
 
 			deviceSymLink := filepath.Join(sysBlock, "device")
 			deviceRealPath, _ := filepath.EvalSymlinks(deviceSymLink)
 			if deviceRealPath == "" || deviceRealPath == "/" || deviceRealPath == "." {
 				continue
 			}
-			diskModel := readFileAndTrim(filepath.Join(deviceSymLink, "model"))
+			diskModel := ReadFileAndTrim(filepath.Join(deviceSymLink, "model"))
 			if diskModel != nil {
 				trimmedModel := strings.TrimSpace(*diskModel)
 				diskModel = &trimmedModel
 			}
-			diskManufacturer := readFileAndTrim(filepath.Join(deviceSymLink, "vendor"))
+			diskManufacturer := ReadFileAndTrim(filepath.Join(deviceSymLink, "vendor"))
 			if diskManufacturer != nil {
 				trimmedManufacturer := strings.TrimSpace(*diskManufacturer)
 				diskManufacturer = &trimmedManufacturer
 			}
 			var diskSerial *string
-			serial := readFileAndTrim(filepath.Join(deviceSymLink, "serial"))
+			serial := ReadFileAndTrim(filepath.Join(deviceSymLink, "serial"))
 			if serial != nil {
 				diskSerial = serial
-			} else if eui := readFileAndTrim(filepath.Join(devicePath, "eui")); eui != nil {
+			} else if eui := ReadFileAndTrim(filepath.Join(devicePath, "eui")); eui != nil {
 				diskSerial = eui
-			} else if euiFallback := readFileAndTrim(filepath.Join(deviceSymLink, "eui")); euiFallback != nil {
+			} else if euiFallback := ReadFileAndTrim(filepath.Join(deviceSymLink, "eui")); euiFallback != nil {
 				diskSerial = euiFallback
 			}
 
 			var diskFirmware *string
-			if firmware := readFileAndTrim(filepath.Join(deviceSymLink, "firmware_rev")); firmware != nil {
+			if firmware := ReadFileAndTrim(filepath.Join(deviceSymLink, "firmware_rev")); firmware != nil {
 				diskFirmware = firmware
-			} else if firmwareFallback := readFileAndTrim(filepath.Join(deviceSymLink, "rev")); firmwareFallback != nil {
+			} else if firmwareFallback := ReadFileAndTrim(filepath.Join(deviceSymLink, "rev")); firmwareFallback != nil {
 				diskFirmware = firmwareFallback
 			}
 
-			nvmeQualifiedName := readFileAndTrim(filepath.Join(deviceSymLink, "subsysnqn"))
+			nvmeQualifiedName := ReadFileAndTrim(filepath.Join(deviceSymLink, "subsysnqn"))
 
 			// No need to check the symlink here
 			nvmeControllerSubsystemPath := filepath.Join(deviceSymLink, "subsystem", "nvme0", "device")
 
-			pcieCurrentLinkSpeed := readFileAndTrim(filepath.Join(nvmeControllerSubsystemPath, "current_link_speed"))
-			pcieCurrentLinkWidth := readFileAndTrim(filepath.Join(nvmeControllerSubsystemPath, "current_link_width"))
-			pcieMaxLinkSpeed := readFileAndTrim(filepath.Join(nvmeControllerSubsystemPath, "max_link_speed"))
-			pcieMaxLinkWidth := readFileAndTrim(filepath.Join(nvmeControllerSubsystemPath, "max_link_width"))
+			pcieCurrentLinkSpeed := ReadFileAndTrim(filepath.Join(nvmeControllerSubsystemPath, "current_link_speed"))
+			pcieCurrentLinkWidth := ReadFileAndTrim(filepath.Join(nvmeControllerSubsystemPath, "current_link_width"))
+			pcieMaxLinkSpeed := ReadFileAndTrim(filepath.Join(nvmeControllerSubsystemPath, "max_link_speed"))
+			pcieMaxLinkWidth := ReadFileAndTrim(filepath.Join(nvmeControllerSubsystemPath, "max_link_width"))
 
 			if minorNum == 0 {
 				if diskType == "SCSI/SATA" && rotating != nil && *rotating {
@@ -202,7 +202,7 @@ func ListBlockDevices(devDir string) ([]*config.DiskHardwareData, error) {
 					diskType = diskType + " (NVMe SSD)"
 				}
 
-				devices = append(devices, &config.DiskHardwareData{
+				devices = append(devices, &types.DiskHardwareData{
 					LinuxAlias:           &deviceName,
 					LinuxDevicePath:      &devicePath,
 					LinuxMajorNumber:     &majorNum,

@@ -2,7 +2,10 @@
 
 package config
 
-import "net/netip"
+import (
+	"net/netip"
+	"uitclient/types"
+)
 
 func ipSliceEqual(a, b []netip.Addr) bool {
 	if len(a) == 0 && len(b) == 0 {
@@ -19,7 +22,7 @@ func ipSliceEqual(a, b []netip.Addr) bool {
 	return true
 }
 
-func equalNetworkHardwareData(a, b NetworkHardwareData) bool {
+func equalNetworkHardwareData(a, b types.NetworkHardwareData) bool {
 	if (a.MACAddress == nil) != (b.MACAddress == nil) {
 		return false
 	}
@@ -77,16 +80,16 @@ func equalNetworkHardwareData(a, b NetworkHardwareData) bool {
 	return true
 }
 
-func UpdateNetworkInterface(ifData map[string]NetworkHardwareData) {
+func UpdateNetworkInterface(ifData map[string]types.NetworkHardwareData) {
 	if len(ifData) == 0 {
 		return
 	}
-	UpdateUniqueClientData(func(cd *ClientData) bool {
+	UpdateUniqueClientData(func(cd *types.ClientData) bool {
 		if cd.Hardware == nil {
-			cd.Hardware = &ClientHardwareData{}
+			cd.Hardware = &types.ClientHardwareData{}
 		}
 		if cd.Hardware.Network == nil {
-			cd.Hardware.Network = make(map[string]NetworkHardwareData)
+			cd.Hardware.Network = make(map[string]types.NetworkHardwareData)
 		}
 		updated := false
 		for ifName, newData := range ifData {

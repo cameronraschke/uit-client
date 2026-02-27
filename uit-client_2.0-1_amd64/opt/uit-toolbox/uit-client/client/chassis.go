@@ -5,14 +5,14 @@ package client
 import "strconv"
 
 func GetChassisSerial() *string {
-	return readFileAndTrim("/sys/class/dmi/id/chassis_serial")
+	return ReadFileAndTrim("/sys/class/dmi/id/chassis_serial")
 }
 
 func GetChassisType() *string {
 	// https://github.com/mirror/dmidecode/blob/master/dmidecode.c#L599
 	var data *int64
 	var notInDmiTable = "Not in DMI table"
-	data = readUintPtr("/sys/class/dmi/id/chassis_type")
+	data = ReadUintPtr("/sys/class/dmi/id/chassis_type")
 	if data == nil {
 		return &notInDmiTable
 	}

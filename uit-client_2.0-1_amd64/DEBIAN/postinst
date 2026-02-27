@@ -18,10 +18,10 @@ while [ ! -f /usr/local/share/ca-certificates/uit-web.crt ]; do
 done
 update-ca-certificates
 
-jsonConfig=$(curl --silent --show-error 'https://10.0.0.1:31411/client/api/configs/uit-client?json=true')
+jsonConfig=$(curl --silent --show-error 'https://10.0.0.1:31411/static/client/configs/uit-client?json=true')
 while [ -z "$jsonConfig" ] || [[ "$jsonConfig" == *"error"* ]]; do
 	echo "Failed to download client config (json), trying again..."
-	jsonConfig=$(curl --silent --show-error 'https://10.0.0.1:31411/client/api/configs/uit-client?json=true')
+	jsonConfig=$(curl --silent --show-error 'https://10.0.0.1:31411/static/client/configs/uit-client?json=true')
 	sleep 1
 done
 

@@ -10,7 +10,7 @@ import (
 	"unicode/utf8"
 )
 
-func readFileAndTrim(filePath string) *string {
+func ReadFileAndTrim(filePath string) *string {
 	if strings.TrimSpace(filePath) == "" {
 		return nil
 	}
@@ -28,7 +28,7 @@ func readFileAndTrim(filePath string) *string {
 	return &trimmed
 }
 
-func readUintPtr(filePath string) *int64 {
+func ReadUintPtr(filePath string) *int64 {
 	fileBytes, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil
@@ -49,13 +49,13 @@ func readUintPtr(filePath string) *int64 {
 	return &value
 }
 
-func readUintBool(filePath string) bool {
+func ReadUintBool(filePath string) bool {
 	// Sysfs boolean-like files typically contain "0" or "1".
 	// Treat exactly "1" as true; anything else (including errors) as false.
-	return readUintPtr(filePath) != nil && *readUintPtr(filePath) == 1
+	return ReadUintPtr(filePath) != nil && *ReadUintPtr(filePath) == 1
 }
 
-func readUintBoolPtr(filePath string) *bool {
+func ReadUintBoolPtr(filePath string) *bool {
 	b, err := os.ReadFile(filePath)
 	if err != nil || b == nil {
 		return nil
@@ -93,7 +93,7 @@ func fileExists(filePath string) bool {
 }
 
 func GetSystemSerial() (*string, error) {
-	data := readFileAndTrim("/sys/class/dmi/id/product_serial")
+	data := ReadFileAndTrim("/sys/class/dmi/id/product_serial")
 	if data == nil || *data == "" {
 		return nil, fmt.Errorf("system serial does not exist")
 	}
@@ -101,7 +101,7 @@ func GetSystemSerial() (*string, error) {
 }
 
 func GetSystemUUID() (*string, error) {
-	data := readFileAndTrim("/sys/class/dmi/id/product_uuid")
+	data := ReadFileAndTrim("/sys/class/dmi/id/product_uuid")
 	if data == nil || *data == "" {
 		return nil, fmt.Errorf("system UUID does not exist")
 	}
@@ -109,7 +109,7 @@ func GetSystemUUID() (*string, error) {
 }
 
 func GetSystemVendor() (*string, error) {
-	data := readFileAndTrim("/sys/class/dmi/id/sys_vendor")
+	data := ReadFileAndTrim("/sys/class/dmi/id/sys_vendor")
 	if data == nil || *data == "" {
 		return nil, fmt.Errorf("system vendor does not exist")
 	}
@@ -117,7 +117,7 @@ func GetSystemVendor() (*string, error) {
 }
 
 func GetSystemSKU() *string {
-	data := readFileAndTrim("/sys/class/dmi/id/product_sku")
+	data := ReadFileAndTrim("/sys/class/dmi/id/product_sku")
 	if data == nil || *data == "" {
 		return nil
 	}

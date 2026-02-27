@@ -4,16 +4,21 @@ package config
 
 import (
 	"fmt"
+	"sync"
 	"sync/atomic"
-	"time"
-
-	"github.com/google/uuid"
+	"uitclient/types"
 )
 
 var (
 	clientConfig atomic.Pointer[ClientConfig]
-	clientData   atomic.Pointer[ClientData]
+	clientDataMu sync.RWMutex
+	clientData   *types.ClientData
 )
+
+type ClientLookup struct {
+	Tagnumber    *int64  `json:"tagnumber"`
+	SystemSerial *string `json:"system_serial"`
+}
 
 type ClientConfig struct {
 	UIT_CLIENT_DB_USER   string `json:"UIT_CLIENT_DB_USER"`
@@ -43,133 +48,59 @@ func GetClientConfig() *ClientConfig {
 	return clientConfig.Load()
 }
 
-func InitializeClientData(data *ClientData) error {
+func InitializeClientData(data *types.ClientData) error {
+	clientDataMu.Lock()
+	defer clientDataMu.Unlock()
 	if data == nil {
 		return fmt.Errorf("cannot initialize app, client data is nil")
 	}
-	clientData.Store(data)
+	clientData = data
 	return nil
 }
 
-func GetClientData() *ClientData {
-	cd := clientData.Load()
-	if cd == nil {
-		return &ClientData{}
+func GetClientData() types.ClientData {
+	clientDataMu.RLock()
+	defer clientDataMu.RUnlock()
+
+	if clientData == nil {
+		return types.ClientData{}
 	}
-	// Return an immutable snapshot (deep copy if callers might mutate)
-	return copyClientData(cd)
+	return *clientData // shallow snapshot
 }
 
 // UpdateClientData performs an unconditional copy-on-write update.
-func UpdateClientData(mutate func(*ClientData)) {
-	currentSnapshot := clientData.Load()
-	if currentSnapshot == nil {
-		currentSnapshot = &ClientData{}
+func UpdateClientData(mutate func(*types.ClientData)) {
+	clientDataMu.Lock()
+	defer clientDataMu.Unlock()
+
+	if clientData == nil {
+		clientData = &types.ClientData{}
 	}
-	newSnapshot := copyClientData(currentSnapshot)
-	mutate(newSnapshot)
-	clientData.Store(newSnapshot)
+	mutate(clientData)
 }
 
 // UpdateUniqueClientData performs a copy-on-write update only if mutate reports change.
-func UpdateUniqueClientData(mutate func(*ClientData) bool) {
-	for {
-		oldSnapshot := clientData.Load()
-		newSnapshot := copyClientData(oldSnapshot) // returns empty struct if currentSnapshot is nil
-		if !mutate(newSnapshot) {
-			return
-		}
-		if clientData.CompareAndSwap(oldSnapshot, newSnapshot) {
-			return
-		}
+func UpdateUniqueClientData(mutate func(*types.ClientData) bool) {
+	clientDataMu.Lock()
+	defer clientDataMu.Unlock()
+
+	if clientData == nil {
+		clientData = &types.ClientData{}
 	}
-}
-
-func SetTagnumber(tag *int64) {
-	UpdateUniqueClientData(func(cd *ClientData) bool {
-		return updateOptional(&cd.Tagnumber, tag)
-	})
-}
-
-func SetSystemSerial(serial *string) {
-	UpdateUniqueClientData(func(cd *ClientData) bool {
-		return updateOptional(&cd.Serial, serial)
-	})
-}
-
-func SetSystemUUID(systemUUID *string) {
-	UpdateUniqueClientData(func(cd *ClientData) bool {
-		return updateOptional(&cd.UUID, systemUUID)
-	})
-}
-
-func SetManufacturer(manufacturer *string) {
-	UpdateUniqueClientData(func(cd *ClientData) bool {
-		return updateOptional(&cd.Manufacturer, manufacturer)
-	})
-}
-
-func SetModel(model *string) {
-	UpdateUniqueClientData(func(cd *ClientData) bool {
-		return updateOptional(&cd.Model, model)
-	})
-}
-
-func SetProductFamily(productFamily *string) {
-	UpdateUniqueClientData(func(cd *ClientData) bool {
-		return updateOptional(&cd.ProductFamily, productFamily)
-	})
-}
-
-func SetProductName(productName *string) {
-	UpdateUniqueClientData(func(cd *ClientData) bool {
-		return updateOptional(&cd.ProductName, productName)
-	})
-}
-
-func SetSKU(sku *string) {
-	UpdateUniqueClientData(func(cd *ClientData) bool {
-		return updateOptional(&cd.SKU, sku)
-	})
-}
-
-func SetJobUUID(uid uuid.UUID) {
-	if uid == uuid.Nil {
+	changed := mutate(clientData)
+	if !changed {
 		return
 	}
-	UpdateUniqueClientData(func(cd *ClientData) bool {
-		if cd.JobData == nil {
-			cd.JobData = &JobData{}
-		}
-		if cd.JobData.UUID == uid {
-			return false
-		}
-		cd.JobData.UUID = uid
-		return true
-	})
-}
-
-func SetBootDuration(duration time.Duration) {
-	if duration.Seconds() <= 0 {
-		return
-	}
-	UpdateUniqueClientData(func(cd *ClientData) bool {
-		if cd.BootDuration == duration {
-			return false
-		}
-		cd.BootDuration = duration
-		return true
-	})
 }
 
 func SetConnectedToHost(connected *bool) {
-	UpdateUniqueClientData(func(cd *ClientData) bool {
+	UpdateUniqueClientData(func(cd *types.ClientData) bool {
 		return updateOptional(&cd.ConnectedToHost, connected)
 	})
 }
 
 func SetTimeSynced(synced *bool) {
-	UpdateUniqueClientData(func(cd *ClientData) bool {
+	UpdateUniqueClientData(func(cd *types.ClientData) bool {
 		return updateOptional(&cd.NTPSynced, synced)
 	})
 }

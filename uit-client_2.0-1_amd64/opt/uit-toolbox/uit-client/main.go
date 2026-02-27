@@ -3,7 +3,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"net"
 	"net/netip"
@@ -12,6 +11,7 @@ import (
 	"uitclient/cli"
 	"uitclient/client"
 	"uitclient/config"
+	"uitclient/types"
 
 	"golang.org/x/sys/cpu"
 	"golang.org/x/sys/unix"
@@ -34,16 +34,16 @@ func getClientData() {
 	}
 	config.SetSystemSerial(serialPtr)
 
-	tagnumber, err := api.SerialLookup(serialPtr)
+	clientLookup, err := api.SerialLookup(*serialPtr)
 	if err != nil {
 		fmt.Printf("Error looking up serial number: %v\n", err)
 		os.Exit(1)
 	}
-	if tagnumber < 1 {
-		fmt.Printf("Invalid tagnumber retrieved: %d\n", tagnumber)
+	if clientLookup.Tagnumber == nil || *clientLookup.Tagnumber < 1 {
+		fmt.Fprintln(os.Stderr, "Invalid tagnumber retrieved")
 		os.Exit(1)
 	}
-	config.SetTagnumber(&tagnumber)
+	config.SetTagnumber(clientLookup.Tagnumber)
 
 	systemUUID, err := client.GetSystemUUID()
 	if err != nil {
@@ -75,7 +75,7 @@ func getClientData() {
 		os.Exit(1)
 	}
 
-	networkMap := make(map[string]config.NetworkHardwareData)
+	networkMap := make(map[string]types.NetworkHardwareData)
 	for _, netIf := range networkInterfaces {
 		ifName := netIf.Name
 		if ifName == "" {
@@ -105,7 +105,7 @@ func getClientData() {
 		}
 
 		linkUp := (netIf.Flags & net.FlagUp) != 0
-		networkMap[ifName] = config.NetworkHardwareData{
+		networkMap[ifName] = types.NetworkHardwareData{
 			MACAddress:    macAddressPtr,
 			NetworkLinkUp: &linkUp,
 			IPAddress:     ipAddressSlice,
@@ -120,7 +120,7 @@ func getClientData() {
 	}
 	config.SetJobUUID(jobUUID)
 
-	config.UpdateClientData(func(clientData *config.ClientData) {
+	config.UpdateClientData(func(clientData *types.ClientData) {
 		clientData.Serial = serialPtr
 	})
 }
@@ -155,12 +155,7 @@ func main() {
 		fmt.Printf("Error getting client configuration: %v\n", err)
 		os.Exit(1)
 	}
-	tmpClientConfig := &config.ClientConfig{}
-	if err = json.Unmarshal(clientConfigJson, tmpClientConfig); err != nil { // Unmarshal JSON into struct
-		fmt.Printf("Error unmarshaling client configuration JSON: %v\n", err)
-		os.Exit(1)
-	}
-	err = config.InitializeClientConfig(tmpClientConfig)
+	err = config.InitializeClientConfig(clientConfigJson)
 	if err != nil {
 		fmt.Printf("Error initializing client configuration: %v\n", err)
 		os.Exit(1)
@@ -184,17 +179,17 @@ func main() {
 		os.Exit(1)
 	}
 
-	tagnumber, err := api.SerialLookup(serialPtr)
+	clientLookup, err := api.SerialLookup(*serialPtr)
 	if err != nil {
 		fmt.Printf("Error looking up serial number: %v\n", err)
 		os.Exit(1)
 	}
-	if tagnumber < 1 {
-		fmt.Printf("Invalid tagnumber retrieved: %d\n", tagnumber)
+	if clientLookup.Tagnumber == nil || *clientLookup.Tagnumber < 1 {
+		fmt.Printf("Invalid tagnumber retrieved: %d\n", *clientLookup.Tagnumber)
 		os.Exit(1)
 	}
 
-	fmt.Printf("Tagnumber: %d, System Serial: %s\n", tagnumber, *serialPtr)
+	fmt.Printf("Tagnumber: %d, System Serial: %s\n", *clientLookup.Tagnumber, *serialPtr)
 
 	hasFP := cpu.X86.HasAES || cpu.ARM64.HasSHA1 || cpu.ARM64.HasSHA2 || cpu.ARM64.HasSHA3 || cpu.ARM64.HasCRC32
 	if hasFP {
@@ -214,7 +209,7 @@ func main() {
 	fmt.Printf("Selected block device path: %s\n", devicePath)
 
 	// Update client information in client data
-	cd := &config.ClientData{}
+	cd := &types.ClientData{}
 	if err := config.InitializeClientData(cd); err != nil {
 		fmt.Printf("Error initializing client data: %v\n", err)
 		os.Exit(1)
@@ -222,7 +217,7 @@ func main() {
 	getClientData()
 
 	clientData := config.GetClientData()
-	if clientData == nil {
+	if clientData == (types.ClientData{}) {
 		fmt.Printf("Client data is nil after initialization\n")
 		os.Exit(1)
 	}

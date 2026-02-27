@@ -3,17 +3,17 @@
 package client
 
 func GetProductFamily() *string {
-	return readFileAndTrim("/sys/class/dmi/id/product_family")
+	return ReadFileAndTrim("/sys/class/dmi/id/product_family")
 }
 
 func GetSystemManufacturer() *string {
-	return readFileAndTrim("/sys/class/dmi/id/sys_vendor")
+	return ReadFileAndTrim("/sys/class/dmi/id/sys_vendor")
 }
 
 func GetSystemModel() *string {
-	return readFileAndTrim("/sys/class/dmi/id/product_name")
+	return ReadFileAndTrim("/sys/class/dmi/id/product_name")
 }
 
 func GetProductSKU() *string {
-	return readFileAndTrim("/sys/class/dmi/id/product_sku")
+	return ReadFileAndTrim("/sys/class/dmi/id/product_sku")
 }
