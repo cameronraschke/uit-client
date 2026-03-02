@@ -311,6 +311,7 @@ if ($arr[0] === "api") {
 	}
 
 	$baseURL = "https://UIT_WEB_HTTPS_HOST:UIT_WEB_HTTPS_PORT";
+	$url = "";
 	$ch = curl_init();
 	$encodedTag=curl_escape($ch, $tagNum);
 	$encodedKey=curl_escape($ch, $key);
@@ -623,6 +624,10 @@ if ($arr[0] === "api") {
 	}
 	
 
+	if ($url === "") {
+		echo "Field not updated, no match: $key";
+		return;
+	}
 	curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
 	curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
 	curl_setopt($ch, CURLOPT_URL, $baseURL . $url);
