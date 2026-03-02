@@ -289,7 +289,7 @@ function systemData {
 
 	# Motherboard Serial
 	tTwoSerialNumber=$(dmidecode --string baseboard-serial-number)
-	printf "%s" "api|${tagNum}|motherboard_serial|${UUID}" | /opt/uit-toolbox/parse
+	printf "%s" "api|${tagNum}|motherboard_serial|${tTwoSerialNumber}|${UUID}" | /opt/uit-toolbox/parse
 }
 
 function hardwareData {
