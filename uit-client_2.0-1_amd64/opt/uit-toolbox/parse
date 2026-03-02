@@ -368,6 +368,15 @@ if ($arr[0] === "api") {
 		]);
 	}
 
+	if ($key === "wifi_mac") {
+		$url = "/api/client/hardware";
+		$body = json_encode([
+			'transaction_uuid' => $value2,
+			'tagnumber' => $tagNum,
+			'system_serial' => $value
+		]);
+	}
+
 	if ($key === "system_serial") {
 		$url = "/api/client/hardware";
 		$body = json_encode([
@@ -445,7 +454,7 @@ if ($arr[0] === "api") {
 		$body = json_encode([
 			'transaction_uuid' => $value2,
 			'tagnumber' => $tagNum,
-			'cpu_max_speed_mhz' => $value
+			'cpu_max_speed_mhz' => (int)$value
 		]);
 	}
 
@@ -454,7 +463,7 @@ if ($arr[0] === "api") {
 		$body = json_encode([
 			'transaction_uuid' => $value2,
 			'tagnumber' => $tagNum,
-			'cpu_core_count' => $value
+			'cpu_core_count' => (int)$value
 		]);
 	}
 
@@ -463,7 +472,7 @@ if ($arr[0] === "api") {
 		$body = json_encode([
 			'transaction_uuid' => $value2,
 			'tagnumber' => $tagNum,
-			'cpu_thread_count' => $value
+			'cpu_thread_count' => (int)$value
 		]);
 	}
 
