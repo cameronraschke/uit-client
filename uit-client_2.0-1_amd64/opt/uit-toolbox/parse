@@ -500,7 +500,7 @@ if ($arr[0] === "api") {
 		$body = json_encode([
 			'transaction_uuid' => $value2,
 			'tagnumber' => $tagNum,
-			'disk_reads' => $value
+			'disk_reads' => (int)$value
 		]);
 	}
 
@@ -509,7 +509,7 @@ if ($arr[0] === "api") {
 		$body = json_encode([
 			'transaction_uuid' => $value2,
 			'tagnumber' => $tagNum,
-			'disk_writes' => $value
+			'disk_writes' => (int)$value
 		]);
 	}
 
@@ -536,7 +536,7 @@ if ($arr[0] === "api") {
 		$body = json_encode([
 			'transaction_uuid' => $value2,
 			'tagnumber' => $tagNum,
-			'disk_size' => $value
+			'disk_size' => (int)$value
 		]);
 	}
 
@@ -583,7 +583,7 @@ if ($arr[0] === "api") {
 		$body = json_encode([
 			'transaction_uuid' => $value2,
 			'tagnumber' => $tagNum,
-			'disk_power_cycles' => $value
+			'disk_power_cycles' => (int)$value
 		]);
 	}
 
@@ -592,7 +592,7 @@ if ($arr[0] === "api") {
 		$body = json_encode([
 			'transaction_uuid' => $value2,
 			'tagnumber' => $tagNum,
-			'disk_errors' => $value
+			'disk_errors' => (int)$value
 		]);
 	}
 
@@ -658,7 +658,7 @@ if ($arr[0] === "api") {
 			'memory_capacity' => (int)$value
 		]);
 	}
-	
+
 	if ($key === "memory_speed_mhz") {
 		$url = "/api/client/hardware";
 		$body = json_encode([
