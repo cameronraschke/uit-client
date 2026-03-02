@@ -344,14 +344,14 @@ fi
 	#t4 = Processor
 	#t22 = Battery
 	#t32 = Boot Status
-	biosVersion=$(dmidecode --string bios-version)
+	biosVersion=$(dmidecode --string bios-version 2>/dev/null)
 		printf "%s" "api|${tagNum}|bios_version|${biosVersion}|${UUID}" | /opt/uit-toolbox/parse
 		printf "%s" "client_health|${tagNum}|bios_version|${biosVersion}" | /opt/uit-toolbox/parse
-	biosDate=$(dmidecode --string bios-release-date)
+	biosDate=$(dmidecode --string bios-release-date 2>/dev/null)
 		printf "%s" "api|${tagNum}|bios_release_date|${biosDate}|${UUID}" | /opt/uit-toolbox/parse
-	biosFirmwareRev=$(dmidecode --string firmware-revision)
+	biosFirmwareRev=$(dmidecode --string firmware-revision 2>/dev/null)
 		printf "%s" "api|${tagNum}|bios_firmware|${biosFirmwareRev}|${UUID}" | /opt/uit-toolbox/parse
-	systemSerial=$(dmidecode --string system-serial-number)
+	systemSerial=$(dmidecode --string system-serial-number 2>/dev/null)
 		printf "%s" "general|system_serial|${systemSerial}|${UUID}" | /opt/uit-toolbox/parse
 		printf "%s" "api|${tagNum}|system_serial|${systemSerial}|${UUID}" | /opt/uit-toolbox/parse
 
@@ -359,54 +359,36 @@ fi
 	diskData
 
 	###Battery Data
-	if [[ -f /sys/class/power_supply/BAT0/charge_full_design ]]; then
-		batChargeNow=$(cat /sys/class/power_supply/BAT0/charge_full)
-		batChargeFactory=$(cat /sys/class/power_supply/BAT0/charge_full_design)
-		printf "%s" "api|${tagNum}|battery_current_max_capacity|${batChargeNow}|${UUID}" | /opt/uit-toolbox/parse
+	if [[ -d /sys/class/power_supply/BAT* ]]; then
+		batteryManufactureDate=$(dmidecode -t22 2>/dev/null | grep 'SBDS Manufacture Date' | sed 's/SBDS Manufacture Date: //g' | sed 's/^[[:space:]]*//g')
+		if [[ -f /sys/class/power_supply/BAT0/charge_full_design ]]; then
+			batteryMaxCapacity=$(cat /sys/class/power_supply/BAT0/charge_full 2>/dev/null)
+			batChargeFactory=$(cat /sys/class/power_supply/BAT0/charge_full_design 2>/dev/null)
+			batChargeCycles=$(cat /sys/class/power_supply/BAT0/cycle_count 2>/dev/null)
+			batteryModel=$(cat /sys/class/power_supply/BAT0/model_name 2>/dev/null)
+			batterySerial=$(cat /sys/class/power_supply/BAT0/serial_number 2>/dev/null)
+		elif [[ -f /sys/class/power_supply/BAT1/energy_full_design ]]; then
+			batteryMaxCapacity=$(cat /sys/class/power_supply/BAT1/energy_full 2>/dev/null)
+			batChargeFactory=$(cat /sys/class/power_supply/BAT1/energy_full_design 2>/dev/null)
+			batChargeCycles=$(cat /sys/class/power_supply/BAT1/cycle_count 2>/dev/null)
+			batteryModel=$(cat /sys/class/power_supply/BAT1/model_name 2>/dev/null)
+			batterySerial=$(cat /sys/class/power_supply/BAT1/serial_number 2>/dev/null)
+		fi
+		printf "%s" "api|${tagNum}|battery_current_max_capacity|${batteryMaxCapacity}|${UUID}" | /opt/uit-toolbox/parse
 		printf "%s" "api|${tagNum}|battery_design_capacity|${batChargeFactory}|${UUID}" | /opt/uit-toolbox/parse
-		batChargeCycles=$(cat /sys/class/power_supply/BAT0/cycle_count 2>/dev/null)
 		printf "%s" "api|${tagNum}|battery_charge_cycles|${batChargeCycles}|${UUID}" | /opt/uit-toolbox/parse
-	elif [[ -f /sys/class/power_supply/BAT1/energy_full_design ]]; then
-		batChargeNow=$(cat /sys/class/power_supply/BAT1/energy_full)
-		batChargeFactory=$(cat /sys/class/power_supply/BAT1/energy_full_design)
-		batHealthPCNT=$(( batChargeNow * 100 / batChargeFactory ))
-			printf "%s" "api|${tagNum}|battery_health|${batHealthPCNT}|${UUID}" | /opt/uit-toolbox/parse
-		batChargeCycles=$(cat /sys/class/power_supply/BAT1/cycle_count)
-			printf "%s" "api|${tagNum}|battery_charge_cycles|${batChargeCycles}|${UUID}" | /opt/uit-toolbox/parse
-	fi
-	
-	batteryModel=$(dmidecode -t22 | grep 'Name' | sed 's/Name: //g' | sed 's/^[[:space:]]*//g')
-	if [[ -z $batteryModel ]]; then
-		if [[ -f /sys/class/power_supply/BAT0/model_name ]]; then
-			batteryModel=$(cat /sys/class/power_supply/BAT0/model_name)
-		elif [[ -f /sys/class/power_supply/BAT1/model_name ]]; then
-			batteryModel=$(cat /sys/class/power_supply/BAT1/model_name)
-		fi
-	fi
 		printf "%s" "api|${tagNum}|battery_model|${batteryModel}|${UUID}" | /opt/uit-toolbox/parse
-	
-	batteryDesignCapacity=$(dmidecode -t22 | grep 'Design Capacity' | sed 's/[^0-9]//g')
-		printf "%s" "api|${tagNum}|battery_design_capacity|${batteryDesignCapacity}|${UUID}" | /opt/uit-toolbox/parse
-
-	batterySerial=$(dmidecode -t22 | grep 'SBDS Serial Number' | sed 's/SBDS Serial Number: //g' | sed 's/^[[:space:]]*//g')
-	if [[ -z $batterySerial ]]; then
-		if [[ -f /sys/class/power_supply/BAT0/serial_number ]]; then
-			batterySerial=$(cat /sys/class/power_supply/BAT0/serial_number)
-		elif [[ -f /sys/class/power_supply/BAT1/serial_number ]]; then
-			batterySerial=$(cat /sys/class/power_supply/BAT1/serial_number)
-		fi
-	fi
 		printf "%s" "api|${tagNum}|battery_serial|${batterySerial}|${UUID}" | /opt/uit-toolbox/parse
+		printf "%s" "api|${tagNum}|battery_manufacture_date|${batteryManufactureDate}|${UUID}" | /opt/uit-toolbox/parse
+	fi
 
-	batteryManufacturer=$(dmidecode -t22 | grep 'SBDS Manufacture Date' | sed 's/SBDS Manufacture Date: //g' | sed 's/^[[:space:]]*//g')
-		printf "%s" "api|${tagNum}|battery_manufacturedate|${batteryManufacturer}|${UUID}" | /opt/uit-toolbox/parse
 
 	###Memory Data
-	memSerial=$(dmidecode --type memory | grep -P '\tSerial Number' | sed 's/Serial Number: //g' | tr '\n' ' ' | tr '\t' ' ' | sed 's/ Not Specified //g' | sed 's/^ //g' | tr ' ' '-' | sed 's/-$//g')
+	memSerial=$(dmidecode --type memory | grep -P '\tSerial Number' | awk '{ print $3 }' | tr '\n' '-' | sed 's/-$//g')
 		printf "%s" "api|${tagNum}|memory_serial|${memSerial}|${UUID}" | /opt/uit-toolbox/parse
 	memCapacity=$(grep '^MemTotal' /proc/meminfo | awk '{ print $2 }')
 		printf "%s" "api|${tagNum}|memory_capacity|${memCapacity}|${UUID}" | /opt/uit-toolbox/parse
-	memSpeed=$(dmidecode --type 17 | grep '^[[:space:]]*Speed\:' | head -n1 | sed 's/[^0-9]//g')
+	memSpeed=$(dmidecode --type 17 2>/dev/null | grep '^[[:space:]]*Speed\:' | head -n1 | sed 's/[^0-9]//g')
 		printf "%s" "api|${tagNum}|memory_speed_mhz|${memSpeed}|${UUID}" | /opt/uit-toolbox/parse
 
 	###Boot Times

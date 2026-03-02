@@ -500,7 +500,7 @@ if ($arr[0] === "api") {
 		$body = json_encode([
 			'transaction_uuid' => $value2,
 			'tagnumber' => $tagNum,
-			`disk_reads` => $value
+			'disk_reads' => $value
 		]);
 	}
 
@@ -509,7 +509,7 @@ if ($arr[0] === "api") {
 		$body = json_encode([
 			'transaction_uuid' => $value2,
 			'tagnumber' => $tagNum,
-			`disk_writes` => $value
+			'disk_writes' => $value
 		]);
 	}
 
@@ -518,7 +518,7 @@ if ($arr[0] === "api") {
 		$body = json_encode([
 			'transaction_uuid' => $value2,
 			'tagnumber' => $tagNum,
-			`disk_model` => $value
+			'disk_model' => $value
 		]);
 	}
 
@@ -527,7 +527,7 @@ if ($arr[0] === "api") {
 		$body = json_encode([
 			'transaction_uuid' => $value2,
 			'tagnumber' => $tagNum,
-			`disk_serial` => $value
+			'disk_serial' => $value
 		]);
 	}
 
@@ -536,7 +536,7 @@ if ($arr[0] === "api") {
 		$body = json_encode([
 			'transaction_uuid' => $value2,
 			'tagnumber' => $tagNum,
-			`disk_size` => $value
+			'disk_size' => $value
 		]);
 	}
 
@@ -545,7 +545,7 @@ if ($arr[0] === "api") {
 		$body = json_encode([
 			'transaction_uuid' => $value2,
 			'tagnumber' => $tagNum,
-			`disk_firmware` => $value
+			'disk_firmware' => $value
 		]);
 	}
 
@@ -565,7 +565,7 @@ if ($arr[0] === "api") {
 		$body = json_encode([
 			'transaction_uuid' => $value2,
 			'tagnumber' => $tagNum,
-			`disk_type` => $value
+			'disk_type' => $value
 		]);
 	}
 
@@ -574,7 +574,7 @@ if ($arr[0] === "api") {
 		$body = json_encode([
 			'transaction_uuid' => $value2,
 			'tagnumber' => $tagNum,
-			`disk_power_on_hours` => $value
+			'disk_power_on_hours' => $value
 		]);
 	}
 
@@ -583,7 +583,7 @@ if ($arr[0] === "api") {
 		$body = json_encode([
 			'transaction_uuid' => $value2,
 			'tagnumber' => $tagNum,
-			`disk_power_cycles` => $value
+			'disk_power_cycles' => $value
 		]);
 	}
 
@@ -592,7 +592,7 @@ if ($arr[0] === "api") {
 		$body = json_encode([
 			'transaction_uuid' => $value2,
 			'tagnumber' => $tagNum,
-			`disk_errors` => $value
+			'disk_errors' => $value
 		]);
 	}
 
@@ -601,7 +601,7 @@ if ($arr[0] === "api") {
 		$body = json_encode([
 			'transaction_uuid' => $value2,
 			'tagnumber' => $tagNum,
-			`bios_version` => $value
+			'bios_version' => $value
 		]);
 	}
 
@@ -610,7 +610,7 @@ if ($arr[0] === "api") {
 		$body = json_encode([
 			'transaction_uuid' => $value2,
 			'tagnumber' => $tagNum,
-			`bios_release_date` => $value
+			'bios_release_date' => $value
 		]);
 	}
 
@@ -619,13 +619,57 @@ if ($arr[0] === "api") {
 		$body = json_encode([
 			'transaction_uuid' => $value2,
 			'tagnumber' => $tagNum,
-			`bios_firmware` => $value
+			'bios_firmware' => $value
 		]);
 	}
 	
+	if ($key === "battery_current_max_capacity") {
+		$url = "/api/client/hardware";
+		$body = json_encode([
+			'transaction_uuid' => $value2,
+			'tagnumber' => $tagNum,
+			'battery_current_max_capacity' => (int)$value
+		]);
+	}
 
-	if ($url === "") {
-		echo "Field not updated, no match: $key";
+	if ($key === "battery_design_capacity") {
+		$url = "/api/client/hardware";
+		$body = json_encode([
+			'transaction_uuid' => $value2,
+			'tagnumber' => $tagNum,
+			'battery_design_capacity' => (int)$value
+		]);
+	}
+
+	if ($key === "memory_serial") {
+		$url = "/api/client/hardware";
+		$body = json_encode([
+			'transaction_uuid' => $value2,
+			'tagnumber' => $tagNum,
+			'memory_serial' => $value
+		]);
+	}
+
+	if ($key === "memory_capacity") {
+		$url = "/api/client/hardware";
+		$body = json_encode([
+			'transaction_uuid' => $value2,
+			'tagnumber' => $tagNum,
+			'memory_capacity' => (int)$value
+		]);
+	}
+	
+	if ($key === "memory_speed_mhz") {
+		$url = "/api/client/hardware";
+		$body = json_encode([
+			'transaction_uuid' => $value2,
+			'tagnumber' => $tagNum,
+			'memory_speed_mhz' => (int)$value
+		]);
+	}
+
+	if ($url === "" || empty($body)) {
+		echo "Field not updated, no match: $key" . PHP_EOL;
 		return;
 	}
 	curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
