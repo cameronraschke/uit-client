@@ -2029,7 +2029,7 @@ function main {
 	enterTag
 	systemData
 	hardwareData
-	printf "%s" "api|${tagNum}|last_hardware_check|${CURRENT_TIME}|time_placeholder" | /opt/uit-toolbox/parse
+	printf "%s" "api|${tagNum}|last_hardware_check|${CURRENT_TIME}|${UUID}" | /opt/uit-toolbox/parse
 	tput reset
 	autodetectClient
 	if [[ $mainMenuOpt == "1" ]]; then
