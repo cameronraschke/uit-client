@@ -306,10 +306,11 @@ if ($arr[0] === "api") {
 	$tagNum = (int)$arr[1];
 	$key = $arr[2];
 	$value = $arr[3];
-	if ($arr[4]) {
+	if (!empty($arr[4])) {
 		$value2 = $arr[4];
 	}
 
+	$baseURL = "https://UIT_WEB_HTTPS_HOST:UIT_WEB_HTTPS_PORT";
 	$ch = curl_init();
 	$encodedTag=curl_escape($ch, $tagNum);
 	$encodedKey=curl_escape($ch, $key);
@@ -317,7 +318,7 @@ if ($arr[0] === "api") {
 
 	if ($key === "memory") {
 		// api|${tagNum}|memory|${memAvailable}|${memTotal}
-		$url = "https://UIT_WEB_HTTPS_HOST:UIT_WEB_HTTPS_PORT/api/client/memory";
+		$url = "/api/client/memory";
 		$body = json_encode([
 			'tagnumber' => $tagNum,
 			'memory_usage' => (int)$value,
@@ -326,7 +327,7 @@ if ($arr[0] === "api") {
 	}
 	if ($key === "cpu_usage") {
 		$usage = floatval($value);
-		$url = "https://UIT_WEB_HTTPS_HOST:UIT_WEB_HTTPS_PORT/api/client/cpu/usage";
+		$url = "/api/client/cpu/usage";
 		$body = json_encode([
 			'tagnumber' => $tagNum,
 			'cpu_usage' => floatval($value),
@@ -334,14 +335,14 @@ if ($arr[0] === "api") {
 	}
 	if ($key === "cpu_temp") {
 		$usage = floatval($value);
-		$url = "https://UIT_WEB_HTTPS_HOST:UIT_WEB_HTTPS_PORT/api/client/cpu/temp";
+		$url = "/api/client/cpu/temp";
 		$body = json_encode([
 			'tagnumber' => $tagNum,
 			'cpu_millidegrees_c' => (int)$value,
 		]);
 	}
 	if ($key === "network") {
-		$url = "https://UIT_WEB_HTTPS_HOST:UIT_WEB_HTTPS_PORT/api/client/network/usage";
+		$url = "/api/client/network/usage";
 		$body = json_encode([
 			'tagnumber' => $tagNum,
 			'network_usage' => (int)$value,
@@ -350,7 +351,7 @@ if ($arr[0] === "api") {
 	}
 
 	if ($key === "uptime") {
-		$url = "https://UIT_WEB_HTTPS_HOST:UIT_WEB_HTTPS_PORT/api/client/uptime";
+		$url = "/api/client/uptime";
 		$body = json_encode([
 			'tagnumber' => $tagNum,
 			'client_app_uptime' => (int)$value,
@@ -359,7 +360,7 @@ if ($arr[0] === "api") {
 	}
 
 	if ($key === "last_hardware_check") {
-		$url = "https://UIT_WEB_HTTPS_HOST:UIT_WEB_HTTPS_PORT/api/client/health/last_hardware_check";
+		$url = "/api/client/health/last_hardware_check";
 		$dt = new DateTime("now", new DateTimeZone("UTC"));
 		$body = json_encode([
 			'tagnumber' => $tagNum,
@@ -367,9 +368,255 @@ if ($arr[0] === "api") {
 		]);
 	}
 
+	if ($key === "system_serial") {
+		$url = "/api/client/hardware";
+		$body = json_encode([
+			'transaction_uuid' => $value2,
+			'tagnumber' => $tagNum,
+			'system_serial' => $value
+		]);
+	}
+
+	if ($key === "system_manufacturer") {
+		$url = "/api/client/hardware";
+		$body = json_encode([
+			'transaction_uuid' => $value2,
+			'tagnumber' => $tagNum,
+			'system_manufacturer' => $value
+		]);
+	}
+
+	if ($key === "system_model") {
+		$url = "/api/client/hardware";
+		$body = json_encode([
+			'transaction_uuid' => $value2,
+			'tagnumber' => $tagNum,
+			'system_model' => $value
+		]);
+	}
+
+	if ($key === "system_uuid") {
+		$url = "/api/client/hardware";
+		$body = json_encode([
+			'transaction_uuid' => $value2,
+			'tagnumber' => $tagNum,
+			'system_uuid' => $value
+		]);
+	}
+
+	if ($key === "system_sku") {
+		$url = "/api/client/hardware";
+		$body = json_encode([
+			'transaction_uuid' => $value2,
+			'tagnumber' => $tagNum,
+			'system_sku' => $value
+		]);
+	}
+
+	if ($key === "chassis_type") {
+		$url = "/api/client/hardware";
+		$body = json_encode([
+			'transaction_uuid' => $value2,
+			'tagnumber' => $tagNum,
+			'chassis_type' => $value
+		]);
+	}
+
+	if ($key === "cpu_manufacturer") {
+		$url = "/api/client/hardware";
+		$body = json_encode([
+			'transaction_uuid' => $value2,
+			'tagnumber' => $tagNum,
+			'cpu_manufacturer' => $value
+		]);
+	}
+
+	if ($key === "cpu_model") {
+		$url = "/api/client/hardware";
+		$body = json_encode([
+			'transaction_uuid' => $value2,
+			'tagnumber' => $tagNum,
+			'cpu_model' => $value
+		]);
+	}
+
+	if ($key === "cpu_max_speed_mhz") {
+		$url = "/api/client/hardware";
+		$body = json_encode([
+			'transaction_uuid' => $value2,
+			'tagnumber' => $tagNum,
+			'cpu_max_speed_mhz' => $value
+		]);
+	}
+
+	if ($key === "cpu_core_count") {
+		$url = "/api/client/hardware";
+		$body = json_encode([
+			'transaction_uuid' => $value2,
+			'tagnumber' => $tagNum,
+			'cpu_core_count' => $value
+		]);
+	}
+
+	if ($key === "cpu_thread_count") {
+		$url = "/api/client/hardware";
+		$body = json_encode([
+			'transaction_uuid' => $value2,
+			'tagnumber' => $tagNum,
+			'cpu_thread_count' => $value
+		]);
+	}
+
+	if ($key === "motherboard_manufacturer") {
+		$url = "/api/client/hardware";
+		$body = json_encode([
+			'transaction_uuid' => $value2,
+			'tagnumber' => $tagNum,
+			'motherboard_manufacturer' => $value
+		]);
+	}
+
+	if ($key === "motherboard_serial") {
+		$url = "/api/client/hardware";
+		$body = json_encode([
+			'transaction_uuid' => $value2,
+			'tagnumber' => $tagNum,
+			'motherboard_serial' => $value
+		]);
+	}
+
+	if ($key === "disk_reads") {
+		$url = "/api/client/hardware";
+		$body = json_encode([
+			'transaction_uuid' => $value2,
+			'tagnumber' => $tagNum,
+			`disk_reads` => $value
+		]);
+	}
+
+	if ($key === "disk_writes") {
+		$url = "/api/client/hardware";
+		$body = json_encode([
+			'transaction_uuid' => $value2,
+			'tagnumber' => $tagNum,
+			`disk_writes` => $value
+		]);
+	}
+
+	if ($key === "disk_model") {
+		$url = "/api/client/hardware";
+		$body = json_encode([
+			'transaction_uuid' => $value2,
+			'tagnumber' => $tagNum,
+			`disk_model` => $value
+		]);
+	}
+
+	if ($key === "disk_serial") {
+		$url = "/api/client/hardware";
+		$body = json_encode([
+			'transaction_uuid' => $value2,
+			'tagnumber' => $tagNum,
+			`disk_serial` => $value
+		]);
+	}
+
+	if ($key === "disk_size") {
+		$url = "/api/client/hardware";
+		$body = json_encode([
+			'transaction_uuid' => $value2,
+			'tagnumber' => $tagNum,
+			`disk_size` => $value
+		]);
+	}
+
+	if ($key === "disk_firmware") {
+		$url = "/api/client/hardware";
+		$body = json_encode([
+			'transaction_uuid' => $value2,
+			'tagnumber' => $tagNum,
+			`disk_firmware` => $value
+		]);
+	}
+
+	if ($key === "disk_type") {
+		$url = "/api/client/hardware";
+		if ($key === "disk_type") {
+			if ($value == "1") {
+				$value = "hdd";
+			} elseif ($value == "0") {
+				$value = "ssd";
+			} elseif ($value == "nvme") {
+				$value = "nvme";
+			} else {
+				$value = "";
+			}
+		}
+		$body = json_encode([
+			'transaction_uuid' => $value2,
+			'tagnumber' => $tagNum,
+			`disk_type` => $value
+		]);
+	}
+
+	if ($key === "disk_power_on_hours") {
+		$url = "/api/client/hardware";
+		$body = json_encode([
+			'transaction_uuid' => $value2,
+			'tagnumber' => $tagNum,
+			`disk_power_on_hours` => $value
+		]);
+	}
+
+	if ($key === "disk_power_cycles") {
+		$url = "/api/client/hardware";
+		$body = json_encode([
+			'transaction_uuid' => $value2,
+			'tagnumber' => $tagNum,
+			`disk_power_cycles` => $value
+		]);
+	}
+
+	if ($key === "disk_errors") {
+		$url = "/api/client/hardware";
+		$body = json_encode([
+			'transaction_uuid' => $value2,
+			'tagnumber' => $tagNum,
+			`disk_errors` => $value
+		]);
+	}
+
+	if ($key === "bios_version") {
+		$url = "/api/client/hardware";
+		$body = json_encode([
+			'transaction_uuid' => $value2,
+			'tagnumber' => $tagNum,
+			`bios_version` => $value
+		]);
+	}
+
+	if ($key === "bios_release_date") {
+		$url = "/api/client/hardware";
+		$body = json_encode([
+			'transaction_uuid' => $value2,
+			'tagnumber' => $tagNum,
+			`bios_release_date` => $value
+		]);
+	}
+
+	if ($key === "bios_firmware") {
+		$url = "/api/client/hardware";
+		$body = json_encode([
+			'transaction_uuid' => $value2,
+			'tagnumber' => $tagNum,
+			`bios_firmware` => $value
+		]);
+	}
+	
+
 	curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
 	curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
-	curl_setopt($ch, CURLOPT_URL, $url);
+	curl_setopt($ch, CURLOPT_URL, $baseURL . $url);
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 	curl_setopt($ch, CURLOPT_HTTPHEADER, array(
 		'Content-Type: application/json',
