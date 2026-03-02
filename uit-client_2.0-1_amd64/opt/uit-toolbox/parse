@@ -574,7 +574,7 @@ if ($arr[0] === "api") {
 		$body = json_encode([
 			'transaction_uuid' => $value2,
 			'tagnumber' => $tagNum,
-			'disk_power_on_hours' => $value
+			'disk_power_on_hours' => (int)$value
 		]);
 	}
 
@@ -686,7 +686,6 @@ if ($arr[0] === "api") {
 		echo 'Error updating battery_health: ' . curl_error($ch);
 	}
 	return;
-
 }
 
 ?>
