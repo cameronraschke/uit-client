@@ -307,11 +307,11 @@ if ($arr[0] === "api_get") {
 	$url = "";
 	$ch = curl_init();
 	$key = $arr[1];
-	if ($arr[2]) $queryKey = curl_escape($ch, $arr[2]);
-	if ($arr[3]) $queryVal = curl_escape($ch, $arr[3]);
+	if (isset($arr[2])) $queryKey = curl_escape($ch, $arr[2]);
+	if (isset($arr[3])) $queryVal = curl_escape($ch, $arr[3]);
 
 	if ($key === "server_time") {
-		$url = "/api/server_time?format=unix";
+		$url = "/api/server_time";
 	}
 
 	if ($url === "") {
@@ -335,7 +335,7 @@ if ($arr[0] === "api_get") {
 	}
 	$responseJSON = json_decode($response, true);
 	$returnField = $responseJSON[$key];
-	if (!empty($returnField)) return $returnField;
+	if (!empty($returnField)) echo $returnField;
 	return;
 }
 
@@ -343,9 +343,7 @@ if ($arr[0] === "api_post") {
 	$tagNum = (int)$arr[1];
 	$key = $arr[2];
 	$value = $arr[3];
-	if (!empty($arr[4])) {
-		$value2 = $arr[4];
-	}
+	if (isset($arr[4])) $value2 = $arr[4];
 
 	$baseURL = "https://UIT_WEB_HTTPS_HOST:UIT_WEB_HTTPS_PORT";
 	$url = "";
