@@ -110,9 +110,9 @@ systemctl daemon-reload &>/dev/null
 /usr/bin/chronyc add server UIT_CLIENT_NTP_HOST iburst
 /usr/bin/chronyc makestep
 
-while [[ $(echo -n "api_get|server_time" | /opt/uit-toolbox/parse) != $(date --rfc-email) ]]; do
+while [[ $(echo -n "api_get|server_time" | /opt/uit-toolbox/parse) != $(date --iso-8601=seconds) ]]; do
 	echo "Error: time is not synced with server. Retrying..." >&2
-	echo "server_time: $(echo -n "api_get|server_time" | /opt/uit-toolbox/parse), local_time: $(date --rfc-email)" >&2
+	echo "server_time: $(echo -n "api_get|server_time" | /opt/uit-toolbox/parse), local_time: $(date --iso-8601=seconds)" >&2
 	sleep 0.5
 done
 printf '%s\n' "${GREEN}Done.${RESET}"
