@@ -539,21 +539,21 @@ if ($arr[0] === "api_post") {
 		]);
 	}
 
-	if ($key === "disk_reads") {
+	if ($key === "disk_reads_kb") {
 		$url = "/api/client/hardware";
 		$body = json_encode([
 			'transaction_uuid' => $value2,
 			'tagnumber' => $tagNum,
-			'disk_reads' => (int)$value
+			'disk_reads_kb' => (int)$value
 		]);
 	}
 
-	if ($key === "disk_writes") {
+	if ($key === "disk_writes_kb") {
 		$url = "/api/client/hardware";
 		$body = json_encode([
 			'transaction_uuid' => $value2,
 			'tagnumber' => $tagNum,
-			'disk_writes' => (int)$value
+			'disk_writes_kb' => (int)$value
 		]);
 	}
 
