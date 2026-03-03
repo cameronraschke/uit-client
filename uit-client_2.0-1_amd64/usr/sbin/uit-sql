@@ -77,12 +77,12 @@ done
 memTotal=$(cat /proc/meminfo  | grep -i memTotal | awk '{ print $2 }')
 memAvailable=$(cat /proc/meminfo  | grep -i memAvailable | awk '{ print $2 }')
 memUsage=$(( memTotal - memAvailable ))
-echo "api|${tagNum}|memory|${memUsage}|${memTotal}" | /opt/uit-toolbox/parse
+echo "api_post|${tagNum}|memory|${memUsage}|${memTotal}" | /opt/uit-toolbox/parse
 
 # Get CPU temp and usage
 cpu_usage=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | cut -d'%' -f1)
 avgTemp=0
-echo "api|${tagNum}|cpu_usage|${cpu_usage}" | /opt/uit-toolbox/parse
+echo "api_post|${tagNum}|cpu_usage|${cpu_usage}" | /opt/uit-toolbox/parse
 for i in $(find /sys/class/hwmon/ -mindepth 1 -maxdepth 1); do
 	type=$(cat ${i}/name)
 	if [[ $type == "coretemp" ]]; then
@@ -93,7 +93,7 @@ for i in $(find /sys/class/hwmon/ -mindepth 1 -maxdepth 1); do
 		avgTemp=$(( avgTemp / ${#cpuTemps[@]} ))
 	fi
 done
-echo "api|${tagNum}|cpu_temp|${avgTemp}" | /opt/uit-toolbox/parse
+echo "api_post|${tagNum}|cpu_temp|${avgTemp}" | /opt/uit-toolbox/parse
 
 # Get network link speed
 for i in $(ip addr | awk '/state UP/ {print $2}' | sed 's/://g'); do
@@ -106,7 +106,7 @@ for i in $(ip addr | awk '/state UP/ {print $2}' | sed 's/://g'); do
 	newRxBytes=$(cat /sys/class/net/${i}/statistics/rx_bytes)
 	newBytes=$(( newTxBytes + newRxBytes ))
 	netUsage=$(( (newBytes - originalBytes) * 8 ))
-	echo "api|${tagNum}|network|${netUsage}|${linkSpeed}" | /opt/uit-toolbox/parse
+	echo "api_post|${tagNum}|network|${netUsage}|${linkSpeed}" | /opt/uit-toolbox/parse
 done
 
 # Check if cancel job has been sent
@@ -142,6 +142,6 @@ echo "${clientAppUptime}" > /root/client_app_uptime
 
 systemUptime=$(cat /proc/uptime | awk '{print int($1)}')
 
-echo "api|${tagNum}|uptime|${clientAppUptime}|${systemUptime}" | /opt/uit-toolbox/parse
+echo "api_post|${tagNum}|uptime|${clientAppUptime}|${systemUptime}" | /opt/uit-toolbox/parse
 
 done

@@ -302,7 +302,42 @@ if ($arr[0] == "live_images") {
 	$dbPSQL->updateLiveImages($tagNum, "time", $time);
 }
 
-if ($arr[0] === "api") {
+if ($arr[0] === "api_get") {
+	$baseURL = "https://UIT_WEB_HTTPS_HOST:UIT_WEB_HTTPS_PORT";
+	$url = "";
+	$ch = curl_init();
+	$key = $arr[1];
+	if ($arr[2]) $queryKey = curl_escape($ch, $arr[2]);
+	if ($arr[3]) $queryVal = curl_escape($ch, $arr[3]);
+
+	if ($key === "server_time") {
+		$url = "/api/server_time?format=unix";
+	}
+
+	if ($url === "") {
+		// echo "Data not fetched, no match for key: $key" . PHP_EOL;
+		return;
+	}
+	curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
+	curl_setopt($ch, CURLOPT_URL, $baseURL . $url);
+	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+	curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+		'User-Agent: uit-client'
+	));
+	$response = curl_exec($ch);
+	if ($response === false) {
+		// echo 'Error fetching data for ' . $key . ': ' . curl_error($ch);
+		return;
+	}
+	if (curl_errno($ch)) {
+		// echo 'Error fetching data for ' . $key . ': ' . curl_error($ch);
+		return;
+	}
+	echo $response;
+	return;
+}
+
+if ($arr[0] === "api_post") {
 	$tagNum = (int)$arr[1];
 	$key = $arr[2];
 	$value = $arr[3];
@@ -683,7 +718,8 @@ if ($arr[0] === "api") {
 	));
 	$response = curl_exec($ch);
 	if (curl_errno($ch)) {
-		echo 'Error updating battery_health: ' . curl_error($ch);
+		echo 'Error updating ' . $key . ': ' . curl_error($ch);
+		return;
 	}
 	return;
 }

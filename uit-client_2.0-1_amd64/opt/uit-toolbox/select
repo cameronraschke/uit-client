@@ -7,6 +7,8 @@ $stdin = fopen('php://stdin', 'r');
 $input = trim(fgets(STDIN));
 fclose($stdin);
 
+if (!str_starts_with($input, "SELECT ") || str_contains($input, ";")) return;
+
 $dbPSQL = new dbPSQL();
 
 $dbPSQL->select($input);
