@@ -142,8 +142,8 @@ printf '%s\n' "${GREEN}Done.${RESET}"
 systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
 
 
-etherAddr=$(for i in $(ip addr | awk '/state UP/ {print $2}' | sed 's/://g'); do cat /sys/class/net/${i}/address; done)
-wifiMac=$(cat /sys/class/ieee80211/phy*/macaddress 2>/dev/null)
+etherAddr=$(for i in $(ip addr | awk '/state UP/ {print $2}' | sed 's/://g'); do cat /sys/class/net/${i}/address 2>/dev/null; done)
+wifiMac=$(cat /sys/class/ieee80211/phy*/macaddress 2>/dev/null | head -n1)
 systemSerial=$(dmidecode --string system-serial-number 2>/dev/null)
 if [[ -z $systemSerial ]]; then
 	systemSerial=$(cat /sys/class/dmi/id/product_serial)
@@ -164,7 +164,7 @@ linuxPath="images"
 
 tput reset
 
-function diskData {
+function collectDiskData {
 		###Disk Data
 	for i in $(lsblk -o NAME --nodeps --noheadings --exclude 1,2,7,11); do
 		if [[ $(cat /sys/block/${i}/removable) == 0 ]]; then
@@ -178,126 +178,61 @@ function diskData {
 
 		# Disk reads
 		diskReads=$(echo "$(cat /sys/class/block/${DISK}/stat | awk '{ print $3 }') * 512" | bc)
-		 printf "%s" "api_post|${tagNum}|disk_reads|${diskReads}|${UUID}" | /opt/uit-toolbox/parse
+		printf "%s" "api_post|${tagNum}|disk_reads|${diskReads}|${UUID}" | /opt/uit-toolbox/parse
+
 		# Disk writes
 		diskWrites=$(echo "$(cat /sys/class/block/${DISK}/stat | awk '{ print $7 }') * 512" | bc)
-		 printf "%s" "api_post|${tagNum}|disk_writes|${diskWrites}|${UUID}" | /opt/uit-toolbox/parse
+		printf "%s" "api_post|${tagNum}|disk_writes|${diskWrites}|${UUID}" | /opt/uit-toolbox/parse
+
 		# Disk model
 		diskModel=$(cat /sys/class/block/${DISK}/device/model 2>/dev/null)
-			printf "%s" "api_post|${tagNum}|disk_model|${diskModel}|${UUID}" | /opt/uit-toolbox/parse
+		printf "%s" "api_post|${tagNum}|disk_model|${diskModel}|${UUID}" | /opt/uit-toolbox/parse
+
 		# Disk Serial
 		diskSerial=$(cat /sys/class/block/${DISK}/device/serial 2>/dev/null)
-			printf "%s" "api_post|${tagNum}|disk_serial|${diskSerial}|${UUID}" | /opt/uit-toolbox/parse
+		printf "%s" "api_post|${tagNum}|disk_serial|${diskSerial}|${UUID}" | /opt/uit-toolbox/parse
+
 		# Disk Size
 		diskSize=$(cat /sys/class/block/${DISK}/size 2>/dev/null)
-			printf "%s" "api_post|${tagNum}|disk_size|${diskSize}|${UUID}" | /opt/uit-toolbox/parse
+		printf "%s" "api_post|${tagNum}|disk_size|${diskSize}|${UUID}" | /opt/uit-toolbox/parse
 
+		# Disk Power On Hours
+		diskPowerOnHours=$(cat /root/smartctl-data | grep -iP 'Power( |_)On( |_)Hours' | sed 's/[^0-9]//g')
+		printf "%s" "api_post|${tagNum}|disk_power_on_hours|${diskPowerOnHours}|${UUID}" | /opt/uit-toolbox/parse
+
+		# Disk firmware
+		diskFirmware=$(cat /root/smartctl-data | grep '^Firmware Version: ' | sed 's/Firmware Version: *//g')
+		printf "%s" "api_post|${tagNum}|disk_firmware|${diskFirmware}|${UUID}" | /opt/uit-toolbox/parse
+
+		# Disk Power Cycles
+		diskPowerCycles=$(cat /root/smartctl-data | grep -iP 'Power( |_)Cycle' | sed 's/[^0-9]//g')
+		printf "%s" "api_post|${tagNum}|disk_power_cycles|${diskPowerCycles}|${UUID}" | /opt/uit-toolbox/parse
 
 		if [[ $DISK =~ $NVME_REGEX ]]; then
-		diskFirmware=$(cat /root/smartctl-data | grep '^Firmware Version: ' | sed 's/Firmware Version: *//g')
-			printf "%s" "api_post|${tagNum}|disk_firmware|${diskFirmware}|${UUID}" | /opt/uit-toolbox/parse
-		diskPowerCycles=$(cat /root/smartctl-data | grep '^Power Cycles: ' | awk '{print $3}' | sed 's/,//g')
-			printf "%s" "api_post|${tagNum}|disk_power_cycles|${diskPowerCycles}|${UUID}" | /opt/uit-toolbox/parse
-		diskType=nvme
-			printf "%s" "api_post|${tagNum}|disk_type|${diskType}|${UUID}" | /opt/uit-toolbox/parse
-		# Disk errors
-		diskGenericErr=$(cat /root/smartctl-data | grep 'Error Information Log Entries:' | awk '{print $5}' | sed 's/,//g')
-		diskDataErr=$(cat /root/smartctl-data | grep 'Media and Data Integrity Errors:' | awk '{print $6}' | sed 's/,//g')
-
-		diskErrors=$(( diskGenericErr + diskDataErr ))
-			printf "%s" "api_post|${tagNum}|disk_errors|${diskErrors}|${UUID}" | /opt/uit-toolbox/parse
+			diskType=nvme
+			# Disk errors
+			diskGenericErr=$(cat /root/smartctl-data | grep 'Error Information Log Entries:' | awk '{print $5}' | sed 's/,//g')
+			diskDataErr=$(cat /root/smartctl-data | grep 'Media and Data Integrity Errors:' | awk '{print $6}' | sed 's/,//g')
+			diskErrorCount=$(( diskGenericErr + diskDataErr ))
+		elif [[ $DISK =~ $SSD_REGEX ]]; then
+			diskType=$(lsblk --nodeps --output NAME,ROTA | grep -i "${DISK}"  | awk '{ print $2 }' | tail -n 1)
+				if [[ $diskType == "1" ]]; then
+					diskType="hdd"
+					else
+					diskType="ssd"
+				fi
+			diskErrorCount=$(cat /root/smartctl-data | grep 'ATA Error Count:' | awk '{print $4}' | sed 's/,//g')
 		fi
+		
+		# Disk type
+		printf "%s" "api_post|${tagNum}|disk_type|${diskType}|${UUID}" | /opt/uit-toolbox/parse
 
-		if [[ $DISK =~ $SSD_REGEX ]]; then
-		diskFirmware=$(cat /root/smartctl-data | grep '^Firmware Version: ' | sed 's/Firmware Version: *//g')
-			printf "%s" "api_post|${tagNum}|disk_firmware|${diskFirmware}|${UUID}" | /opt/uit-toolbox/parse
-
-		diskType=$(lsblk --nodeps --output NAME,ROTA | grep -i "${DISK}"  | awk '{ print $2 }' | tail -n 1)
-			printf "%s" "api_post|${tagNum}|disk_type|${diskType}|${UUID}" | /opt/uit-toolbox/parse
-			if [[ $diskType == "1" ]]; then
-				diskType="hdd"
-				else
-				diskType="ssd"
-			fi
-		diskPowerOnHours=$(cat /root/smartctl-data | grep '9 Power_On_Hours' | awk '{print $10}')
-			printf "%s" "api_post|${tagNum}|disk_power_on_hours|${diskPowerOnHours}|${UUID}" | /opt/uit-toolbox/parse
-
-		diskPowerCycles=$(cat /root/smartctl-data | grep '12 Power_Cycle_Count' | awk '{print $10}' | sed 's/,//g')
-			printf "%s" "api_post|${tagNum}|disk_power_cycles|${diskPowerCycles}|${UUID}" | /opt/uit-toolbox/parse
-
-		# Disk errors
-		diskErrors=$(cat /root/smartctl-data | grep 'ATA Error Count:' | awk '{print $4}' | sed 's/,//g')
-			printf "%s" "api_post|${tagNum}|disk_errors|${diskErrors}|${UUID}" | /opt/uit-toolbox/parse
-		fi
+		# Disk error count
+		printf "%s" "api_post|${tagNum}|disk_errors|${diskErrorCount}|${UUID}" | /opt/uit-toolbox/parse
 	done
 }
 
-
-function systemData {
-	# WiFi MAC Address
-	wifiMac=$(cat /sys/class/ieee80211/phy*/macaddress 2>/dev/null)
-	printf "%s" "api_post|${tagNum}|wifi_mac|${wifiMac}|${UUID}" | /opt/uit-toolbox/parse
-
-	# System Manufacturer
-	tOneManufacturer=$(dmidecode --string system-manufacturer)
-	printf "%s" "api_post|${tagNum}|system_manufacturer|${tOneManufacturer}|${UUID}" | /opt/uit-toolbox/parse
-
-
-	# System Model Name
-	systemModel=$(dmidecode --string system-product-name)
-	if [[ -z $systemModel ]]; then
-		systemModel=$(cat /sys/class/dmi/id/product_name)
-	fi
-	printf "%s" "api_post|${tagNum}|system_model|${systemModel}|${UUID}" | /opt/uit-toolbox/parse
-
-	# System UUID
-	systemUUID=$(dmidecode --string system-uuid)
-	if [[ -z $systemUUID ]]; then
-		systemUUID=$(cat /sys/class/dmi/id/product_uuid)
-	fi
-	printf "%s" "api_post|${tagNum}|system_uuid|${systemUUID}|${UUID}" | /opt/uit-toolbox/parse
-
-	# System SKU
-	systemSKU=$(dmidecode --string system-sku-number)
-	if [[ -z $systemSKU ]]; then
-		systemSKU=$(cat /sys/class/dmi/id/product_sku)
-	fi
-	printf "%s" "api_post|${tagNum}|system_sku|${systemSKU}|${UUID}" | /opt/uit-toolbox/parse
-
-	# Chassis Type
-	chassisType=$(dmidecode --string chassis-type | head -n1)
-	printf "%s" "api_post|${tagNum}|chassis_type|${chassisType}|${UUID}" | /opt/uit-toolbox/parse
-
-	# CPU Manufacturer
-	systemManufacturer=$(dmidecode --string processor-manufacturer)
-	printf "%s" "api_post|${tagNum}|cpu_manufacturer|${systemManufacturer}|${UUID}" | /opt/uit-toolbox/parse
-
-	# CPU Model
-	tFourVersion=$(dmidecode --string processor-version)
-	printf "%s" "api_post|${tagNum}|cpu_model|${tFourVersion}|${UUID}" | /opt/uit-toolbox/parse
-
-	# CPU Max Speed
-	tFourMaxSpeed=$(dmidecode -t4 | grep 'Max Speed' | sed 's/[^0-9]//g')
-	printf "%s" "api_post|${tagNum}|cpu_max_speed_mhz|${tFourMaxSpeed}|${UUID}" | /opt/uit-toolbox/parse
-
-	# CPU Core Count
-	tFourCoreCount=$(dmidecode -t4 | grep 'Core Count' | sed 's/Core Count: //g' | sed 's/^[[:space:]]*//g')
-	printf "%s" "api_post|${tagNum}|cpu_core_count|${tFourCoreCount}|${UUID}" | /opt/uit-toolbox/parse
-
-	# CPU Thread Count
-	tFourThreadCount=$(dmidecode -t4 | grep 'Thread Count' | sed 's/Thread Count: //g' | sed 's/^[[:space:]]*//g')
-	printf "%s" "api_post|${tagNum}|cpu_thread_count|${tFourThreadCount}|${UUID}" | /opt/uit-toolbox/parse
-
-	# Motherboard Manufacturer
-	tTwoManufacturer=$(dmidecode --string baseboard-manufacturer)
-	printf "%s" "api_post|${tagNum}|motherboard_manufacturer|${tTwoManufacturer}|${UUID}" | /opt/uit-toolbox/parse
-
-	# Motherboard Serial
-	tTwoSerialNumber=$(dmidecode --string baseboard-serial-number)
-	printf "%s" "api_post|${tagNum}|motherboard_serial|${tTwoSerialNumber}|${UUID}" | /opt/uit-toolbox/parse
-}
-
-function hardwareData {
+function collectSystemData {
 # 53 cols in art
 terminalCols=$(( $(tput cols) / 2 ))
 # 5 rows in art, first number in tput cup
@@ -340,6 +275,7 @@ EOF
 printf '%s\n' "${RESET}"
 printf '%s\n' "${BOLD}Inputting data into database...${RESET}"
 fi
+
 	printf "%s" "general|host_connected|1|${UUID}" | /opt/uit-toolbox/parse
 	### DMI Data
 	#t0 = BIOS
@@ -349,9 +285,72 @@ fi
 	#t4 = Processor
 	#t22 = Battery
 	#t32 = Boot Status
+
+	# Ethernet MAC Address
+	printf "%s" "api_post|${tagNum}|ethernet_mac|${etherAddr}|${UUID}" | /opt/uit-toolbox/parse
+
+	# WiFi MAC Address
+	printf "%s" "api_post|${tagNum}|wifi_mac|${wifiMac}|${UUID}" | /opt/uit-toolbox/parse
+
+	# System Manufacturer
+	systemManufacturer=$(dmidecode --string system-manufacturer)
+	printf "%s" "api_post|${tagNum}|system_manufacturer|${systemManufacturer}|${UUID}" | /opt/uit-toolbox/parse
+
+	# System Model Name
+	systemModel=$(dmidecode --string system-product-name)
+	if [[ -z $systemModel ]]; then
+		systemModel=$(cat /sys/class/dmi/id/product_name)
+	fi
+	printf "%s" "api_post|${tagNum}|system_model|${systemModel}|${UUID}" | /opt/uit-toolbox/parse
+
+	# System UUID
+	systemUUID=$(dmidecode --string system-uuid)
+	if [[ -z $systemUUID ]]; then
+		systemUUID=$(cat /sys/class/dmi/id/product_uuid)
+	fi
+	printf "%s" "api_post|${tagNum}|system_uuid|${systemUUID}|${UUID}" | /opt/uit-toolbox/parse
+
+	# System SKU
+	systemSKU=$(dmidecode --string system-sku-number)
+	if [[ -z $systemSKU ]]; then
+		systemSKU=$(cat /sys/class/dmi/id/product_sku)
+	fi
+	printf "%s" "api_post|${tagNum}|system_sku|${systemSKU}|${UUID}" | /opt/uit-toolbox/parse
+
+	# Chassis Type
+	chassisType=$(dmidecode --string chassis-type | head -n1)
+	printf "%s" "api_post|${tagNum}|chassis_type|${chassisType}|${UUID}" | /opt/uit-toolbox/parse
+
+	# CPU Manufacturer
+	cpuManufacturer=$(dmidecode --string processor-manufacturer)
+	printf "%s" "api_post|${tagNum}|cpu_manufacturer|${cpuManufacturer}|${UUID}" | /opt/uit-toolbox/parse
+
+	# CPU Model
+	cpuModel=$(dmidecode --string processor-version)
+	printf "%s" "api_post|${tagNum}|cpu_model|${cpuModel}|${UUID}" | /opt/uit-toolbox/parse
+
+	# CPU Max Speed
+	cpuMaxSpeed=$(dmidecode -t4 | grep 'Max Speed' | sed 's/[^0-9]//g')
+	printf "%s" "api_post|${tagNum}|cpu_max_speed_mhz|${cpuMaxSpeed}|${UUID}" | /opt/uit-toolbox/parse
+
+	# CPU Core Count
+	cpuCoreCount=$(dmidecode -t4 | grep 'Core Count' | sed 's/Core Count: //g' | sed 's/^[[:space:]]*//g')
+	printf "%s" "api_post|${tagNum}|cpu_core_count|${cpuCoreCount}|${UUID}" | /opt/uit-toolbox/parse
+
+	# CPU Thread Count
+	cpuThreadCount=$(dmidecode -t4 | grep 'Thread Count' | sed 's/Thread Count: //g' | sed 's/^[[:space:]]*//g')
+	printf "%s" "api_post|${tagNum}|cpu_thread_count|${cpuThreadCount}|${UUID}" | /opt/uit-toolbox/parse
+
+	# Motherboard Manufacturer
+	motherboardManufacturer=$(dmidecode --string baseboard-manufacturer)
+	printf "%s" "api_post|${tagNum}|motherboard_manufacturer|${motherboardManufacturer}|${UUID}" | /opt/uit-toolbox/parse
+
+	# Motherboard Serial
+	motherboardSerial=$(dmidecode --string baseboard-serial-number)
+	printf "%s" "api_post|${tagNum}|motherboard_serial|${motherboardSerial}|${UUID}" | /opt/uit-toolbox/parse
+
 	biosVersion=$(dmidecode --string bios-version 2>/dev/null)
 		printf "%s" "api_post|${tagNum}|bios_version|${biosVersion}|${UUID}" | /opt/uit-toolbox/parse
-		printf "%s" "client_health|${tagNum}|bios_version|${biosVersion}" | /opt/uit-toolbox/parse
 	biosDate=$(dmidecode --string bios-release-date 2>/dev/null)
 		printf "%s" "api_post|${tagNum}|bios_release_date|${biosDate}|${UUID}" | /opt/uit-toolbox/parse
 	biosFirmwareRev=$(dmidecode --string firmware-revision 2>/dev/null)
@@ -361,38 +360,38 @@ fi
 		printf "%s" "api_post|${tagNum}|system_serial|${systemSerial}|${UUID}" | /opt/uit-toolbox/parse
 
 	###Disk Data
-	diskData
+	collectDiskData
 
 	###Battery Data
-	if [[ -d /sys/class/power_supply/BAT* ]]; then
-		batteryManufactureDate=$(dmidecode -t22 2>/dev/null | grep 'SBDS Manufacture Date' | sed 's/SBDS Manufacture Date: //g' | sed 's/^[[:space:]]*//g')
-		if [[ -f /sys/class/power_supply/BAT0/charge_full_design ]]; then
-			batteryMaxCapacity=$(cat /sys/class/power_supply/BAT0/charge_full 2>/dev/null)
-			batChargeFactory=$(cat /sys/class/power_supply/BAT0/charge_full_design 2>/dev/null)
-			batChargeCycles=$(cat /sys/class/power_supply/BAT0/cycle_count 2>/dev/null)
-			batteryModel=$(cat /sys/class/power_supply/BAT0/model_name 2>/dev/null)
-			batterySerial=$(cat /sys/class/power_supply/BAT0/serial_number 2>/dev/null)
-		elif [[ -f /sys/class/power_supply/BAT1/energy_full_design ]]; then
-			batteryMaxCapacity=$(cat /sys/class/power_supply/BAT1/energy_full 2>/dev/null)
-			batChargeFactory=$(cat /sys/class/power_supply/BAT1/energy_full_design 2>/dev/null)
-			batChargeCycles=$(cat /sys/class/power_supply/BAT1/cycle_count 2>/dev/null)
-			batteryModel=$(cat /sys/class/power_supply/BAT1/model_name 2>/dev/null)
-			batterySerial=$(cat /sys/class/power_supply/BAT1/serial_number 2>/dev/null)
+		if [[ -f /sys/class/power_supply/BAT*/present ]]; then
+			batteryManufactureDate=$(dmidecode -t22 2>/dev/null | grep 'SBDS Manufacture Date' | head -n1 | sed 's/[^0-9-]//g')
+			if [[ $(cat /sys/class/power_supply/BAT0/present 2>/dev/null) == 1 ]]; then
+				batteryMaxCurrentCapacity=$(cat /sys/class/power_supply/BAT0/charge_full 2>/dev/null)
+				batteryFactoryCapacity=$(cat /sys/class/power_supply/BAT0/charge_full_design 2>/dev/null)
+				batteryChargeCycles=$(cat /sys/class/power_supply/BAT0/cycle_count 2>/dev/null)
+				batteryModel=$(cat /sys/class/power_supply/BAT0/model_name 2>/dev/null)
+				batterySerial=$(cat /sys/class/power_supply/BAT0/serial_number 2>/dev/null)
+			elif [[ $(cat /sys/class/power_supply/BAT1/present 2>/dev/null) == 1 ]]; then
+				batteryMaxCurrentCapacity=$(cat /sys/class/power_supply/BAT1/energy_full 2>/dev/null)
+				batteryFactoryCapacity=$(cat /sys/class/power_supply/BAT1/energy_full_design 2>/dev/null)
+				batteryChargeCycles=$(cat /sys/class/power_supply/BAT1/cycle_count 2>/dev/null)
+				batteryModel=$(cat /sys/class/power_supply/BAT1/model_name 2>/dev/null)
+				batterySerial=$(cat /sys/class/power_supply/BAT1/serial_number 2>/dev/null)
+			fi
+			printf "%s" "api_post|${tagNum}|battery_current_max_capacity|${batteryMaxCurrentCapacity}|${UUID}" | /opt/uit-toolbox/parse
+			printf "%s" "api_post|${tagNum}|battery_design_capacity|${batteryFactoryCapacity}|${UUID}" | /opt/uit-toolbox/parse
+			printf "%s" "api_post|${tagNum}|battery_charge_cycles|${batteryChargeCycles}|${UUID}" | /opt/uit-toolbox/parse
+			printf "%s" "api_post|${tagNum}|battery_model|${batteryModel}|${UUID}" | /opt/uit-toolbox/parse
+			printf "%s" "api_post|${tagNum}|battery_serial|${batterySerial}|${UUID}" | /opt/uit-toolbox/parse
+			printf "%s" "api_post|${tagNum}|battery_manufacture_date|${batteryManufactureDate}|${UUID}" | /opt/uit-toolbox/parse
 		fi
-		printf "%s" "api_post|${tagNum}|battery_current_max_capacity|${batteryMaxCapacity}|${UUID}" | /opt/uit-toolbox/parse
-		printf "%s" "api_post|${tagNum}|battery_design_capacity|${batChargeFactory}|${UUID}" | /opt/uit-toolbox/parse
-		printf "%s" "api_post|${tagNum}|battery_charge_cycles|${batChargeCycles}|${UUID}" | /opt/uit-toolbox/parse
-		printf "%s" "api_post|${tagNum}|battery_model|${batteryModel}|${UUID}" | /opt/uit-toolbox/parse
-		printf "%s" "api_post|${tagNum}|battery_serial|${batterySerial}|${UUID}" | /opt/uit-toolbox/parse
-		printf "%s" "api_post|${tagNum}|battery_manufacture_date|${batteryManufactureDate}|${UUID}" | /opt/uit-toolbox/parse
-	fi
 
 
 	###Memory Data
-	memSerial=$(dmidecode --type memory | grep -P '\tSerial Number' | awk '{ print $3 }' | tr '\n' '-' | sed 's/-$//g')
-		printf "%s" "api_post|${tagNum}|memory_serial|${memSerial}|${UUID}" | /opt/uit-toolbox/parse
-	memCapacity=$(grep '^MemTotal' /proc/meminfo | awk '{ print $2 }')
-		printf "%s" "api_post|${tagNum}|memory_capacity|${memCapacity}|${UUID}" | /opt/uit-toolbox/parse
+	memorySerial=$(dmidecode --type memory | grep -P '\tSerial Number' | awk '{ print $3 }' | tr '\n' '-' | sed 's/-$//g')
+		printf "%s" "api_post|${tagNum}|memory_serial|${memorySerial}|${UUID}" | /opt/uit-toolbox/parse
+	memoryCapacity=$(grep '^MemTotal' /proc/meminfo | awk '{ print $2 }')
+		printf "%s" "api_post|${tagNum}|memory_capacity_kb|${memoryCapacity}|${UUID}" | /opt/uit-toolbox/parse
 	memSpeed=$(dmidecode --type 17 2>/dev/null | grep '^[[:space:]]*Speed\:' | head -n1 | sed 's/[^0-9]//g')
 		printf "%s" "api_post|${tagNum}|memory_speed_mhz|${memSpeed}|${UUID}" | /opt/uit-toolbox/parse
 
@@ -424,7 +423,7 @@ function checkNetwork {
 	done
 }
 
-function enterTag {
+function findIdentityInDB {
 	tput reset
 	printf '\n'
 
@@ -447,7 +446,7 @@ function enterTag {
 
 		printf "%s" "init|${UUID}|${tagNum}|${systemSerial}|${etherAddr}|${wifiMac}|$(cat /sys/class/tpm/tpm0/tpm_version_major)" | /opt/uit-toolbox/parse
 		printf "%s" "location|custom|${tagNum}|${systemSerial}|new entry|0|" | /opt/uit-toolbox/parse
-		enterTag
+		findIdentityInDB
 	fi
 }
 
@@ -1607,7 +1606,7 @@ function terminate {
 	footer
 	totaltime
 
-	diskData
+	collectDiskData
 
 	for i in $(ps | grep 'uit-cpu' | awk '{ print $1 }'); do kill "${i}" 2>/dev/null; done
 	for i in $(ps | grep 'uit-network' | awk '{ print $1 }'); do kill "${i}" 2>/dev/null; done
@@ -1709,17 +1708,17 @@ function resetForClientRestart {
 
 function autodetectClient {
 	footer
-	if [[ $(printf "%s" "${tOneManufacturer}" | grep -i "dell") ]]; then
-		systemManufacturer="dell"
+	if [[ $(printf "%s" "${systemManufacturer}" | grep -i "dell") ]]; then
+		systemManufacturerFormatted="dell"
 		cloneImgName='TechCommons-Dell-Laptops'
-		elif [[ $(printf "%s" "${tOneManufacturer}" | grep -i "hp") ]]; then
-			systemManufacturer="hp"
+		elif [[ $(printf "%s" "${systemManufacturer}" | grep -i "hp") ]]; then
+			systemManufacturerFormatted="hp"
 			cloneImgName='TechCommons-HP-LaptopsLZ4'
-		elif [[ $(printf "%s" "${tOneManufacturer}" | grep -i "hewlett") ]]; then
-			systemManufacturer="hp"
+		elif [[ $(printf "%s" "${systemManufacturer}" | grep -i "hewlett") ]]; then
+			systemManufacturerFormatted="hp"
 			cloneImgName='TechCommons-HP-LaptopsLZ4'
 		else
-			systemManufacturer="unknown"
+			systemManufacturerFormatted="unknown"
 			cloneImgName='TechCommons-HP-LaptopsLZ4'
 	fi
 
@@ -1782,15 +1781,13 @@ function autodetectClient {
 				fi
 			done
 			if [[ $job_queued == "data collection" ]]; then
-				enterTag
-				systemData
-				hardwareData
+				findIdentityInDB
+				collectSystemData
 				printf "%s" "job_queue|${tagNum}|job_status|Starting data collection" | /opt/uit-toolbox/parse
 				resetForClientRestart
 			elif [[ $job_queued == "update" ]]; then
-				enterTag
-				systemData
-				hardwareData
+				findIdentityInDB
+				collectSystemData
 				printf "%s" "job_queue|${tagNum}|job_status|Updating..." | /opt/uit-toolbox/parse
 				if [[ -f /root/uit-toolbox-client.deb ]]; then
 					rm /root/uit-toolbox-client.deb
@@ -1810,9 +1807,8 @@ function autodetectClient {
 				play /root/findmy1.mp3 &> /dev/null
 				resetForClientRestart
 			elif [[ $job_queued == "hpEraseAndClone" ]]; then
-				enterTag
-				systemData
-				hardwareData
+				findIdentityInDB
+				collectSystemData
 				printf "%s" "job_queue|${tagNum}|job_status|Starting Erase + Clone job (HP)" | /opt/uit-toolbox/parse
 				APPSELECT="EC"
 				ACTION="erase and clone"
@@ -1841,9 +1837,8 @@ function autodetectClient {
 				printf "%s" "system-stats|network|${UUID}" | /opt/uit-toolbox/parse
 				resetForClientRestart
 			elif [[ $job_queued == "hpCloneOnly" ]]; then
-				enterTag
-				systemData
-				hardwareData
+				findIdentityInDB
+				collectSystemData
 				printf "%s" "job_queue|${tagNum}|job_status|Starting Clone only job (HP)" | /opt/uit-toolbox/parse
 				APPSELECT="C"
 				ACTION="clone"
@@ -1868,9 +1863,8 @@ function autodetectClient {
 				printf "%s" "system-stats|network|${UUID}" | /opt/uit-toolbox/parse
 				resetForClientRestart
 			elif [[ $job_queued == "nvmeErase" ]]; then
-				enterTag
-				systemData
-				hardwareData
+				findIdentityInDB
+				collectSystemData
 				if [[ /dev/nvme0n1 ]]; then
 					CLIENTDISK='nvme0n1'
 				else
@@ -1899,9 +1893,8 @@ function autodetectClient {
 				printf "%s" "system-stats|network|${UUID}" | /opt/uit-toolbox/parse
 				resetForClientRestart
 			elif [[ $job_queued == "nvmeVerify" ]]; then
-				enterTag
-				systemData
-				hardwareData
+				findIdentityInDB
+				collectSystemData
 				printf "%s" "job_queue|${tagNum}|job_status|Starting Verify job (${CLIENTDISK})" | /opt/uit-toolbox/parse
 				vrfySections=""
 				writeSections=""
@@ -1965,9 +1958,9 @@ function autodetectClient {
 	read -n 1 -p "${BOLD}Enter [1,2]:${RESET} " input
 
 	if [[ $input == "1" ]]; then
-		if [[ $systemManufacturer == "hp" && $chassisType == "notebook" && $diskType == "nvme" ]]; then
+		if [[ $systemManufacturerFormatted == "hp" && $chassisType == "notebook" && $diskType == "nvme" ]]; then
 			mainMenuOpt="1"
-		elif [[ $systemManufacturer == "dell" && $chassisType == "notebook" && $diskType == "nvme" ]]; then
+		elif [[ $systemManufacturerFormatted == "dell" && $chassisType == "notebook" && $diskType == "nvme" ]]; then
 			mainMenuOpt="2"
 		else
 			printf '\n'
@@ -1979,7 +1972,7 @@ function autodetectClient {
 		printf '%s\n' "------------------------------"
 		printf '%s\n' "${BOLD}Is this information corect?${RESET}"
 		printf '\n'
-		printf '%s\n' "${BOLD}${BLUE}System Manufacturer${RESET}${BOLD}: ${systemManufacturer}${RESET}"
+		printf '%s\n' "${BOLD}${BLUE}System Manufacturer${RESET}${BOLD}: ${systemManufacturerFormatted}${RESET}"
 		printf '%s\n' "${BOLD}${BLUE}Chassis Type${RESET}${BOLD}: ${chassisType}${RESET}"
 		printf '%s\n' "${BOLD}${BLUE}Disk type${RESET}${BOLD}: ${DISK}${RESET}"
 		printf '\n'
@@ -1999,9 +1992,8 @@ function autodetectClient {
 
 function main {
 	tput reset
-	enterTag
-	systemData
-	hardwareData
+	findIdentityInDB
+	collectSystemData
 	printf "%s" "api_post|${tagNum}|last_hardware_check|${CURRENT_TIME}|${UUID}" | /opt/uit-toolbox/parse
 	tput reset
 	autodetectClient

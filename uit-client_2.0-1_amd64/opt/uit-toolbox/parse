@@ -357,8 +357,8 @@ if ($arr[0] === "api_post") {
 		$url = "/api/client/memory";
 		$body = json_encode([
 			'tagnumber' => $tagNum,
-			'memory_usage' => (int)$value,
-			'memory_capacity' => (int)$value2
+			'memory_usage_kb' => (int)$value,
+			'memory_capacity_kb' => (int)$value2
 		]);
 	}
 	if ($key === "cpu_usage") {
@@ -404,12 +404,21 @@ if ($arr[0] === "api_post") {
 		]);
 	}
 
+	if ($key === "ethernet_mac") {
+		$url = "/api/client/hardware";
+		$body = json_encode([
+			'transaction_uuid' => $value2,
+			'tagnumber' => $tagNum,
+			'ethernet_mac' => $value
+		]);
+	}
+
 	if ($key === "wifi_mac") {
 		$url = "/api/client/hardware";
 		$body = json_encode([
 			'transaction_uuid' => $value2,
 			'tagnumber' => $tagNum,
-			'system_serial' => $value
+			'wifi_mac' => $value
 		]);
 	}
 
@@ -676,6 +685,44 @@ if ($arr[0] === "api_post") {
 		]);
 	}
 
+	if ($key === "battery_model") {
+		$url = "/api/client/hardware";
+		$body = json_encode([
+			'transaction_uuid' => $value2,
+			'tagnumber' => $tagNum,
+			'battery_model' => $value
+		]);
+	}
+
+	if ($key === "battery_serial") {
+		$url = "/api/client/hardware";
+		$body = json_encode([
+			'transaction_uuid' => $value2,
+			'tagnumber' => $tagNum,
+			'battery_serial' => $value
+		]);
+	}
+
+	if ($key === "battery_manufacture_date") {
+		$url = "/api/client/hardware";
+		$body = json_encode([
+			'transaction_uuid' => $value2,
+			'tagnumber' => $tagNum,
+			'battery_manufacture_date' => $value
+		]);
+	}
+
+	if ($key === "battery_charge_cycles") {
+		$url = "/api/client/hardware";
+		$body = json_encode([
+			'transaction_uuid' => $value2,
+			'tagnumber' => $tagNum,
+			'battery_charge_cycles' => (int)$value
+		]);
+	}
+
+	
+
 	if ($key === "memory_serial") {
 		$url = "/api/client/hardware";
 		$body = json_encode([
@@ -685,12 +732,12 @@ if ($arr[0] === "api_post") {
 		]);
 	}
 
-	if ($key === "memory_capacity") {
+	if ($key === "memory_capacity_kb") {
 		$url = "/api/client/hardware";
 		$body = json_encode([
 			'transaction_uuid' => $value2,
 			'tagnumber' => $tagNum,
-			'memory_capacity' => (int)$value
+			'memory_capacity_kb' => (int)$value
 		]);
 	}
 

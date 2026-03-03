@@ -44,14 +44,14 @@ type RealtimeSystemData struct {
 	AppUptime          *time.Duration `json:"app_uptime,omitempty"`
 	KernelUpdated      *bool          `json:"kernel_updated,omitempty"`
 	CPU                *CPUUsage      `json:"cpu_usage,omitempty"`
-	Memory             *MemoryUsage   `json:"memory_usage,omitempty"`
+	Memory             *MemoryUsage   `json:"memory_usage_kb,omitempty"`
 	Network            *NetworkUsage  `json:"network_usage,omitempty"`
 	Energy             *EnergyUsage   `json:"energy_usage,omitempty"`
 }
 
 type MemoryUsage struct {
-	TotalUsage    *int64 `json:"memory_usage"`
-	TotalCapacity int64  `json:"memory_capacity"`
+	TotalUsage    *int64 `json:"memory_usage_kb"`
+	TotalCapacity int64  `json:"memory_capacity_kb"`
 	Type          string `json:"type"`
 	SpeedMHz      int64  `json:"speed_mhz"`
 }
