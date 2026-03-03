@@ -333,7 +333,9 @@ if ($arr[0] === "api_get") {
 		// echo 'Error fetching data for ' . $key . ': ' . curl_error($ch);
 		return;
 	}
-	echo $response;
+	$responseJSON = json_decode($response, true);
+	$returnField = $responseJSON[$key];
+	if (!empty($returnField)) return $returnField;
 	return;
 }
 
