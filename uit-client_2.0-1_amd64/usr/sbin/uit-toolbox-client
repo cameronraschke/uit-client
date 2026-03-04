@@ -370,7 +370,7 @@ fi
 		batteryDMIData=$(dmidecode -t22 2>/dev/null)
 		if [[ $(cat /sys/class/power_supply/BAT0/present 2>/dev/null) == 1 || $(cat /sys/class/power_supply/BAT1/present 2>/dev/null) == 1 ]]; then
 			batteryManufacturer=$(echo "$batteryDMIData" | grep -P '\tManufacturer' | head -n1 | sed 's/Manufacturer:[[:space:]]*//g')
-			batteryManufactureDate=$(echo "$batteryDMIData" | grep -P '\t(SBDS )?Manufacture Date' | head -n1 | sed 's/[^0-9-]//g')
+			batteryManufactureDate=$(echo "$batteryDMIData" | grep -P '\t(SBDS )?Manufacture Date' | head -n1 | sed 's/[^0-9\/-]//g')
 			if [[ $(cat /sys/class/power_supply/BAT0/present 2>/dev/null) == 1 ]]; then
 				batteryMaxCurrentCapacity=$(cat /sys/class/power_supply/BAT0/charge_full 2>/dev/null)
 				batteryFactoryCapacity=$(cat /sys/class/power_supply/BAT0/charge_full_design 2>/dev/null)
