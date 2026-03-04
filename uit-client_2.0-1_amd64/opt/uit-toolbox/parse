@@ -703,6 +703,15 @@ if ($arr[0] === "api_post") {
 		]);
 	}
 
+	if ($key === "battery_manufacturer") {
+		$url = "/api/client/hardware";
+		$body = json_encode([
+			'transaction_uuid' => $value2,
+			'tagnumber' => $tagNum,
+			'battery_manufacturer' => $value
+		]);
+	}
+
 	if ($key === "battery_manufacture_date") {
 		$url = "/api/client/hardware";
 		$body = json_encode([
