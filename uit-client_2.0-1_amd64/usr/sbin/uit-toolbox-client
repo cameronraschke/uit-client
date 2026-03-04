@@ -369,7 +369,8 @@ fi
 	###Battery Data
 		batteryDMIData=$(dmidecode -t22 2>/dev/null)
 		if [[ $(cat /sys/class/power_supply/BAT0/present 2>/dev/null) == 1 || $(cat /sys/class/power_supply/BAT1/present 2>/dev/null) == 1 ]]; then
-			batteryManufactureDate=$(echo "$batteryDMIData" | grep 'SBDS Manufacture Date' | head -n1 | sed 's/[^0-9-]//g')
+			batteryManufacturer=$(echo "$batteryDMIData" | grep -P '\tManufacturer' | head -n1 | sed 's/Manufacturer:[[:space:]]*//g')
+			batteryManufactureDate=$(echo "$batteryDMIData" | grep -P '\t(SBDS )?Manufacture Date' | head -n1 | sed 's/[^0-9-]//g')
 			if [[ $(cat /sys/class/power_supply/BAT0/present 2>/dev/null) == 1 ]]; then
 				batteryMaxCurrentCapacity=$(cat /sys/class/power_supply/BAT0/charge_full 2>/dev/null)
 				batteryFactoryCapacity=$(cat /sys/class/power_supply/BAT0/charge_full_design 2>/dev/null)
@@ -394,6 +395,7 @@ fi
 			printf "%s" "api_post|${tagNum}|battery_charge_cycles|${batteryChargeCycles}|${UUID}" | /opt/uit-toolbox/parse
 			printf "%s" "api_post|${tagNum}|battery_model|${batteryModel}|${UUID}" | /opt/uit-toolbox/parse
 			printf "%s" "api_post|${tagNum}|battery_serial|${batterySerial}|${UUID}" | /opt/uit-toolbox/parse
+			printf "%s" "api_post|${tagNum}|battery_manufacturer|${batteryManufacturer}|${UUID}" | /opt/uit-toolbox/parse
 			printf "%s" "api_post|${tagNum}|battery_manufacture_date|${batteryManufactureDate}|${UUID}" | /opt/uit-toolbox/parse
 		fi
 
