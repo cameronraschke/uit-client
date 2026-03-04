@@ -367,7 +367,7 @@ fi
 	collectDiskData
 
 	###Battery Data
-		if [[ -f /sys/class/power_supply/BAT*/present ]]; then
+		if [[ $(cat /sys/class/power_supply/BAT0/present 2>/dev/null) == 1 || $(cat /sys/class/power_supply/BAT1/present 2>/dev/null) == 1 ]]; then
 			batteryManufactureDate=$(dmidecode -t22 2>/dev/null | grep 'SBDS Manufacture Date' | head -n1 | sed 's/[^0-9-]//g')
 			if [[ $(cat /sys/class/power_supply/BAT0/present 2>/dev/null) == 1 ]]; then
 				batteryMaxCurrentCapacity=$(cat /sys/class/power_supply/BAT0/charge_full 2>/dev/null)
