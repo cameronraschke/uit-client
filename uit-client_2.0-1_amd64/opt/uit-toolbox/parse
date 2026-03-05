@@ -379,7 +379,7 @@ if ($arr[0] === "api_post") {
 	}
 	if ($key === "cpu_mhz") {
 		$usage = floatval($value);
-		$url = "/api/client/cpu/usage";
+		$url = "/api/client/cpu/mhz";
 		$body = json_encode([
 			'tagnumber' => $tagNum,
 			'cpu_mhz' => floatval($value),
