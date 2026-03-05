@@ -377,6 +377,14 @@ if ($arr[0] === "api_post") {
 			'cpu_millidegrees_c' => (int)$value,
 		]);
 	}
+	if ($key === "cpu_mhz") {
+		$usage = floatval($value);
+		$url = "/api/client/cpu/usage";
+		$body = json_encode([
+			'tagnumber' => $tagNum,
+			'cpu_mhz' => floatval($value),
+		]);
+	}
 	if ($key === "network") {
 		$url = "/api/client/network/usage";
 		$body = json_encode([

@@ -1,5 +1,5 @@
 while true; do
-  cpu_usage=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | cut -d'%' -f1)
-  echo "$cpu_usage" >> /tmp/cpu-usage.txt
+  cpuUsage=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | cut -d'%' -f1)
+  echo "$cpuUsage" >> /tmp/cpu-usage.txt
   sleep 1
 done
