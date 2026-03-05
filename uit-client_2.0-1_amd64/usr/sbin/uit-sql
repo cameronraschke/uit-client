@@ -3,7 +3,7 @@ while true; do
 SECONDS=0
 serial=$(dmidecode --string system-serial-number)
 tagNum=$(echo "SELECT tagnumber AS result FROM locations WHERE system_serial = '${serial}' ORDER BY time DESC LIMIT 1" | /opt/uit-toolbox/select)
-echo "job_queue|${tagNum}|present|$(date '+%Y-%m-%d %H:%M:%S')" | /opt/uit-toolbox/parse
+echo "job_queue|${tagNum}|last_heard|$(date '+%Y-%m-%d %H:%M:%S')" | /opt/uit-toolbox/parse
 
 for i in $(find /sys/class/hwmon/ -mindepth 1); do
     type=$(cat ${i}/name)    
