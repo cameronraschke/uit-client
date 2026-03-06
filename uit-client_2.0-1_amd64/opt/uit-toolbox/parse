@@ -31,9 +31,6 @@ if ($arr[0] == "init") {
 	if (strFilter($wifiMac) === 0) {
 		$dbPSQL->updateSystemData($tagNum, "wifi_mac", $wifiMac);
 	}
-	if (strFilter($tpmVersion) === 0) {
-		$dbPSQL->updateClientHealth($tagNum, "tpm_version", $tpmVersion);
-	}
 	$dbPSQL->updateJob("date", $date, $uuid);
 
 	function queryTime($queryTime) {
@@ -263,14 +260,6 @@ if ($arr[0] == "job_queue") {
 	}
 }
 
-if ($arr[0] == "client_health") {
-	$tagNum = $arr[1];
-	$key = $arr[2];
-	$value = $arr[3];
-
-	$dbPSQL->updateClientHealth($tagNum, $key, $value);
-}
-
 if ($arr[0] == "live_images") {
 	$tagNum = $arr[1];
 	$key = $arr[2];
@@ -400,15 +389,6 @@ if ($arr[0] === "api_post") {
 			'tagnumber' => $tagNum,
 			'client_app_uptime' => (int)$value,
 			'system_uptime' => (int)$value2,
-		]);
-	}
-
-	if ($key === "last_hardware_check") {
-		$url = "/api/client/health/last_hardware_check";
-		$dt = new DateTime("now", new DateTimeZone("UTC"));
-		$body = json_encode([
-			'tagnumber' => $tagNum,
-			'last_hardware_check' => $dt->format(DATE_RFC3339_EXTENDED)
 		]);
 	}
 
@@ -738,8 +718,6 @@ if ($arr[0] === "api_post") {
 		]);
 	}
 
-	
-
 	if ($key === "memory_serial") {
 		$url = "/api/client/hardware";
 		$body = json_encode([
@@ -764,6 +742,78 @@ if ($arr[0] === "api_post") {
 			'transaction_uuid' => $value2,
 			'tagnumber' => $tagNum,
 			'memory_speed_mhz' => (int)$value
+		]);
+	}
+
+	if ($key === "health_system_serial") {
+		$url = "/api/client/hardware/health";
+		$body = json_encode([
+			'transaction_uuid' => $value2,
+			'tagnumber' => $tagNum,
+			'health_system_serial' => $value
+		]);
+	}
+
+	if ($key === "health_tpm_version") {
+		$url = "/api/client/hardware/health";
+		$body = json_encode([
+			'transaction_uuid' => $value2,
+			'tagnumber' => $tagNum,
+			'health_tpm_version' => $value
+		]);
+	}
+
+	if ($key === "health_bios_version") {
+		$url = "/api/client/hardware/health";
+		$body = json_encode([
+			'transaction_uuid' => $value2,
+			'tagnumber' => $tagNum,
+			'health_bios_version' => $value
+		]);
+	}
+
+	if ($key === "health_erase_completed") {
+		$url = "/api/client/hardware/health";
+		$body = json_encode([
+			'transaction_uuid' => $value2,
+			'tagnumber' => $tagNum,
+			'health_erase_completed' => boolval($value)
+		]);
+	}
+
+	if ($key === "health_erase_duration") {
+		$url = "/api/client/hardware/health";
+		$body = json_encode([
+			'transaction_uuid' => $value2,
+			'tagnumber' => $tagNum,
+			'health_erase_duration' => (int)$value
+		]);
+	}
+
+	if ($key === "health_clone_completed") {
+		$url = "/api/client/hardware/health";
+		$body = json_encode([
+			'transaction_uuid' => $value2,
+			'tagnumber' => $tagNum,
+			'health_clone_completed' => boolval($value)
+		]);
+	}
+
+	if ($key === "health_clone_duration") {
+		$url = "/api/client/hardware/health";
+		$body = json_encode([
+			'transaction_uuid' => $value2,
+			'tagnumber' => $tagNum,
+			'health_clone_duration' => (int)$value
+		]);
+	}
+
+	if ($key === "last_hardware_check") {
+		$url = "/api/client/health/last_hardware_check";
+		$dt = new DateTime("now", new DateTimeZone("UTC"));
+		$body = json_encode([
+			'tagnumber' => $tagNum,
+			'last_hardware_check' => $dt->format(DATE_RFC3339_EXTENDED)
 		]);
 	}
 

@@ -355,6 +355,7 @@ fi
 
 	biosVersion=$(dmidecode --string bios-version 2>/dev/null)
 		printf "%s" "api_post|${tagNum}|bios_version|${biosVersion}|${UUID}" | /opt/uit-toolbox/parse
+		printf "%s" "api_post|${tagNum}|health_bios_version|${biosVersion}|${UUID}" | /opt/uit-toolbox/parse
 	biosDate=$(dmidecode --string bios-release-date 2>/dev/null)
 		printf "%s" "api_post|${tagNum}|bios_release_date|${biosDate}|${UUID}" | /opt/uit-toolbox/parse
 	biosFirmwareRev=$(dmidecode --string firmware-revision 2>/dev/null)
@@ -362,6 +363,7 @@ fi
 	systemSerial=$(dmidecode --string system-serial-number 2>/dev/null)
 		printf "%s" "general|system_serial|${systemSerial}|${UUID}" | /opt/uit-toolbox/parse
 		printf "%s" "api_post|${tagNum}|system_serial|${systemSerial}|${UUID}" | /opt/uit-toolbox/parse
+		printf "%s" "api_post|${tagNum}|health_system_serial|${systemSerial}|${UUID}" | /opt/uit-toolbox/parse
 
 	###Disk Data
 	collectDiskData
@@ -420,6 +422,8 @@ fi
 		printf "%s" "general|avg_cpu_temp|${cpuTemp}|${UUID}" | /opt/uit-toolbox/parse
         fi
 	done
+
+	printf "%s" "api_post|${tagNum}|health_tpm_version|$(cat /sys/class/tpm/tpm0/tpm_version_major 2>/dev/null)|${UUID}" | /opt/uit-toolbox/parse
 
 	printf "%s" "system-stats|cpu|${UUID}" | /opt/uit-toolbox/parse
 	printf "%s" "system-stats|network|${UUID}" | /opt/uit-toolbox/parse
@@ -1479,7 +1483,6 @@ function execute_Clone {
 	printf "%s" "general|clone_image|${cloneImgName}|${UUID}" | /opt/uit-toolbox/parse
 	printf "%s" "job_queue|${tagNum}|job_status|Cloning ${cloneImgName} -> ${CLIENTDISK} ($cloneMode)" | /opt/uit-toolbox/parse
 	resetUsageData
-	SECONDS=0
 	start_time=$SECONDS
 	linuxServer="UIT_CLIENT_DB_HOST"
 	linuxDNS="UIT_SERVER_HOSTNAME"
@@ -1509,7 +1512,6 @@ function execute_Clone {
 
 function execute_Shred {
 	if [[ $APPSELECT == "EC" || $APPSELECT == "E" ]]; then
-		SECONDS=0
 		start_time=$SECONDS
 		if [[ $shredMode == 'nist' ]]; then
 			nistMode_Shred
@@ -1570,8 +1572,17 @@ function execute {
 		basicEraseMode_Shred
 		printf "%s" "job_queue|${tagNum}|clone_mode|$cloneMode" | /opt/uit-toolbox/parse
 		printf "%s" "job_queue|${tagNum}|erase_mode|$shredMode" | /opt/uit-toolbox/parse
+
+		start_shred=$SECONDS
 		execute_Shred
+		shredJobDuration=$((SECONDS - start_shred))
+		printf "%s" "api_post|${tagNum}|health_erase_duration|${shredJobDuration}|${UUID}" | /opt/uit-toolbox/parse
+
+		start_clone=$SECONDS
 		execute_Clone
+		cloneJobDuration=$((SECONDS - start_clone))
+		printf "%s" "api_post|${tagNum}|health_clone_duration|${cloneJobDuration}|${UUID}" | /opt/uit-toolbox/parse
+
 	elif [[ $APPSELECT == "E" ]]; then
 		if [[ -z $shredMode ]]; then
 			advEraseMode_Shred
@@ -1582,7 +1593,10 @@ function execute {
 			printf "%s" "job_queue|${tagNum}|job_queued|generic-erase" | /opt/uit-toolbox/parse
 		fi
 		printf "%s" "job_queue|${tagNum}|erase_mode|$shredMode" | /opt/uit-toolbox/parse
+		start_shred=$SECONDS
 		execute_Shred
+		shredJobDuration=$((SECONDS - start_shred))
+		printf "%s" "api_post|${tagNum}|health_erase_duration|${shredJobDuration}|${UUID}" | /opt/uit-toolbox/parse
 	elif [[ $APPSELECT == "C" ]]; then
 		if [[ -z $cloneMode ]]; then
 			clientselect_Clone
@@ -1591,7 +1605,10 @@ function execute {
 			printf "%s" "job_queue|${tagNum}|job_queued|generic-clone" | /opt/uit-toolbox/parse
 		fi
 		printf "%s" "job_queue|${tagNum}|clone_mode|$cloneMode" | /opt/uit-toolbox/parse
+		start_clone=$SECONDS
 		execute_Clone
+		cloneJobDuration=$((SECONDS - start_clone))
+		printf "%s" "api_post|${tagNum}|health_clone_duration|${cloneJobDuration}|${UUID}" | /opt/uit-toolbox/parse
 	else
 		printf "%s" "job_queue|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
 		printf "%s" "job_queue|${tagNum}|job_queued|" | /opt/uit-toolbox/parse
@@ -1648,9 +1665,11 @@ function terminate {
 			fi
 
 			printf "%s" "general|clone_completed|1|${UUID}" | /opt/uit-toolbox/parse
+			printf "%s" "api_post|${tagNum}|health_clone_completed|1|${UUID}" | /opt/uit-toolbox/parse
 
 			if [[ $APPSELECT == "EC" ]]; then
 				printf "%s" "general|erase_completed|1|${UUID}" | /opt/uit-toolbox/parse
+				printf "%s" "api_post|${tagNum}|health_erase_completed|1|${UUID}" | /opt/uit-toolbox/parse
 			fi
 
 			terminateMessage=$(printf '%s\n' "Tag#: ${tagNum}"
@@ -1665,6 +1684,7 @@ function terminate {
 		if [[ $cloneMode == "savedisk" ]]; then
 			printf "%s" "general|clone_master|1|${UUID}" | /opt/uit-toolbox/parse
 			printf "%s" "general|clone_completed|1|${UUID}" | /opt/uit-toolbox/parse
+			printf "%s" "api_post|${tagNum}|health_clone_completed|1|${UUID}" | /opt/uit-toolbox/parse
 
 			terminateMessage=$(printf '%s\n' "Tag#: ${tagNum}"
 			printf '%s\n' "MAC: ${etherAddr}"
@@ -1680,6 +1700,7 @@ function terminate {
 
 	if [[ $APPSELECT == "E" ]]; then
 		printf "%s" "general|erase_completed|1|${UUID}" | /opt/uit-toolbox/parse
+		printf "%s" "api_post|${tagNum}|health_erase_completed|1|${UUID}" | /opt/uit-toolbox/parse
 
 		terminateAction="erased"
 
@@ -1845,7 +1866,9 @@ function autodetectClient {
 				execute
 				totaltime
 				printf "%s" "general|clone_completed|1|${UUID}" | /opt/uit-toolbox/parse
+			printf "%s" "api_post|${tagNum}|health_clone_completed|1|${UUID}" | /opt/uit-toolbox/parse
 				printf "%s" "general|erase_completed|1|${UUID}" | /opt/uit-toolbox/parse
+				printf "%s" "api_post|${tagNum}|health_erase_completed|1|${UUID}" | /opt/uit-toolbox/parse
 				printf "%s" "system-stats|cpu|${UUID}" | /opt/uit-toolbox/parse
 				printf "%s" "system-stats|network|${UUID}" | /opt/uit-toolbox/parse
 				resetForClientRestart
@@ -1872,6 +1895,7 @@ function autodetectClient {
 				execute
 				totaltime
 				printf "%s" "general|clone_completed|1|${UUID}" | /opt/uit-toolbox/parse
+				printf "%s" "api_post|${tagNum}|health_clone_completed|1|${UUID}" | /opt/uit-toolbox/parse
 				printf "%s" "system-stats|cpu|${UUID}" | /opt/uit-toolbox/parse
 				printf "%s" "system-stats|network|${UUID}" | /opt/uit-toolbox/parse
 				resetForClientRestart
@@ -1902,6 +1926,7 @@ function autodetectClient {
 				execute
 				totaltime
 				printf "%s" "general|erase_completed|1|${UUID}" | /opt/uit-toolbox/parse
+				printf "%s" "api_post|${tagNum}|health_erase_completed|1|${UUID}" | /opt/uit-toolbox/parse
 				printf "%s" "system-stats|cpu|${UUID}" | /opt/uit-toolbox/parse
 				printf "%s" "system-stats|network|${UUID}" | /opt/uit-toolbox/parse
 				resetForClientRestart
@@ -1932,6 +1957,7 @@ function autodetectClient {
 				execute
 				totaltime
 				printf "%s" "general|erase_completed|1|${UUID}" | /opt/uit-toolbox/parse
+				printf "%s" "api_post|${tagNum}|health_erase_completed|1|${UUID}" | /opt/uit-toolbox/parse
 				printf "%s" "system-stats|cpu|${UUID}" | /opt/uit-toolbox/parse
 				printf "%s" "system-stats|network|${UUID}" | /opt/uit-toolbox/parse
 				resetForClientRestart
