@@ -423,7 +423,8 @@ fi
         fi
 	done
 
-	printf "%s" "api_post|${tagNum}|health_tpm_version|$(cat /sys/class/tpm/tpm0/tpm_version_major 2>/dev/null)|${UUID}" | /opt/uit-toolbox/parse
+	tpmVersion=$(cat /sys/class/tpm/tpm0/tpm_version_major 2>/dev/null)
+	printf "%s" "api_post|${tagNum}|health_tpm_version|${tpmVersion}|${UUID}" | /opt/uit-toolbox/parse
 
 	printf "%s" "system-stats|cpu|${UUID}" | /opt/uit-toolbox/parse
 	printf "%s" "system-stats|network|${UUID}" | /opt/uit-toolbox/parse

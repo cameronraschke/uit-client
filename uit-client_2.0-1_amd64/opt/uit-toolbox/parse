@@ -812,6 +812,7 @@ if ($arr[0] === "api_post") {
 		$url = "/api/client/health";
 		$dt = new DateTime("now", new DateTimeZone("UTC"));
 		$body = json_encode([
+			'transaction_uuid' => $value2,
 			'tagnumber' => $tagNum,
 			'last_hardware_check' => $dt->format(DATE_RFC3339_EXTENDED)
 		]);
@@ -823,7 +824,7 @@ if ($arr[0] === "api_post") {
 	}
 	curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
 	curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
-	curl_setopt($ch, CURLOPT_URL, $baseURL . $url);
+	curl_setopt($ch, CURLOPT_URL, $baseURL . $url . '?' . urlencode($key));
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 	curl_setopt($ch, CURLOPT_HTTPHEADER, array(
 		'Content-Type: application/json',
