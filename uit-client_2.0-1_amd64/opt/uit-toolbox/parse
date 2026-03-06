@@ -746,7 +746,7 @@ if ($arr[0] === "api_post") {
 	}
 
 	if ($key === "health_system_serial") {
-		$url = "/api/client/hardware/health";
+		$url = "/api/client/health";
 		$body = json_encode([
 			'transaction_uuid' => $value2,
 			'tagnumber' => $tagNum,
@@ -755,7 +755,7 @@ if ($arr[0] === "api_post") {
 	}
 
 	if ($key === "health_tpm_version") {
-		$url = "/api/client/hardware/health";
+		$url = "/api/client/health";
 		$body = json_encode([
 			'transaction_uuid' => $value2,
 			'tagnumber' => $tagNum,
@@ -764,7 +764,7 @@ if ($arr[0] === "api_post") {
 	}
 
 	if ($key === "health_bios_version") {
-		$url = "/api/client/hardware/health";
+		$url = "/api/client/health";
 		$body = json_encode([
 			'transaction_uuid' => $value2,
 			'tagnumber' => $tagNum,
@@ -773,7 +773,7 @@ if ($arr[0] === "api_post") {
 	}
 
 	if ($key === "health_erase_completed") {
-		$url = "/api/client/hardware/health";
+		$url = "/api/client/health";
 		$body = json_encode([
 			'transaction_uuid' => $value2,
 			'tagnumber' => $tagNum,
@@ -782,7 +782,7 @@ if ($arr[0] === "api_post") {
 	}
 
 	if ($key === "health_erase_duration") {
-		$url = "/api/client/hardware/health";
+		$url = "/api/client/health";
 		$body = json_encode([
 			'transaction_uuid' => $value2,
 			'tagnumber' => $tagNum,
@@ -791,7 +791,7 @@ if ($arr[0] === "api_post") {
 	}
 
 	if ($key === "health_clone_completed") {
-		$url = "/api/client/hardware/health";
+		$url = "/api/client/health";
 		$body = json_encode([
 			'transaction_uuid' => $value2,
 			'tagnumber' => $tagNum,
@@ -800,7 +800,7 @@ if ($arr[0] === "api_post") {
 	}
 
 	if ($key === "health_clone_duration") {
-		$url = "/api/client/hardware/health";
+		$url = "/api/client/health";
 		$body = json_encode([
 			'transaction_uuid' => $value2,
 			'tagnumber' => $tagNum,
