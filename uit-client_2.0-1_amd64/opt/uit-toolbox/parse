@@ -331,8 +331,8 @@ if ($arr[0] === "api_get") {
 if ($arr[0] === "api_post") {
 	$tagNum = (int)$arr[1];
 	$key = $arr[2];
-	$value = $arr[3];
-	if (isset($arr[4])) $value2 = $arr[4];
+	$value = trim($arr[3]);
+	if (isset($arr[4])) $value2 = trim($arr[4]);
 
 	$baseURL = "https://UIT_WEB_HTTPS_HOST:UIT_WEB_HTTPS_PORT";
 	$url = "";
