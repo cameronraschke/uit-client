@@ -750,7 +750,7 @@ if ($arr[0] === "api_post") {
 		$body = json_encode([
 			'transaction_uuid' => $value2,
 			'tagnumber' => $tagNum,
-			'health_system_serial' => $value
+			'system_serial' => $value
 		]);
 	}
 
@@ -759,7 +759,7 @@ if ($arr[0] === "api_post") {
 		$body = json_encode([
 			'transaction_uuid' => $value2,
 			'tagnumber' => $tagNum,
-			'health_tpm_version' => $value
+			'tpm_version' => $value
 		]);
 	}
 
@@ -768,7 +768,7 @@ if ($arr[0] === "api_post") {
 		$body = json_encode([
 			'transaction_uuid' => $value2,
 			'tagnumber' => $tagNum,
-			'health_bios_version' => $value
+			'bios_version' => $value
 		]);
 	}
 
@@ -777,7 +777,7 @@ if ($arr[0] === "api_post") {
 		$body = json_encode([
 			'transaction_uuid' => $value2,
 			'tagnumber' => $tagNum,
-			'health_erase_completed' => boolval($value)
+			'erase_completed' => boolval($value)
 		]);
 	}
 
@@ -786,7 +786,7 @@ if ($arr[0] === "api_post") {
 		$body = json_encode([
 			'transaction_uuid' => $value2,
 			'tagnumber' => $tagNum,
-			'health_erase_duration' => (int)$value
+			'erase_duration' => (int)$value
 		]);
 	}
 
@@ -795,7 +795,7 @@ if ($arr[0] === "api_post") {
 		$body = json_encode([
 			'transaction_uuid' => $value2,
 			'tagnumber' => $tagNum,
-			'health_clone_completed' => boolval($value)
+			'clone_completed' => boolval($value)
 		]);
 	}
 
@@ -804,7 +804,7 @@ if ($arr[0] === "api_post") {
 		$body = json_encode([
 			'transaction_uuid' => $value2,
 			'tagnumber' => $tagNum,
-			'health_clone_duration' => (int)$value
+			'clone_duration' => (int)$value
 		]);
 	}
 
