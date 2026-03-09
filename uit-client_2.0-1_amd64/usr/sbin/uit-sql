@@ -85,10 +85,12 @@ avgTemp=0
 echo "api_post|${tagNum}|cpu_usage|${cpu_usage}" | /opt/uit-toolbox/parse
 for i in $(find /sys/class/hwmon/ -mindepth 1 -maxdepth 1); do
 	type=$(cat ${i}/name)
-	if [[ $type == "coretemp" ]]; then
-		cpuTemps=( $(cat ${i}/temp1_input) )
+	if [[ $type == "coretemp" || $type == "acpitz" ]]; then
+		cpuTemps=( $(cat ${i}/temp*_input) )
 		for temp in ${cpuTemps[@]}; do
-			avgTemp=$(( avgTemp + temp ))
+			if [[ temp -gt 0 ]]; then
+				avgTemp=$(( avgTemp + temp ))
+			fi
 		done
 		avgTemp=$(( avgTemp / ${#cpuTemps[@]} ))
 	fi
