@@ -219,7 +219,7 @@ if ($arr[0] == "job_queue") {
 	$key = $arr[2];
 	$value = $arr[3];
 
-	if ($key == "job_queued") {
+	if ($key == "job_name") {
 		if ($value == "0") {
 			$value = "NULL";
 		} elseif ($value == "1") {
@@ -301,6 +301,9 @@ if ($arr[0] === "api_get") {
 
 	if ($key === "server_time") {
 		$url = "/api/server_time";
+	}
+	if ($key === "job_queue_position") {
+		$url = '/api/client/job_queue_position?'.$queryKey.'='.$queryVal;
 	}
 
 	if ($url === "") {

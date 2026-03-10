@@ -119,8 +119,8 @@ for i in $(ip addr | awk '/state UP/ {print $2}' | sed 's/://g'); do
 done
 
 # Check if cancel job has been sent
-if [[ $(echo "SELECT job_queued AS result FROM job_queue WHERE tagnumber = '${tagNum}'" | /opt/uit-toolbox/select) == "cancel" ]]; then
-    echo "job_queue|${tagNum}|job_queued|" | /opt/uit-toolbox/parse
+if [[ $(echo "SELECT job_name AS result FROM job_queue WHERE tagnumber = '${tagNum}'" | /opt/uit-toolbox/select) == "cancel" ]]; then
+    echo "job_queue|${tagNum}|job_name|" | /opt/uit-toolbox/parse
     echo "job_queue|${tagNum}|job_active|" | /opt/uit-toolbox/parse
     echo "job_queue|${tagNum}|status|fail - Job cancelled :(" | /opt/uit-toolbox/parse
     UUID=$(printf '%s' "SELECT uuid AS result FROM jobstats WHERE tagnumber = '${tagNum}' AND host_connected = TRUE ORDER BY time DESC LIMIT 1" | /opt/uit-toolbox/select)
