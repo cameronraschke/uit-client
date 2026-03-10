@@ -302,6 +302,12 @@ if ($arr[0] === "api_get") {
 	if ($key === "server_time") {
 		$url = "/api/server_time";
 	}
+	if ($key === "job_name") {
+		$url = '/api/client/job_name?'.$queryKey.'='.$queryVal;
+	}
+	if ($key === "job_name_formatted") {
+		$url = '/api/client/job_name_formatted?'.$queryKey.'='.$queryVal;
+	}
 	if ($key === "job_queue_position") {
 		$url = '/api/client/job_queue_position?'.$queryKey.'='.$queryVal;
 	}

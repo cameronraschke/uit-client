@@ -152,9 +152,9 @@ ipAddr=$(ip addr | grep -C 2 'state UP' | grep 'inet' | grep -oP '10.0.0.[0-9]{1
 
 
 function fetchJobQueueData {
-	jobQueued=$(printf "%s" "SELECT (CASE WHEN job_name IS NOT NULL THEN job_name ELSE 'NULL' END) AS result FROM job_queue WHERE tagnumber = '${tagNum}'" | /opt/uit-toolbox/select)
+	jobName=$(printf "%s" "api_get|job_name|tagnumber|${tagNum}" | /opt/uit-toolbox/parse)
+	jobNameFormatted=$(printf "%s" "api_get|job_name_formatted|job_name|${jobName}" | /opt/uit-toolbox/parse)
 	job_queued_override=$(printf "%s" "SELECT (CASE WHEN job_name IS NOT NULL THEN job_name ELSE 'NULL' END) AS result FROM job_queue WHERE job_name IN ('hpEraseAndClone', 'hpCloneOnly', 'generic-erase+clone', 'generic-clone') AND tagnumber = '${tagNum}'" | /opt/uit-toolbox/select)
-	job_queued_formatted=$(printf "%s" "SELECT (CASE WHEN job_name = 'data collection' THEN 'data collection' WHEN job_name = 'update' THEN 'update' WHEN job_name = 'findmy' THEN 'playing a sound' WHEN (job_name = 'hpEraseAndClone' OR job_name = 'generic-erase+clone') THEN 'disk erase & clone' WHEN (job_name = 'hpCloneOnly' OR job_name = 'generic-clone') THEN 'disk clone' WHEN job_name = 'nvmeErase' THEN 'disk erase' WHEN job_name = 'nvmeVerify' THEN 'disk verify' WHEN job_name = 'shutdown' THEN 'shutdown' WHEN job_name = 'clean-shutdown' THEN 'shutdown' ELSE 'NULL' END) AS result FROM job_queue WHERE tagnumber = '${tagNum}'" | /opt/uit-toolbox/select) 
 	jobQueuedPosition=$(printf '%s' "api_get|job_queue_position|tagnumber|${tagNum}" | /opt/uit-toolbox/parse)
 }
 
@@ -466,8 +466,6 @@ function findIdentityInDB {
 	fi
 }
 
-
-
 function jobInfo {
 	if [[ $ACTION != "" ]]; then
 		printf '%s\n' "The selected mode is ${BOLD}${ACTION}${RESET}"
@@ -486,8 +484,6 @@ function jobInfo {
 
 	printf '\n'
 }
-
-
 
 function footer {
 	biosUpdatedSQL=$(printf "%s" "SELECT bios_version AS result FROM static_bios_stats WHERE system_model = '${systemModel}'" | /opt/uit-toolbox/select 2>/dev/null)
@@ -526,8 +522,6 @@ function footer {
 	tput cup 1 0
 }
 
-
-
 function header {
 	footer
 	printf '%s\n' "${RESET}Welcome to UIT-Toolbox Client by Cameron Raschke ${DIM}(caraschke@uh.edu).${RESET}"
@@ -543,8 +537,6 @@ function header {
 	printf '\n'
 	printf '%s\n' "------------------------------"
 }
-
-
 
 function manualClient {
 	header
@@ -563,10 +555,6 @@ function manualClient {
 	printf '   %s\n' "${BOLD}${GREEN}[0]${RESET} ${BOLD}Enter Location${RESET}"
 	read -n 1 -p "${BOLD}Please enter [0-9]:${RESET} " mainMenuOpt
 }
-
-
-
-
 
 function powerWarning {
 	if [[ $CLIENTDISK =~ $NVME_REGEX ]]; then
@@ -603,8 +591,6 @@ function powerWarning {
 	fi
 }
 
-
-
 function appSelect {
 	footer
 	printf '%s\n' "${BOLD}Please select an ${BLUE}action${RESET}${BOLD}:${RESET} "
@@ -631,8 +617,6 @@ function appSelect {
 		appSelect
 	fi
 }
-
-
 
 function basicEraseMode_Shred {
 	if [[ $shredMode == 'verify' ]]; then
@@ -1566,7 +1550,7 @@ function execute {
 		if [[ -z $cloneMode ]]; then
 			clientselect_Clone
 		fi
-		if [[ $jobQueued != "hpEraseAndClone" ]]; then
+		if [[ $jobName != "hpEraseAndClone" ]]; then
 			printf "%s" "job_queue|${tagNum}|job_name|generic-erase+clone" | /opt/uit-toolbox/parse
 		fi
 		basicEraseMode_Shred
@@ -1589,7 +1573,7 @@ function execute {
 		else
 			basicEraseMode_Shred
 		fi
-		if [[ $jobQueued != "nvmeErase" ]]; then
+		if [[ $jobName != "nvmeErase" ]]; then
 			printf "%s" "job_queue|${tagNum}|job_name|generic-erase" | /opt/uit-toolbox/parse
 		fi
 		printf "%s" "job_queue|${tagNum}|erase_mode|$shredMode" | /opt/uit-toolbox/parse
@@ -1601,7 +1585,7 @@ function execute {
 		if [[ -z $cloneMode ]]; then
 			clientselect_Clone
 		fi
-		if [[ $jobQueued != "hpCloneOnly" ]]; then
+		if [[ $jobName != "hpCloneOnly" ]]; then
 			printf "%s" "job_queue|${tagNum}|job_name|generic-clone" | /opt/uit-toolbox/parse
 		fi
 		printf "%s" "job_queue|${tagNum}|clone_mode|$cloneMode" | /opt/uit-toolbox/parse
@@ -1783,23 +1767,17 @@ function autodetectClient {
 		unattended="true"
 
 		fetchJobQueueData
-		if [[ $jobQueued != "NULL" ]]; then
+		if [[ $jobName != "NULL" ]]; then
 			printf "%s" "job_queue|${tagNum}|job_queued|TRUE" | /opt/uit-toolbox/parse
 			tput cuu1
 			tput el
 			while true; do
 				header
-				printf '\n'
-				printf '\n'
+				printf "\n\n"
 				tput cuu1
 				tput el
 				fetchJobQueueData
-				if [[ $jobQueued == "NULL" ]]; then
-					break
-				fi
-				if [[ $job_queued_override == "NULL" ]]; then
-					printf "%s" "job_queue|${tagNum}|job_queued|TRUE" | /opt/uit-toolbox/parse
-					printf "%s" "job_queue|${tagNum}|job_active|TRUE" | /opt/uit-toolbox/parse
+				if [[ $jobName == "NULL" ]]; then
 					break
 				fi
 				if [[ $jobQueuedPosition == 0 ]]; then
@@ -1811,8 +1789,8 @@ function autodetectClient {
 						break
 					fi
 				fi
-				printf '%s\n' "	${BOLD}Tagnumber ${tagNum} (${systemSerial}) is scheduled for ${job_queued_formatted} and is ${jobQueuedPosition} in queue. Press ${BOLD}${GREEN}'q' ${RESET}${BOLD}to exit.${RESET}"
-				printf "%s" "job_queue|${tagNum}|job_status|Scheduled for ${job_queued_formatted}, ${jobQueuedPosition} in queue." | /opt/uit-toolbox/parse
+				printf '%s\n' "	${BOLD}Tagnumber ${tagNum} (${systemSerial}) is scheduled for ${jobNameFormatted} and is ${jobQueuedPosition} in queue. Press ${BOLD}${GREEN}'q' ${RESET}${BOLD}to exit.${RESET}"
+				printf "%s" "job_queue|${tagNum}|job_status|Scheduled for ${jobNameFormatted}, ${jobQueuedPosition} in queue." | /opt/uit-toolbox/parse
 				read -t 3 -N 1 input
 				if [[ $input = "q" ]] || [[ $input = "Q" ]]; then
 					resetUsageData
@@ -1822,15 +1800,10 @@ function autodetectClient {
 					pkill --terminal tty1
 				fi
 			done
-			if [[ $jobQueued == "data collection" ]]; then
+			if [[ $jobName == "update" ]]; then
 				findIdentityInDB
-				collectSystemData
-				printf "%s" "job_queue|${tagNum}|job_status|Starting data collection" | /opt/uit-toolbox/parse
-				resetForClientRestart
-			elif [[ $jobQueued == "update" ]]; then
-				findIdentityInDB
-				collectSystemData
 				printf "%s" "job_queue|${tagNum}|job_status|Updating..." | /opt/uit-toolbox/parse
+				collectSystemData
 				if [[ -f /root/uit-toolbox-client.deb ]]; then
 					rm /root/uit-toolbox-client.deb
 				fi
@@ -1844,11 +1817,11 @@ function autodetectClient {
 				done
 				dpkg --install /root/uit-toolbox-client.deb &>/dev/null
 				resetForClientRestart
-			elif [[ $jobQueued == "findmy" ]]; then
+			elif [[ $jobName == "findmy" ]]; then
 				printf "%s" "job_queue|${tagNum}|job_status|Playing sound" | /opt/uit-toolbox/parse
 				play /root/findmy1.mp3 &> /dev/null
 				resetForClientRestart
-			elif [[ $jobQueued == "hpEraseAndClone" ]]; then
+			elif [[ $jobName == "hpEraseAndClone" ]]; then
 				findIdentityInDB
 				collectSystemData
 				printf "%s" "job_queue|${tagNum}|job_status|Starting Erase + Clone job (HP)" | /opt/uit-toolbox/parse
@@ -1880,7 +1853,7 @@ function autodetectClient {
 				printf "%s" "system-stats|cpu|${UUID}" | /opt/uit-toolbox/parse
 				printf "%s" "system-stats|network|${UUID}" | /opt/uit-toolbox/parse
 				resetForClientRestart
-			elif [[ $jobQueued == "hpCloneOnly" ]]; then
+			elif [[ $jobName == "hpCloneOnly" ]]; then
 				findIdentityInDB
 				collectSystemData
 				printf "%s" "job_queue|${tagNum}|job_status|Starting Clone only job (HP)" | /opt/uit-toolbox/parse
@@ -1907,7 +1880,7 @@ function autodetectClient {
 				printf "%s" "system-stats|cpu|${UUID}" | /opt/uit-toolbox/parse
 				printf "%s" "system-stats|network|${UUID}" | /opt/uit-toolbox/parse
 				resetForClientRestart
-			elif [[ $jobQueued == "nvmeErase" ]]; then
+			elif [[ $jobName == "nvmeErase" ]]; then
 				findIdentityInDB
 				collectSystemData
 				if [[ /dev/nvme0n1 ]]; then
@@ -1938,7 +1911,7 @@ function autodetectClient {
 				printf "%s" "system-stats|cpu|${UUID}" | /opt/uit-toolbox/parse
 				printf "%s" "system-stats|network|${UUID}" | /opt/uit-toolbox/parse
 				resetForClientRestart
-			elif [[ $jobQueued == "nvmeVerify" ]]; then
+			elif [[ $jobName == "nvmeVerify" ]]; then
 				findIdentityInDB
 				collectSystemData
 				printf "%s" "job_queue|${tagNum}|job_status|Starting Verify job (${CLIENTDISK})" | /opt/uit-toolbox/parse
@@ -1969,19 +1942,19 @@ function autodetectClient {
 				printf "%s" "system-stats|cpu|${UUID}" | /opt/uit-toolbox/parse
 				printf "%s" "system-stats|network|${UUID}" | /opt/uit-toolbox/parse
 				resetForClientRestart
-			elif [[ $jobQueued == "shutdown" ]]; then
+			elif [[ $jobName == "shutdown" ]]; then
 				printf "%s" "job_queue|${tagNum}|job_status|fail - Shutting down" | /opt/uit-toolbox/parse
 				printf "%s" "job_queue|${tagNum}|job_queued|FALSE" | /opt/uit-toolbox/parse
 				printf "%s" "job_queue|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
 				printf "%s" "job_queue|${tagNum}|job_name|" | /opt/uit-toolbox/parse
 				poweroff
-			elif [[ $jobQueued == "clean-shutdown" ]]; then
+			elif [[ $jobName == "clean-shutdown" ]]; then
 				printf "%s" "job_queue|${tagNum}|job_status|Shutting down" | /opt/uit-toolbox/parse
 				printf "%s" "job_queue|${tagNum}|job_queued|FALSE" | /opt/uit-toolbox/parse
 				printf "%s" "job_queue|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
 				printf "%s" "job_queue|${tagNum}|job_name|" | /opt/uit-toolbox/parse
 				poweroff				
-			elif [[ $jobQueued == "fail-test" ]]; then
+			elif [[ $jobName == "fail-test" ]]; then
 				printf "%s" "job_queue|${tagNum}|job_status|fail - test" | /opt/uit-toolbox/parse
 				resetForClientRestart
 			fi
