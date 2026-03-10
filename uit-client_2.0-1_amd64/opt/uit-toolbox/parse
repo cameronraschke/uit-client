@@ -327,7 +327,8 @@ if ($arr[0] === "api_get") {
 	}
 	$responseJSON = json_decode($response, true);
 	$returnField = $responseJSON[$key];
-	if (!empty($returnField)) echo $returnField;
+	// if (!empty($returnField)) echo $returnField;
+	echo $returnField;
 	return;
 }
 
