@@ -155,9 +155,8 @@ function fetchJobQueueData {
 	jobQueued=$(printf "%s" "SELECT job_name AS result FROM job_queue WHERE tagnumber = '${tagNum}'" | /opt/uit-toolbox/select)
 	job_queued_override=$(printf "%s" "SELECT job_name AS result FROM job_queue WHERE job_name IN ('hpEraseAndClone', 'hpCloneOnly', 'generic-erase+clone', 'generic-clone') AND tagnumber = '${tagNum}'" | /opt/uit-toolbox/select)
 	job_queued_formatted=$(printf "%s" "SELECT (CASE WHEN job_name = 'data collection' THEN 'data collection' WHEN job_name = 'update' THEN 'update' WHEN job_name = 'findmy' THEN 'playing a sound' WHEN (job_name = 'hpEraseAndClone' OR job_name = 'generic-erase+clone') THEN 'disk erase & clone' WHEN (job_name = 'hpCloneOnly' OR job_name = 'generic-clone') THEN 'disk clone' WHEN job_name = 'nvmeErase' THEN 'disk erase' WHEN job_name = 'nvmeVerify' THEN 'disk verify' WHEN job_name = 'shutdown' THEN 'shutdown' WHEN job_name = 'clean-shutdown' THEN 'shutdown' ELSE job_name END) AS result FROM job_queue WHERE tagnumber = '${tagNum}'" | /opt/uit-toolbox/select) 
-	jobQueuedPosition=$(printf '%s' "api_get|job_queue_position|tagnumber|${tagNum}" | /opt/uit-toolbox/select)
+	jobQueuedPosition=$(printf '%s' "api_get|job_queue_position|tagnumber|${tagNum}" | /opt/uit-toolbox/parse)
 	job_active=$(printf "%s" "SELECT job_active AS result FROM job_queue WHERE tagnumber = '${tagNum}'" | /opt/uit-toolbox/select)
-	job_available=$(printf "%s" "SELECT COUNT(tagnumber) AS result FROM job_queue WHERE job_name IN ('hpEraseAndClone', 'hpCloneOnly', 'generic-erase+clone', 'generic-clone') AND job_active = TRUE" | /opt/uit-toolbox/select)
 }
 
 linuxPath="images"
@@ -1798,9 +1797,10 @@ function autodetectClient {
 					printf "%s" "job_queue|${tagNum}|job_active|TRUE" | /opt/uit-toolbox/parse
 					break
 				fi
-				if [[ $job_available == "NULL" && $jobQueuedPosition == 1 ]]; then
-					okay_to_go=$(printf "%s" "SELECT COUNT(tagnumber) AS result FROM job_queue WHERE job_name IN ('hpEraseAndClone', 'hpCloneOnly', 'generic-erase+clone', 'generic-clone') AND job_active = TRUE" | /opt/uit-toolbox/select)
-					if [[ $okay_to_go == "NULL" || $okay_to_go == "0" ]]; then
+				if [[ $jobQueuedPosition == 0 ]]; then
+					sleep 1
+					okay_to_go=$(printf '%s' "api_get|job_queue_position|tagnumber|${tagNum}" | /opt/uit-toolbox/parse)
+					if [[ $okay_to_go == 0 ]]; then
 						printf "%s" "job_queue|${tagNum}|job_active|TRUE" | /opt/uit-toolbox/parse
 						break
 					fi
