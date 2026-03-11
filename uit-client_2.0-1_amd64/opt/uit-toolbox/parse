@@ -322,7 +322,6 @@ if ($arr[0] === "api_post") {
 	$encodedValue=curl_escape($ch, $value);
 
 	if ($key == "live_image") {
-	
 		$url = "/api/live_image?tagnumber=" . $encodedTag;
 		$pngFileName = "/tmp/screenshot.png";
 		$pngImage = imagecreatefrompng($pngFileName);
@@ -345,6 +344,11 @@ if ($arr[0] === "api_post") {
 			'Content-Length: ' . strlen($imageBuffer),
 			'User-Agent: uit-client'
 		));
+		curl_exec($ch);
+		if (curl_errno($ch)) {
+			echo 'Error updating ' . $key . ': ' . curl_error($ch);
+			return;
+		}
 		unset($imageBuffer);
 		return;
 	}
