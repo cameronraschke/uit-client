@@ -828,6 +828,21 @@ if ($arr[0] === "api_post") {
 		]);
 	}
 
+	if ($key === "job_queued_at") {
+		$url = "/api/client/job_queued_at";
+		if ($value === "now") {
+			$dt = new DateTime("now", new DateTimeZone("UTC"));
+			$dtFormatted = $dt->format(DATE_RFC3339_EXTENDED);
+		} elseif ($value === "clear") {
+			$dtFormatted = null;
+		}
+		$body = json_encode([
+			'transaction_uuid' => $value2,
+			'tagnumber' => $tagNum,
+			'job_queued_at' => $dtFormatted
+		]);
+	}
+
 	if ($url === "" || empty($body)) {
 		echo "Field not updated, no match: $key" . PHP_EOL;
 		return;
