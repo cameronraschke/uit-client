@@ -154,7 +154,6 @@ ipAddr=$(ip addr | grep -C 2 'state UP' | grep 'inet' | grep -oP '10.0.0.[0-9]{1
 function fetchJobQueueData {
 	jobName=$(printf "%s" "api_get|job_name|tagnumber|${tagNum}" | /opt/uit-toolbox/parse)
 	jobNameFormatted=$(printf "%s" "api_get|job_name_formatted|job_name|${jobName}" | /opt/uit-toolbox/parse)
-	job_queued_override=$(printf "%s" "SELECT (CASE WHEN job_name IS NOT NULL THEN job_name ELSE 'NULL' END) AS result FROM job_queue WHERE job_name IN ('hpEraseAndClone', 'hpCloneOnly', 'generic-erase+clone', 'generic-clone') AND tagnumber = '${tagNum}'" | /opt/uit-toolbox/select)
 	jobQueuedPosition=$(printf '%s' "api_get|job_queue_position|tagnumber|${tagNum}" | /opt/uit-toolbox/parse)
 }
 
@@ -1595,6 +1594,7 @@ function execute {
 		printf "%s" "api_post|${tagNum}|health_clone_duration|${cloneJobDuration}|${UUID}" | /opt/uit-toolbox/parse
 	else
 		printf "%s" "job_queue|${tagNum}|job_queued|FALSE" | /opt/uit-toolbox/parse
+		printf "%s" "api_post|${tagNum}|job_queued_at|clear|${UUID}" | /opt/uit-toolbox/parse
 		printf "%s" "job_queue|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
 		printf "%s" "job_queue|${tagNum}|job_name|" | /opt/uit-toolbox/parse
 		printf "%s" "job_queue|${tagNum}|job_status|fail - Invalid application selected" | /opt/uit-toolbox/parse
@@ -1613,6 +1613,7 @@ function totaltime {
 function terminate {
 	printf "%s" "job_queue|${tagNum}|job_name|" | /opt/uit-toolbox/parse
 	printf "%s" "job_queue|${tagNum}|job_queued|FALSE" | /opt/uit-toolbox/parse
+	printf "%s" "api_post|${tagNum}|job_queued_at|clear|${UUID}" | /opt/uit-toolbox/parse
 	printf "%s" "job_queue|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
 	printf "%s" "job_queue|${tagNum}|job_status|Waiting for job" | /opt/uit-toolbox/parse
 	printf "%s" "system-stats|cpu|${UUID}" | /opt/uit-toolbox/parse
@@ -1715,6 +1716,7 @@ function terminate {
 function resetForClientRestart {
 	printf "%s" "job_queue|${tagNum}|job_name|" | /opt/uit-toolbox/parse
 	printf "%s" "job_queue|${tagNum}|job_queued|FALSE" | /opt/uit-toolbox/parse
+	printf "%s" "api_post|${tagNum}|job_queued_at|clear|${UUID}" | /opt/uit-toolbox/parse
 	printf "%s" "job_queue|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
 	for i in $(ps | grep 'uit-cpu' | awk '{ print $1 }'); do kill "${i}" 2>/dev/null; done
 	for i in $(ps | grep 'uit-network' | awk '{ print $1 }'); do kill "${i}" 2>/dev/null; done
@@ -1767,8 +1769,10 @@ function autodetectClient {
 		unattended="true"
 
 		fetchJobQueueData
-		if [[ $jobName != "NULL" ]]; then
+		if [[ $jobName != "" ]]; then
 			printf "%s" "job_queue|${tagNum}|job_queued|TRUE" | /opt/uit-toolbox/parse
+			printf "%s" "api_post|${tagNum}|job_queued_at|now|${UUID}" | /opt/uit-toolbox/parse
+			
 			tput cuu1
 			tput el
 			while true; do
@@ -1777,7 +1781,7 @@ function autodetectClient {
 				tput cuu1
 				tput el
 				fetchJobQueueData
-				if [[ $jobName == "NULL" ]]; then
+				if [[ $jobName == "" ]]; then
 					break
 				fi
 				if [[ $jobQueuedPosition == 0 ]]; then
@@ -1796,6 +1800,7 @@ function autodetectClient {
 					resetUsageData
 					printf "%s" "job_queue|${tagNum}|job_name|" | /opt/uit-toolbox/parse
 					printf "%s" "job_queue|${tagNum}|job_queued|FALSE" | /opt/uit-toolbox/parse
+					printf "%s" "api_post|${tagNum}|job_queued_at|clear|${UUID}" | /opt/uit-toolbox/parse
 					printf "%s" "job_queue|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
 					pkill --terminal tty1
 				fi
@@ -1945,12 +1950,14 @@ function autodetectClient {
 			elif [[ $jobName == "shutdown" ]]; then
 				printf "%s" "job_queue|${tagNum}|job_status|fail - Shutting down" | /opt/uit-toolbox/parse
 				printf "%s" "job_queue|${tagNum}|job_queued|FALSE" | /opt/uit-toolbox/parse
+				printf "%s" "api_post|${tagNum}|job_queued_at|clear|${UUID}" | /opt/uit-toolbox/parse
 				printf "%s" "job_queue|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
 				printf "%s" "job_queue|${tagNum}|job_name|" | /opt/uit-toolbox/parse
 				poweroff
 			elif [[ $jobName == "clean-shutdown" ]]; then
 				printf "%s" "job_queue|${tagNum}|job_status|Shutting down" | /opt/uit-toolbox/parse
 				printf "%s" "job_queue|${tagNum}|job_queued|FALSE" | /opt/uit-toolbox/parse
+				printf "%s" "api_post|${tagNum}|job_queued_at|clear|${UUID}" | /opt/uit-toolbox/parse
 				printf "%s" "job_queue|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
 				printf "%s" "job_queue|${tagNum}|job_name|" | /opt/uit-toolbox/parse
 				poweroff				
@@ -2080,6 +2087,7 @@ function main {
 	fi
 	if [[ $unattended == "false" ]]; then
 		printf "%s" "job_queue|${tagNum}|job_queued|FALSE" | /opt/uit-toolbox/parse
+		printf "%s" "api_post|${tagNum}|job_queued_at|clear|${UUID}" | /opt/uit-toolbox/parse
 		printf "%s" "job_queue|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
 		terminate
 	fi
