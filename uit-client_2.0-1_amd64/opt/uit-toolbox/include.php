@@ -616,48 +616,6 @@ class dbPSQL {
 			$stmt->execute();
 		}
 	}
-
-
-	//LIVE_IMAGES table
-	public function insertLiveImages ($tagnumber) {
-		if (strFilter($tagnumber) === 0) {
-			$sql = "INSERT INTO live_images (tagnumber) VALUES (:tagnumber)";
-			$stmt = $this->pdo->prepare($sql);
-
-			$stmt->bindParam(':tagnumber', $tagnumber, PDO::PARAM_INT);
-		} else {
-			exit();
-		}
-
-		if (strFilter($stmt) === 0) {
-			$stmt->execute();
-		}
-	}
-
-	public function updateLiveImages ($tagnumber, $key, $value) {
-		if (strFilter($tagnumber) === 0 && strFilter($key) === 0) {
-			if ($this->check_tables_cols("live_images", $key) === 0) {
-				$sql = "UPDATE live_images SET $key = :value WHERE tagnumber = :tagnumber";
-				$stmt = $this->pdo->prepare($sql);
-
-				if (is_bool($value) === true) {
-					$stmt->bindParam(':tagnumber', $tagnumber, PDO::PARAM_STR);
-					$stmt->bindParam(':value', $value, PDO::PARAM_BOOL);
-				} elseif (strFilter($value) === 0) {
-					$stmt->bindParam(':tagnumber', $tagnumber, PDO::PARAM_STR);
-					$stmt->bindParam(':value', $value, PDO::PARAM_STR);
-				} else {
-					$stmt->bindParam(':tagnumber', $tagnumber, PDO::PARAM_STR);
-					$stmt->bindParam(':value', $value, PDO::PARAM_NULL);
-				}
-
-				if (strFilter($stmt) == 0) {
-					$stmt->execute();
-				}
-			}
-		}
-	}
-
 }
 
 
