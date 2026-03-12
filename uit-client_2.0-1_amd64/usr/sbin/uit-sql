@@ -1,158 +1,159 @@
 #!/bin/bash
 while true; do
-SECONDS=0
-serial=$(dmidecode --string system-serial-number)
-tagNum=$(echo "SELECT tagnumber AS result FROM locations WHERE system_serial = '${serial}' ORDER BY time DESC LIMIT 1" | /opt/uit-toolbox/select)
-echo "job_queue|${tagNum}|last_heard|$(date '+%Y-%m-%d %H:%M:%S')" | /opt/uit-toolbox/parse
-
-for i in $(find /sys/class/hwmon/ -mindepth 1); do
-    type=$(cat ${i}/name)    
-    if [[ $type == "BAT0" || $type == "BAT1" ]]; then
-     if [[ -f ${i}/device/charge_full_design ]]; then
-        battCapacityFactory=$(cat ${i}/device/charge_full_design)
-        elif [[ -f ${i}/device/energy_full_design ]]; then 
-            battCapacityFactory=$(cat ${i}/device/energy_full_design)
-        fi
-        #battCapacityNow=$(cat ${i}/device/charge_full)
-        #battCharge=$(cat ${i}/device/charge_now)
-        battCharePcnt=$(cat ${i}/device/capacity)
-        battStatus=$(cat ${i}/device/status)
-        #battModel=$(cat ${i}/device/model_name)
-        echo "job_queue|${tagNum}|battery_charge|${battCharePcnt}" | /opt/uit-toolbox/parse
-        echo "job_queue|${tagNum}|battery_status|${battStatus}" | /opt/uit-toolbox/parse
-        fi
-
-    if [[ $type == "nvme" ]]; then
-        nvmeTemp=$(cat ${i}/temp1_input)
-        nvmeMaxTemp=$(cat ${i}/temp1_max)
-        nvmeAlarm=$(cat ${i}/temp1_alarm)
-        nvmeFirmware=$(cat ${i}/device/firmware_rev)
-        nvmeModel=$(cat ${i}/device/model)
-        nvmeSerial=$(cat ${i}/device/serial)
-        echo "job_queue|${tagNum}|disk_temp|${nvmeTemp}" | /opt/uit-toolbox/parse
-        echo "job_queue|${tagNum}|max_disk_temp|${nvmeMaxTemp}" | /opt/uit-toolbox/parse
-        fi
-
-    # # Dell BIOS/Motherboard Temp
-    # if [[ $type == "dell_smm" ]]; then
-    #     tmpSum=0
-    #     tmpNum=0
-    #     for tmp in $(find ${i}/temp*_input); do
-    #         tmpSum=$(( tmpSum + tmp ))
-    #         tmpNum=$(( tmpNum + 1 ))
-    #         done
-    #     motherboardTemp=$(( tmpSum / tmpNum ))
-    #     fi
-done
-
-
-# See realtime energy usage
-if [[ -d /sys/class/powercap ]]; then
-    uj1=0
-    uj2=0
-    for i in $(cat /sys/class/powercap/*/energy_uj 2>/dev/null); do
-        uj1=$(( uj1 + i ))
-    done
-    sleep 1
-    for i in $(cat /sys/class/powercap/*/energy_uj 2>/dev/null); do
-        uj2=$(( uj2 + i ))
-    done
-
-    echo "job_queue|${tagNum}|watts_now|${uj1}|${uj2}" | /opt/uit-toolbox/parse
-fi
-
-
-# Check if running kernel is up to date
-for i in $(ls /lib/modules); do
-    echo "${i}" | grep -i --quiet "$(uname -r)"
-    if [[ ${PIPESTATUS[1]} == "0" ]]; then
-        echo "job_queue|${tagNum}|kernel_updated|1" | /opt/uit-toolbox/parse
-        break
-    else
-        echo "job_queue|${tagNum}|kernel_updated|" | /opt/uit-toolbox/parse
-    fi
-done
-
-# Get memory info
-memTotal=$(cat /proc/meminfo  | grep -i memTotal | awk '{ print $2 }')
-memAvailable=$(cat /proc/meminfo  | grep -i memAvailable | awk '{ print $2 }')
-memUsage=$(( memTotal - memAvailable ))
-echo "api_post|${tagNum}|memory|${memUsage}|${memTotal}" | /opt/uit-toolbox/parse
-
-# Get CPU temp and usage
-cpu_usage=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | cut -d'%' -f1)
-avgTemp=0
-echo "api_post|${tagNum}|cpu_usage|${cpu_usage}" | /opt/uit-toolbox/parse
-for i in $(find /sys/class/hwmon/ -mindepth 1 -maxdepth 1); do
-	type=$(cat ${i}/name)
-	if [[ $type == "coretemp" || $type == "acpitz" ]]; then
-		cpuTemps=( $(cat ${i}/temp*_input) )
-		for temp in ${cpuTemps[@]}; do
-			if [[ temp -gt 0 ]]; then
-				avgTemp=$(( avgTemp + temp ))
-			fi
-		done
-		avgTemp=$(( avgTemp / ${#cpuTemps[@]} ))
+	startingSystemUptime=$(cat /proc/uptime | awk '{print int($1)}')
+	systemSerial=$(dmidecode --string system-serial-number 2>/dev/null)
+	if [[ -z $systemSerial ]]; then
+		systemSerial=$(cat /sys/class/dmi/id/product_serial)
 	fi
-done
-echo "api_post|${tagNum}|cpu_temp|${avgTemp}" | /opt/uit-toolbox/parse
+	tagNum=$(printf "%s" "api_get|client_lookup|system_serial|${systemSerial}" | /opt/uit-toolbox/parse)
+	echo "api_post|${tagNum}|last_heard|$(date --iso-8601=seconds)" | /opt/uit-toolbox/parse
 
-# CPU frequency
-cpuMHzArr=( $(cat /proc/cpuinfo | grep 'cpu MHz' | awk '{ print $4 }') )
-cpuMhzSum=0
-for i in ${cpuMHzArr[@]}; do cpuMhzSum=$(echo "$cpuMhzSum + $i" | bc); done
-cpuMhzAvg=$(echo "scale=2; $cpuMhzSum / ${#cpuMHzArr[@]}" | bc)
-echo "api_post|${tagNum}|cpu_mhz|${cpuMhzAvg}" | /opt/uit-toolbox/parse
+	for i in $(find /sys/class/hwmon/ -mindepth 1); do
+		deviceName=$(cat ${i}/name)    
+		if [[ $deviceName == "BAT0" || $deviceName == "BAT1" ]]; then
+			if [[ -f ${i}/device/charge_full_design ]]; then
+				battCapacityFactory=$(cat ${i}/device/charge_full_design)
+			elif [[ -f ${i}/device/energy_full_design ]]; then 
+				battCapacityFactory=$(cat ${i}/device/energy_full_design)
+			fi
+			battCharePcnt=$(cat ${i}/device/capacity)
+			battStatus=$(cat ${i}/device/status)
+			#battModel=$(cat ${i}/device/model_name)
+			echo "api_post|${tagNum}|battery_charge|${battCharePcnt}" | /opt/uit-toolbox/parse
+		fi
 
-# Get network link speed
-for i in $(ip addr | awk '/state UP/ {print $2}' | sed 's/://g'); do
-	linkSpeed=$(cat /sys/class/net/${i}/speed 2>/dev/null)
-	originalTxBytes=$(cat /sys/class/net/${i}/statistics/tx_bytes)
-	originalRxBytes=$(cat /sys/class/net/${i}/statistics/rx_bytes)
-	originalBytes=$(( originalTxBytes + originalRxBytes ))
-	sleep 1
-	newTxBytes=$(cat /sys/class/net/${i}/statistics/tx_bytes)
-	newRxBytes=$(cat /sys/class/net/${i}/statistics/rx_bytes)
-	newBytes=$(( newTxBytes + newRxBytes ))
-	netUsage=$(( (newBytes - originalBytes) * 8 ))
-	echo "api_post|${tagNum}|network|${netUsage}|${linkSpeed}" | /opt/uit-toolbox/parse
-done
+		if [[ $deviceName == "nvme" ]]; then
+			nvmeTemp=$(cat ${i}/temp1_input)
+			nvmeMaxTemp=$(cat ${i}/temp1_max)
+			nvmeAlarm=$(cat ${i}/temp1_alarm)
+			nvmeFirmware=$(cat ${i}/device/firmware_rev)
+			nvmeModel=$(cat ${i}/device/model)
+			nvmeSerial=$(cat ${i}/device/serial)
+			echo "job_queue|${tagNum}|disk_temp|${nvmeTemp}" | /opt/uit-toolbox/parse
+			echo "job_queue|${tagNum}|max_disk_temp|${nvmeMaxTemp}" | /opt/uit-toolbox/parse
+		fi
 
-# Check if cancel job has been sent
-if [[ $(echo "SELECT job_name AS result FROM job_queue WHERE tagnumber = '${tagNum}'" | /opt/uit-toolbox/select) == "cancel" ]]; then
-    echo "job_queue|${tagNum}|job_name|" | /opt/uit-toolbox/parse
-    echo "job_queue|${tagNum}|job_queued|FALSE" | /opt/uit-toolbox/parse
+		# # Dell BIOS/Motherboard Temp
+		# if [[ $deviceName == "dell_smm" ]]; then
+		# 	tmpSum=0
+		# 	tmpNum=0
+		# 	for tmp in $(find ${i}/temp*_input); do
+		# 		tmpSum=$(( tmpSum + tmp ))
+		# 		tmpNum=$(( tmpNum + 1 ))
+		# 	done
+		# 	motherboardTemp=$(( tmpSum / tmpNum ))
+		# fi
+	done
+
+
+	# See realtime energy usage
+	if [[ -d /sys/class/powercap ]]; then
+		uj1=0
+		uj2=0
+
+		for i in $(cat /sys/class/powercap/*/energy_uj 2>/dev/null); do
+			uj1=$(( uj1 + i ))
+		done
+		sleep 1
+		for i in $(cat /sys/class/powercap/*/energy_uj 2>/dev/null); do
+			uj2=$(( uj2 + i ))
+		done
+		echo "job_queue|${tagNum}|watts_now|${uj1}|${uj2}" | /opt/uit-toolbox/parse
+	fi
+
+
+	# Check if running kernel is up to date
+	for i in $(ls /lib/modules); do
+		echo "${i}" | grep -i --quiet "$(uname -r)"
+		if [[ ${PIPESTATUS[1]} == "0" ]]; then
+			echo "job_queue|${tagNum}|kernel_updated|1" | /opt/uit-toolbox/parse
+			break
+		else
+			echo "job_queue|${tagNum}|kernel_updated|" | /opt/uit-toolbox/parse
+		fi
+	done
+
+	# Get memory info
+	memTotal=$(cat /proc/meminfo  | grep -i memTotal | awk '{ print $2 }')
+	memAvailable=$(cat /proc/meminfo  | grep -i memAvailable | awk '{ print $2 }')
+	memUsage=$(( memTotal - memAvailable ))
+	echo "api_post|${tagNum}|memory|${memUsage}|${memTotal}" | /opt/uit-toolbox/parse
+
+	# Get CPU temp and usage
+	cpu_usage=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | cut -d'%' -f1)
+	avgTemp=0
+	echo "api_post|${tagNum}|cpu_usage|${cpu_usage}" | /opt/uit-toolbox/parse
+	for i in $(find /sys/class/hwmon/ -mindepth 1 -maxdepth 1); do
+		hwmonName=$(cat ${i}/name)
+		if [[ $hwmonName == "coretemp" || $hwmonName == "acpitz" ]]; then
+			cpuTemps=( $(cat ${i}/temp*_input) )
+			for temp in ${cpuTemps[@]}; do
+				if [[ temp -gt 0 ]]; then
+					avgTemp=$(( avgTemp + temp ))
+				fi
+			done
+			avgTemp=$(( avgTemp / ${#cpuTemps[@]} ))
+		fi
+	done
+	echo "api_post|${tagNum}|cpu_temp|${avgTemp}" | /opt/uit-toolbox/parse
+
+	# CPU frequency
+	cpuMHzArr=( $(cat /proc/cpuinfo | grep 'cpu MHz' | awk '{ print $4 }') )
+	cpuMhzSum=0
+	for i in ${cpuMHzArr[@]}; do 
+		cpuMhzSum=$(echo "$cpuMhzSum + $i" | bc); 
+	done
+	cpuMhzAvg=$(echo "scale=2; $cpuMhzSum / ${#cpuMHzArr[@]}" | bc)
+	echo "api_post|${tagNum}|cpu_mhz|${cpuMhzAvg}" | /opt/uit-toolbox/parse
+
+	# Get network link speed
+	for i in $(ip addr | awk '/state UP/ {print $2}' | sed 's/://g'); do
+		linkSpeed=$(cat /sys/class/net/${i}/speed 2>/dev/null)
+		originalTxBytes=$(cat /sys/class/net/${i}/statistics/tx_bytes)
+		originalRxBytes=$(cat /sys/class/net/${i}/statistics/rx_bytes)
+		originalBytes=$(( originalTxBytes + originalRxBytes ))
+		sleep 1
+		newTxBytes=$(cat /sys/class/net/${i}/statistics/tx_bytes)
+		newRxBytes=$(cat /sys/class/net/${i}/statistics/rx_bytes)
+		newBytes=$(( newTxBytes + newRxBytes ))
+		netUsage=$(( (newBytes - originalBytes) * 8 ))
+		echo "api_post|${tagNum}|network|${netUsage}|${linkSpeed}" | /opt/uit-toolbox/parse
+	done
+
+	# Check if cancel job has been sent
+	if [[ $(echo "SELECT job_name AS result FROM job_queue WHERE tagnumber = '${tagNum}'" | /opt/uit-toolbox/select) == "cancel" ]]; then
+		echo "job_queue|${tagNum}|job_name|" | /opt/uit-toolbox/parse
+		echo "job_queue|${tagNum}|job_queued|FALSE" | /opt/uit-toolbox/parse
 		printf "%s" "api_post|${tagNum}|job_queued_at|clear|${UUID}" | /opt/uit-toolbox/parse
-    echo "job_queue|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
-    echo "job_queue|${tagNum}|status|fail - Job cancelled :(" | /opt/uit-toolbox/parse
-    UUID=$(printf '%s' "SELECT uuid AS result FROM jobstats WHERE tagnumber = '${tagNum}' AND host_connected = TRUE ORDER BY time DESC LIMIT 1" | /opt/uit-toolbox/select)
-    echo "general|erase_completed||${UUID}" | /opt/uit-toolbox/parse
-    echo "general|clone_completed||${UUID}" | /opt/uit-toolbox/parse
-    echo "general|job_failed|TRUE|${UUID}" | /opt/uit-toolbox/parse
-    pkill --terminal tty1
-fi
+		echo "job_queue|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
+		echo "job_queue|${tagNum}|status|fail - Job cancelled :(" | /opt/uit-toolbox/parse
+		UUID=$(printf '%s' "SELECT uuid AS result FROM jobstats WHERE tagnumber = '${tagNum}' AND host_connected = TRUE ORDER BY time DESC LIMIT 1" | /opt/uit-toolbox/select)
+		echo "general|erase_completed||${UUID}" | /opt/uit-toolbox/parse
+		echo "general|clone_completed||${UUID}" | /opt/uit-toolbox/parse
+		echo "general|job_failed|TRUE|${UUID}" | /opt/uit-toolbox/parse
+		pkill --terminal tty1
+	fi
 
 
-#Network link speed
-for i in $(ip addr | awk '/state UP/ {print $2}' | sed 's/://g'); do
-    netSpeed=$(cat /sys/class/net/${i}/speed 2>/dev/null)
-    if [[ $netSpeed != $(echo "SELECT network_speed AS result FROM job_queue WHERE tagnumber = '${tagNum}'" | /opt/uit-toolbox/select) ]]; then
-        echo "job_queue|${tagNum}|network_speed|$netSpeed" | /opt/uit-toolbox/parse
-    fi
-done
+	#Network link speed
+	for i in $(ip addr | awk '/state UP/ {print $2}' | sed 's/://g'); do
+		netSpeed=$(cat /sys/class/net/${i}/speed 2>/dev/null)
+		if [[ $netSpeed != $(echo "SELECT network_speed AS result FROM job_queue WHERE tagnumber = '${tagNum}'" | /opt/uit-toolbox/select) ]]; then
+			echo "job_queue|${tagNum}|network_speed|$netSpeed" | /opt/uit-toolbox/parse
+		fi
+	done
 
-# Sleep before next loop
-sleep 1
+	# Sleep before next loop
+	sleep 1
+	
+	endingSystemUptime=$(cat /proc/uptime | awk '{print int($1)}')
 
-clientAppUptime=$(cat /root/client_app_uptime 2>/dev/null)
-if [[ -z $clientAppUptime ]]; then
-    clientAppUptime=0
-fi
-clientAppUptime=$(( clientAppUptime + SECONDS ))
-echo "${clientAppUptime}" > /root/client_app_uptime
+	timeToLoop=$((startingSystemUptime - endingSystemUptime))
+	if [[ -z $timeToLoop ]]; then
+		timeToLoop=0
+	fi
+	clientAppUptime=$((clientAppUptime + timeToLoop))
+	echo "${clientAppUptime}" > /root/client_app_uptime
 
-systemUptime=$(cat /proc/uptime | awk '{print int($1)}')
-
-echo "api_post|${tagNum}|uptime|${clientAppUptime}|${systemUptime}" | /opt/uit-toolbox/parse
-
+	echo "api_post|${tagNum}|uptime|${clientAppUptime}|${endingSystemUptime}" | /opt/uit-toolbox/parse
 done

@@ -442,7 +442,7 @@ function findIdentityInDB {
 	tput reset
 	printf '\n'
 
-	tagNum=$(printf "%s" "SELECT tagnumber AS result FROM locations WHERE system_serial = '${systemSerial}' AND tagnumber IS NOT NULL ORDER BY time DESC LIMIT 1" | /opt/uit-toolbox/select)
+	tagNum=$(printf "%s" "api_get|client_lookup|system_serial|${systemSerial}" | /opt/uit-toolbox/parse)
 	if [[ $tagNum != "NULL" ]]; then
 		UUID=""
 		UUID=$(cat /proc/sys/kernel/random/uuid)
@@ -1948,13 +1948,6 @@ function autodetectClient {
 				printf "%s" "system-stats|network|${UUID}" | /opt/uit-toolbox/parse
 				resetForClientRestart
 			elif [[ $jobName == "shutdown" ]]; then
-				printf "%s" "job_queue|${tagNum}|job_status|fail - Shutting down" | /opt/uit-toolbox/parse
-				printf "%s" "job_queue|${tagNum}|job_queued|FALSE" | /opt/uit-toolbox/parse
-				printf "%s" "api_post|${tagNum}|job_queued_at|clear|${UUID}" | /opt/uit-toolbox/parse
-				printf "%s" "job_queue|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
-				printf "%s" "job_queue|${tagNum}|job_name|" | /opt/uit-toolbox/parse
-				poweroff
-			elif [[ $jobName == "clean-shutdown" ]]; then
 				printf "%s" "job_queue|${tagNum}|job_status|Shutting down" | /opt/uit-toolbox/parse
 				printf "%s" "job_queue|${tagNum}|job_queued|FALSE" | /opt/uit-toolbox/parse
 				printf "%s" "api_post|${tagNum}|job_queued_at|clear|${UUID}" | /opt/uit-toolbox/parse
