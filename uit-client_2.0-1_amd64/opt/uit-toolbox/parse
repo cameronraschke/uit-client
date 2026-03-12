@@ -357,11 +357,11 @@ if ($arr[0] === "api_post") {
 		return;
 	}
 
-	if ($key === "battery_charge") {
+	if ($key === "battery_charge_pcnt") {
 		$url = "/api/client/hardware/battery";
 		$body = json_encode([
 			'tagnumber' => $tagNum,
-			'battery_charge' => floatval($value),
+			'battery_charge_pcnt' => floatval($value),
 		]);
 	}
 

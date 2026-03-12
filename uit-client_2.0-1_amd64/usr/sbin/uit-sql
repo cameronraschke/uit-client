@@ -19,7 +19,7 @@ while true; do
 			battCharePcnt=$(cat ${i}/device/capacity)
 			battStatus=$(cat ${i}/device/status)
 			#battModel=$(cat ${i}/device/model_name)
-			echo "api_post|${tagNum}|battery_charge|${battCharePcnt}" | /opt/uit-toolbox/parse
+			echo "api_post|${tagNum}|battery_charge_pcnt|${battCharePcnt}" | /opt/uit-toolbox/parse
 		fi
 
 		if [[ $deviceName == "nvme" ]]; then
