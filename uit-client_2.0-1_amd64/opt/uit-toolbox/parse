@@ -271,6 +271,7 @@ if ($arr[0] === "api_get") {
 
 	if ($key === "client_lookup") {
 		$url = "/api/client/lookup?".$queryKey."=".$queryVal;
+		$key = "tagnumber";
 	}
 
 	if ($key === "server_time") {
