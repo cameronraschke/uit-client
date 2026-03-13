@@ -1784,10 +1784,10 @@ function autodetectClient {
 				if [[ $jobName == "" ]]; then
 					break
 				fi
-				if [[ $jobQueuedPosition == 0 ]]; then
+				if [[ $jobQueuedPosition -le 1 ]]; then
 					sleep 1
 					okay_to_go=$(printf '%s' "api_get|job_queue_position|tagnumber|${tagNum}" | /opt/uit-toolbox/parse)
-					if [[ $okay_to_go == 0 ]]; then
+					if [[ $okay_to_go -le 1 ]]; then
 						printf "%s" "job_queue|${tagNum}|job_queued|TRUE" | /opt/uit-toolbox/parse
 						printf "%s" "job_queue|${tagNum}|job_active|TRUE" | /opt/uit-toolbox/parse
 						break

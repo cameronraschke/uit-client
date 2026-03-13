@@ -1,3 +1,4 @@
+#!/bin/bash
 while true; do
   cpuUsage=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | cut -d'%' -f1)
   echo "$cpuUsage" >> /tmp/cpu-usage.txt
