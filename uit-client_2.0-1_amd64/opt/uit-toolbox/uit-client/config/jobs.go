@@ -294,7 +294,7 @@ func SetJobFailed(v *bool) {
 		if cd.JobData == nil {
 			cd.JobData = &types.JobData{}
 		}
-		return updateOptional(&cd.JobData.Failed, v)
+		return updateOptional(&cd.JobData.Cancelled, v)
 	})
 }
 
@@ -303,7 +303,7 @@ func GetJobFailed() *bool {
 	if cd.JobData == nil {
 		return nil
 	}
-	val := *cd.JobData.Failed
+	val := *cd.JobData.Cancelled
 	return &val
 }
 
