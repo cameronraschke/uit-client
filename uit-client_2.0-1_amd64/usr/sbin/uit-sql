@@ -130,7 +130,7 @@ while true; do
 		UUID=$(printf '%s' "SELECT uuid AS result FROM jobstats WHERE tagnumber = '${tagNum}' AND host_connected = TRUE ORDER BY time DESC LIMIT 1" | /opt/uit-toolbox/select)
 		echo "general|erase_completed||${UUID}" | /opt/uit-toolbox/parse
 		echo "general|clone_completed||${UUID}" | /opt/uit-toolbox/parse
-		echo "general|job_failed|TRUE|${UUID}" | /opt/uit-toolbox/parse
+		echo "general|job_cancelled|TRUE|${UUID}" | /opt/uit-toolbox/parse
 		pkill --terminal tty1
 	fi
 

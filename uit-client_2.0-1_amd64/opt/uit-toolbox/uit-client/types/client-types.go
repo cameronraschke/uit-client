@@ -87,7 +87,7 @@ type JobData struct {
 	CloneImageName     *string       `json:"clone_image_name,omitempty"`
 	CloneSourceHost    *string       `json:"clone_source_host,omitempty"`
 	CloneCompleted     *bool         `json:"clone_completed,omitempty"`
-	Failed             *bool         `json:"job_failed,omitempty"`
+	Cancelled          *bool         `json:"job_cancelled,omitempty"`
 	FailedMessage      *string       `json:"job_failed_message,omitempty"`
 	StartTime          *time.Time    `json:"start_time,omitempty"`
 	EndTime            *time.Time    `json:"end_time,omitempty"`
