@@ -148,7 +148,7 @@ while true; do
 	
 	endingSystemUptime=$(cat /proc/uptime | awk '{print int($1)}')
 
-	timeToLoop=$((startingSystemUptime - endingSystemUptime))
+	timeToLoop=$((endingSystemUptime - startingSystemUptime))
 	if [[ -z $timeToLoop ]]; then
 		timeToLoop=0
 	fi
