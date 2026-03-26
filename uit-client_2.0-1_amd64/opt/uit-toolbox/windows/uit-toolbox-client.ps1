@@ -1,24 +1,49 @@
-Set-Variable -name "systemSerial" -Value ((Get-WmiObject -Class Win32_ComputerSystemProduct | Select-Object -ExpandProperty IdentifyingNumber).trim())
-if ($systemSerial -eq "") {
-	Set-Variable -name "systemSerial" -Value ((Get-WmiObject -Class Win32_SystemEnclosure | Select-Object -ExpandProperty SerialNumber).trim())
+$arr = @{
+'systemSerial' = (Get-CimInstance -Class Win32_ComputerSystemProduct).IdentifyingNumber
+'chassisType' = (Get-CimInstance -Class Win32_ComputerSystem).ChassisSKUNumber
+'adDomain' = (Get-CimInstance -Class Win32_ComputerSystem).Domain
+'adDomainJoined' = (($null -ne $adDomain) -and ($adDomain -ne ""))
+'systemManufacturer' = (Get-CimInstance -Class Win32_ComputerSystem).Manufacturer
+'systemModel' = (Get-CimInstance -Class Win32_ComputerSystem).Model
+'biosVersion' = (Get-CimInstance -Class Win32_BIOS).SMBIOSBIOSVersion
+'osVersion' = (Get-CimInstance -Class Win32_OperatingSystem).BuildNumber
+'osUBR' = (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion" -Name UBR).UBR
+'memorySizeBytes' = (Get-CimInstance -Class Win32_PhysicalMemory | Measure-Object -Property Capacity -Sum).Sum
+'osName' = (Get-CimInstance -Class Win32_OperatingSystem).Caption
+'osInstalledAt' = (Get-Date -Date ((Get-CimInstance -Class Win32_OperatingSystem).InstallDate) -UFormat '%Y-%m-%dT%H:%M:%S%Z')
+'memorySpeedMHz' = (Get-CimInstance -Class Win32_PhysicalMemory).Speed | Select-Object -First 1
+'cpuModel' = (Get-CimInstance -Class Win32_Processor).Name
+'cpuCores' = (Get-CimInstance -Class Win32_Processor).NumberOfCores
+'cpuThreads' = (Get-CimInstance -Class Win32_Processor).NumberOfLogicalProcessors
+'diskSizeBytes' = (Get-CimInstance -Class Win32_DiskDrive | Measure-Object -Property Size -Sum).Sum
+'ethernetMacAddr' = (Get-CimInstance -Class Win32_NetworkAdapterConfiguration | Where-Object { $_.IPEnabled } | Select-Object -ExpandProperty MACAddress | Select-Object -First 1)
+'wifiMacAddr' = (Get-CimInstance -Class Win32_NetworkAdapterConfiguration | Where-Object { $_.IPEnabled -and $_.Description -match "Wireless" } | Select-Object -ExpandProperty MACAddress | Select-Object -First 1)
+'diskModel' = (Get-CimInstance -Class Win32_DiskDrive | Select-Object -ExpandProperty Model | Select-Object -First 1)
+# 'cpuTemp' = (Get-CimInstance -Namespace root\wmi -Class MSAcpi_ThermalZoneTemperature | Select-Object -ExpandProperty CurrentTemperature | Select-Object -First 1) / 10 - 273.15
+'batteryChargePercent' = (Get-CimInstance -Class Win32_Battery).EstimatedChargeRemaining
 }
-Set-Variable -name "chassisType" -Value ((Get-WmiObject -Class Win32_ComputerSystem | Select-Object -ExpandProperty ChassisSKUNumber).trim())
-Set-Variable -name "adDomain" -Value ((Get-WmiObject -Class Win32_ComputerSystem | Select-Object -ExpandProperty Domain).trim())
-Set-Variable -name "adDomainJoined" -Value (($null -ne $adDomain) -and ($adDomain -ne ""))
-Set-Variable -name "systemManufacturer" -Value ((Get-WmiObject -Class Win32_ComputerSystem | Select-Object -ExpandProperty Manufacturer).trim())
-Set-Variable -name "systemModel" -Value ((Get-WmiObject -Class Win32_ComputerSystem | Select-Object -ExpandProperty Model).trim())
-Set-Variable -name "biosVersion" -Value ((Get-WmiObject -Class Win32_BIOS | Select-Object -ExpandProperty SMBIOSBIOSVersion).trim())
-Set-Variable -name "osVersion" -Value ((Get-WmiObject -Class Win32_OperatingSystem | Select-Object -ExpandProperty Version).trim())
-Set-Variable -name "memorySizeBytes" -Value ((Get-WmiObject -Class Win32_PhysicalMemory | Measure-Object -Property Capacity -Sum).Sum)
-Set-Variable -name "osName" -Value ((Get-WmiObject -Class Win32_OperatingSystem | Select-Object -ExpandProperty Caption).trim())
-Set-Variable -name "osInstalledAt" -Value ((Get-WmiObject -Class Win32_OperatingSystem | Select-Object -ExpandProperty InstallDate).trim())
-Set-Variable -name "memorySpeedMHz" -Value ((Get-WmiObject -Class Win32_PhysicalMemory | Select-Object -ExpandProperty Speed | Select-Object -First 1))
-Set-Variable -name "cpuModel" -Value ((Get-WmiObject -Class Win32_Processor | Select-Object -ExpandProperty Name).trim())
-Set-Variable -name "cpuCores" -Value ((Get-WmiObject -Class Win32_Processor | Select-Object -ExpandProperty NumberOfCores))
-Set-Variable -name "cpuThreads" -Value ((Get-WmiObject -Class Win32_Processor | Select-Object -ExpandProperty NumberOfLogicalProcessors))
-Set-Variable -name "diskSizeBytes" -Value ((Get-WmiObject -Class Win32_DiskDrive | Measure-Object -Property Size -Sum).Sum)
-Set-Variable -name "ethernetMacAddr" -Value ((Get-WmiObject -Class Win32_NetworkAdapterConfiguration | Where-Object { $_.IPEnabled } | Select-Object -ExpandProperty MACAddress | Select-Object -First 1).trim())
-Set-Variable -name "wifiMacAddr" -Value (Get-WmiObject -Class Win32_NetworkAdapterConfiguration | Where-Object { $_.IPEnabled -and $_.Description -match "Wireless" } | Select-Object -ExpandProperty MACAddress | Select-Object -First 1 | ForEach-Object { $_.Trim() })
-Set-Variable -name "diskModel" -Value ((Get-WmiObject -Class Win32_DiskDrive | Select-Object -ExpandProperty Model | Select-Object -First 1).trim())
-Set-Variable -name "cpuTemp" -Value ((Get-WmiObject -Namespace root\wmi -Class MSAcpi_ThermalZoneTemperature | Select-Object -ExpandProperty CurrentTemperature | Select-Object -First 1) / 10 - 273.15)
-Set-Variable -name "batteryChargePercent" -Value (Get-WmiObject -Class Win32_Battery | Select-Object -ExpandProperty EstimatedChargeRemaining)
+
+$newArr = @{}
+foreach ($key in $arr.Keys) {
+	if ($null -ne $arr[$key]) {
+		$newArr[$key] = $arr[$key]
+	}
+	if ($null -eq $arr[$key]) {
+		$newArr[$key] = $null
+	}
+	if ($arr[$key] -is [string]) {
+		$newArr[$key] = $arr[$key].Trim()
+	}
+	if ($arr[$key] -is [string] -and [string]::IsNullOrWhiteSpace($arr[$key])) {
+		$newArr[$key] = $null
+	}
+	if ($key -eq "ethernetMacAddr" -and $null -ne $newArr[$key]) {
+		$newArr[$key] = $newArr[$key].Replace("-", ":")
+	}
+	if ($key -eq "wifiMacAddr" -and $null -ne $newArr[$key]) {
+		$newArr[$key] = $newArr[$key].Replace("-", ":")
+	}
+}
+
+$jsonStr = $newArr | ConvertTo-Json -Depth 4
+Write-Host $jsonStr
