@@ -5,7 +5,15 @@ while true; do
 	if [[ -z $systemSerial ]]; then
 		systemSerial=$(cat /sys/class/dmi/id/product_serial)
 	fi
+	if [[ -z $systemSerial ]]; then
+		sleep 5
+		continue
+	fi
 	tagNum=$(printf "%s" "api_get|client_lookup|system_serial|${systemSerial}" | /opt/uit-toolbox/parse)
+	if [[ -z $tagNum ]]; then
+		sleep 5
+		continue
+	fi
 	echo "api_post|${tagNum}|last_heard|$(date --iso-8601=seconds)" | /opt/uit-toolbox/parse
 
 	for i in $(find /sys/class/hwmon/ -mindepth 1); do
