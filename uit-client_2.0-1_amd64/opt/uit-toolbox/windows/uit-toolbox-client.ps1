@@ -46,14 +46,14 @@ foreach ($key in $arr.Keys) {
 }
 
 $ipOfServer = Read-Host "Enter the web server's IP address"
-$username = Read-Host "Username: "
-$password = Read-Host "Password: " -AsSecureString
+$username = Read-Host "Username"
+$password = Read-Host "Password" -AsSecureString
 $authBody = @{
 	"username" = $username
 	"password" = $password
 }
 $authURL = "https://${ipOfServer}:31411/login"
-Invoke-WebRequest -Uri $authURL -Method POST -Headers $httpHeaders -Body ($authBody | ConvertTo-Json -Depth 4) -ContentType "application/json" -WebSession $authSession
+Invoke-WebRequest -Uri $authURL -HttpVersion 2.0 -SkipCertificateCheck -SslProtocol Tls12 -Method POST -Headers $httpHeaders -Body ($authBody | ConvertTo-Json -Depth 4) -ContentType "application/json" -WebSession $authSession
 
 # $serverURL = "http://${ipOfServer}:31411/api/windows-client-info"
 
@@ -61,7 +61,7 @@ Invoke-WebRequest -Uri $authURL -Method POST -Headers $httpHeaders -Body ($authB
 # 	"Host" = "${ipOfServer}"
 # 	"User-Agent" = "uit-client"
 # 	"Content-Type" = "application/json"
-# 	"UIT_Token" = "UIT_DB_CLIENT_PASSWD"
+# 	"UIT_Token" = ${password}"
 # }
 
 # Invoke-WebRequest -Uri $serverURL -Method POST -Headers $httpHeaders -Body ($httpBodyArr | ConvertTo-Json -Depth 4) -ContentType "application/json" -Cookies $authSession.Cookies
