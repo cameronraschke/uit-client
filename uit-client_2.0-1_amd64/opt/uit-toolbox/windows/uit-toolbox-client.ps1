@@ -45,26 +45,19 @@ foreach ($key in $arr.Keys) {
 	}
 }
 
-$ipOfServer = Read-Host "Enter the web server's IP address"
-$username = Read-Host "Username"
-$password = Read-Host "Password" -AsSecureString
-$authBody = @{
-	"username" = $username
-	"password" = $password
+Add-Type -AssemblyName System.Windows.Forms
+$dialogObj = New-Object System.Windows.Forms.FolderBrowserDialog
+$dialogObj.Description = "Select a folder to save the backups"
+$fileDialog = $dialogObj.ShowDialog()
+
+if ($fileDialog -eq [System.Windows.Forms.DialogResult]::OK -and 
+	-not [string]::IsNullOrWhiteSpace($dialogObj.SelectedPath)) {
+	Write-Host "Selected folder: $($dialogObj.SelectedPath)"
+} else {
+	Write-Host "No folder selected. Exiting."
+	exit
 }
-$authURL = "https://${ipOfServer}:31411/login"
-Invoke-WebRequest -Uri $authURL -HttpVersion 2.0 -SkipCertificateCheck -SslProtocol Tls12 -Method POST -Headers $httpHeaders -Body ($authBody | ConvertTo-Json -Depth 4) -ContentType "application/json" -WebSession $authSession
-
-# $serverURL = "http://${ipOfServer}:31411/api/windows-client-info"
-
-# $httpHeaders = @{
-# 	"Host" = "${ipOfServer}"
-# 	"User-Agent" = "uit-client"
-# 	"Content-Type" = "application/json"
-# 	"UIT_Token" = ${password}"
-# }
-
-# Invoke-WebRequest -Uri $serverURL -Method POST -Headers $httpHeaders -Body ($httpBodyArr | ConvertTo-Json -Depth 4) -ContentType "application/json" -Cookies $authSession.Cookies
 
 $jsonStr = $httpBodyArr | ConvertTo-Json -Depth 4
+Out-File -FilePath "$($dialogObj.SelectedPath)\uit-system-info.json" -InputObject $jsonStr -Encoding UTF8
 Write-Host $jsonStr

@@ -4,12 +4,11 @@ $dialogObj = New-Object System.Windows.Forms.FolderBrowserDialog
 $dialogObj.Description = "Select a folder to save the backups"
 $fileDialog = $dialogObj.ShowDialog()
 
-if ($fileDialog -eq [System.Windows.Forms.DialogResult]::OK -and 
-    -not [string]::IsNullOrWhiteSpace($dialogObj.SelectedPath)) {
-		Write-Host "Selected folder: $($dialogObj.SelectedPath)"
+if ($fileDialog -eq [System.Windows.Forms.DialogResult]::OK -and -not [string]::IsNullOrWhiteSpace($dialogObj.SelectedPath)) {
+	Write-Host "Selected folder: $($dialogObj.SelectedPath)"
 } else {
-		Write-Host "No folder selected. Exiting."
-		exit
+	Write-Host "No folder selected. Exiting."
+	exit
 }
 
 Set-Variable -name "remoteHost" -Value ""
