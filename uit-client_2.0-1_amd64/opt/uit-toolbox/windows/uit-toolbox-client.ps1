@@ -45,6 +45,10 @@ foreach ($key in $arr.Keys) {
 	}
 }
 
+$tagNum = Read-Host "Enter tag number (100000-999999)"
+
+$httpBodyArr["tagnumber"] = $tagNum
+
 Add-Type -AssemblyName System.Windows.Forms
 $dialogObj = New-Object System.Windows.Forms.FolderBrowserDialog
 $dialogObj.Description = "Select a folder to save the backups"
