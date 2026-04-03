@@ -46,6 +46,11 @@ foreach ($key in $arr.Keys) {
 }
 
 $tagNum = Read-Host "Enter tag number (100000-999999)"
+$okayToGo = Read-Host "You entered tag number $tagNum. Is this correct? (Y/N)"
+if ($okayToGo -ne "Y") {
+	Write-Host "Exiting. Please run the script again and enter the correct tag number."
+	exit
+}
 
 $httpBodyArr["tagnumber"] = $tagNum
 
