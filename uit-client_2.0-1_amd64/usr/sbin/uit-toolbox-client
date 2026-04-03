@@ -183,7 +183,7 @@ function collectDiskData {
 
 		# Disk Size
 		diskSize=$(cat /sys/class/block/${DISK}/size 2>/dev/null)
-		printf "%s" "api_post|${tagNum}|disk_size|${diskSize}|${UUID}" | /opt/uit-toolbox/parse
+		printf "%s" "api_post|${tagNum}|disk_size_kb|${diskSize}|${UUID}" | /opt/uit-toolbox/parse
 
 		# Disk Power On Hours
 		diskPowerOnHours=$(cat /root/smartctl-data | grep -iP 'Power( |_)On( |_)Hours' | sed 's/[^0-9]//g')

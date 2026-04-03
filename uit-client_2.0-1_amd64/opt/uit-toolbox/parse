@@ -597,12 +597,12 @@ if ($arr[0] === "api_post") {
 		]);
 	}
 
-	if ($key === "disk_size") {
+	if ($key === "disk_size_kb") {
 		$url = "/api/client/hardware";
 		$body = json_encode([
 			'transaction_uuid' => $value2,
 			'tagnumber' => $tagNum,
-			'disk_size' => (int)$value
+			'disk_size_kb' => (int)$value
 		]);
 	}
 
