@@ -1,49 +1,70 @@
 $arr = @{
-'systemSerial' = (Get-CimInstance -Class Win32_ComputerSystemProduct).IdentifyingNumber
-'chassisType' = (Get-CimInstance -Class Win32_ComputerSystem).ChassisSKUNumber
-'adDomain' = (Get-CimInstance -Class Win32_ComputerSystem).Domain
-'adDomainJoined' = (($null -ne $adDomain) -and ($adDomain -ne ""))
-'systemManufacturer' = (Get-CimInstance -Class Win32_ComputerSystem).Manufacturer
-'systemModel' = (Get-CimInstance -Class Win32_ComputerSystem).Model
-'biosVersion' = (Get-CimInstance -Class Win32_BIOS).SMBIOSBIOSVersion
-'osVersion' = (Get-CimInstance -Class Win32_OperatingSystem).BuildNumber
-'osUBR' = (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion" -Name UBR).UBR
-'memorySizeBytes' = (Get-CimInstance -Class Win32_PhysicalMemory | Measure-Object -Property Capacity -Sum).Sum
-'osName' = (Get-CimInstance -Class Win32_OperatingSystem).Caption
-'osInstalledAt' = (Get-Date -Date ((Get-CimInstance -Class Win32_OperatingSystem).InstallDate) -UFormat '%Y-%m-%dT%H:%M:%S%Z')
-'memorySpeedMHz' = (Get-CimInstance -Class Win32_PhysicalMemory).Speed | Select-Object -First 1
-'cpuModel' = (Get-CimInstance -Class Win32_Processor).Name
-'cpuCores' = (Get-CimInstance -Class Win32_Processor).NumberOfCores
-'cpuThreads' = (Get-CimInstance -Class Win32_Processor).NumberOfLogicalProcessors
-'diskSizeBytes' = (Get-CimInstance -Class Win32_DiskDrive | Measure-Object -Property Size -Sum).Sum
-'ethernetMacAddr' = (Get-CimInstance -Class Win32_NetworkAdapterConfiguration | Where-Object { $_.IPEnabled } | Select-Object -ExpandProperty MACAddress | Select-Object -First 1)
-'wifiMacAddr' = (Get-CimInstance -Class Win32_NetworkAdapterConfiguration | Where-Object { $_.IPEnabled -and $_.Description -match "Wireless" } | Select-Object -ExpandProperty MACAddress | Select-Object -First 1)
-'diskModel' = (Get-CimInstance -Class Win32_DiskDrive | Select-Object -ExpandProperty Model | Select-Object -First 1)
+'system_serial' = (Get-CimInstance -Class Win32_ComputerSystemProduct).IdentifyingNumber
+'chassis_type' = (Get-CimInstance -Class Win32_ComputerSystem).ChassisSKUNumber
+'ad_domain' = (Get-CimInstance -Class Win32_ComputerSystem).Domain
+'ad_domain_joined' = (($null -ne $adDomain) -and ($adDomain -ne ""))
+'system_manufacturer' = (Get-CimInstance -Class Win32_ComputerSystem).Manufacturer
+'system_model' = (Get-CimInstance -Class Win32_ComputerSystem).Model
+'bios_version' = (Get-CimInstance -Class Win32_BIOS).SMBIOSBIOSVersion
+'os_name' = (Get-CimInstance -Class Win32_OperatingSystem).Caption
+'os_installed_at' = (Get-Date -Date ((Get-CimInstance -Class Win32_OperatingSystem).InstallDate) -UFormat '%Y-%m-%dT%H:%M:%S%Z')
+'os_version' = (Get-CimInstance -Class Win32_OperatingSystem).BuildNumber
+'os_ubr' = (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion" -Name UBR).UBR
+'memory_capacity_kb' = (Get-CimInstance -Class Win32_PhysicalMemory | Measure-Object -Property Capacity -Sum).Sum / 1024
+'memory_speed_mhz' = (Get-CimInstance -Class Win32_PhysicalMemory).Speed | Select-Object -First 1
+'cpu_model' = (Get-CimInstance -Class Win32_Processor).Name
+'cpu_cores' = (Get-CimInstance -Class Win32_Processor).NumberOfCores
+'cpu_threads' = (Get-CimInstance -Class Win32_Processor).NumberOfLogicalProcessors
+'disk_size_bytes' = (Get-CimInstance -Class Win32_DiskDrive | Measure-Object -Property Size -Sum).Sum
+'ethernet_mac_addr' = (Get-CimInstance -Class Win32_NetworkAdapterConfiguration | Where-Object { $_.IPEnabled } | Select-Object -ExpandProperty MACAddress | Select-Object -First 1)
+'wifi_mac_addr' = (Get-CimInstance -Class Win32_NetworkAdapterConfiguration | Where-Object { $_.IPEnabled -and $_.Description -match "Wireless" } | Select-Object -ExpandProperty MACAddress | Select-Object -First 1)
+'disk_model' = (Get-CimInstance -Class Win32_DiskDrive | Select-Object -ExpandProperty Model | Select-Object -First 1)
 # 'cpuTemp' = (Get-CimInstance -Namespace root\wmi -Class MSAcpi_ThermalZoneTemperature | Select-Object -ExpandProperty CurrentTemperature | Select-Object -First 1) / 10 - 273.15
-'batteryChargePercent' = (Get-CimInstance -Class Win32_Battery).EstimatedChargeRemaining
+'battery_charge_percent' = (Get-CimInstance -Class Win32_Battery).EstimatedChargeRemaining
 }
 
-$newArr = @{}
+$httpBodyArr = @{}
 foreach ($key in $arr.Keys) {
 	if ($null -ne $arr[$key]) {
-		$newArr[$key] = $arr[$key]
+		$httpBodyArr[$key] = $arr[$key]
 	}
 	if ($null -eq $arr[$key]) {
-		$newArr[$key] = $null
+		$httpBodyArr[$key] = $null
 	}
 	if ($arr[$key] -is [string]) {
-		$newArr[$key] = $arr[$key].Trim()
+		$httpBodyArr[$key] = $arr[$key].Trim()
 	}
 	if ($arr[$key] -is [string] -and [string]::IsNullOrWhiteSpace($arr[$key])) {
-		$newArr[$key] = $null
+		$httpBodyArr[$key] = $null
 	}
-	if ($key -eq "ethernetMacAddr" -and $null -ne $newArr[$key]) {
-		$newArr[$key] = $newArr[$key].Replace("-", ":")
+	if ($key -eq "ethernet_mac_addr" -and $null -ne $httpBodyArr[$key]) {
+		$httpBodyArr[$key] = $httpBodyArr[$key].Replace("-", ":")
 	}
-	if ($key -eq "wifiMacAddr" -and $null -ne $newArr[$key]) {
-		$newArr[$key] = $newArr[$key].Replace("-", ":")
+	if ($key -eq "wifi_mac_addr" -and $null -ne $httpBodyArr[$key]) {
+		$httpBodyArr[$key] = $httpBodyArr[$key].Replace("-", ":")
 	}
 }
 
-$jsonStr = $newArr | ConvertTo-Json -Depth 4
+$ipOfServer = Read-Host "Enter the web server's IP address"
+$username = Read-Host "Username: "
+$password = Read-Host "Password: " -AsSecureString
+$authBody = @{
+	"username" = $username
+	"password" = $password
+}
+$authURL = "https://${ipOfServer}:31411/login"
+Invoke-WebRequest -Uri $authURL -Method POST -Headers $httpHeaders -Body ($authBody | ConvertTo-Json -Depth 4) -ContentType "application/json" -WebSession $authSession
+
+# $serverURL = "http://${ipOfServer}:31411/api/windows-client-info"
+
+# $httpHeaders = @{
+# 	"Host" = "${ipOfServer}"
+# 	"User-Agent" = "uit-client"
+# 	"Content-Type" = "application/json"
+# 	"UIT_Token" = "UIT_DB_CLIENT_PASSWD"
+# }
+
+# Invoke-WebRequest -Uri $serverURL -Method POST -Headers $httpHeaders -Body ($httpBodyArr | ConvertTo-Json -Depth 4) -ContentType "application/json" -Cookies $authSession.Cookies
+
+$jsonStr = $httpBodyArr | ConvertTo-Json -Depth 4
 Write-Host $jsonStr
