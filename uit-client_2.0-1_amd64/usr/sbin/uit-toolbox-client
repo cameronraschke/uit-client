@@ -352,7 +352,6 @@ fi
 
 	biosVersion=$(dmidecode --string bios-version 2>/dev/null)
 		printf "%s" "api_post|${tagNum}|bios_version|${biosVersion}|${UUID}" | /opt/uit-toolbox/parse
-		printf "%s" "api_post|${tagNum}|health_bios_version|${biosVersion}|${UUID}" | /opt/uit-toolbox/parse
 	biosDate=$(dmidecode --string bios-release-date 2>/dev/null)
 		printf "%s" "api_post|${tagNum}|bios_release_date|${biosDate}|${UUID}" | /opt/uit-toolbox/parse
 	biosFirmwareRev=$(dmidecode --string firmware-revision 2>/dev/null)

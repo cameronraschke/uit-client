@@ -662,15 +662,6 @@ if ($arr[0] === "api_post") {
 		]);
 	}
 
-	if ($key === "bios_version") {
-		$url = "/api/client/hardware";
-		$body = json_encode([
-			'transaction_uuid' => $value2,
-			'tagnumber' => $tagNum,
-			'bios_version' => $value
-		]);
-	}
-
 	if ($key === "bios_release_date") {
 		$url = "/api/client/hardware";
 		$body = json_encode([
@@ -797,7 +788,7 @@ if ($arr[0] === "api_post") {
 		]);
 	}
 
-	if ($key === "health_bios_version") {
+	if ($key === "bios_version") {
 		$url = "/api/client/health";
 		$body = json_encode([
 			'transaction_uuid' => $value2,
