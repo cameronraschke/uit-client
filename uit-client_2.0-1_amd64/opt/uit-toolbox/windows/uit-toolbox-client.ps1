@@ -25,7 +25,13 @@ $arr = @{
 'ethernet_mac_addr' = (Get-CimInstance -Class Win32_NetworkAdapterConfiguration | Where-Object { $_.IPEnabled } | Select-Object -ExpandProperty MACAddress | Select-Object -First 1)
 'wifi_mac_addr' = (Get-CimInstance -Class Win32_NetworkAdapterConfiguration | Where-Object { $_.IPEnabled -and $_.Description -match "Wireless" } | Select-Object -ExpandProperty MACAddress | Select-Object -First 1)
 # 'cpuTemp' = (Get-CimInstance -Namespace root\wmi -Class MSAcpi_ThermalZoneTemperature | Select-Object -ExpandProperty CurrentTemperature | Select-Object -First 1) / 10 - 273.15
-'battery_charge_percent' = (Get-CimInstance -Class Win32_Battery).EstimatedChargeRemaining
+'battery_manufacturer' = (Get-WmiObject -Namespace "root\wmi" -Class "BatteryStaticData").ManufactureName
+'battery_serial' = (Get-CimInstance -Class Win32_Battery).SerialNumber
+# 'battery_charge_percent' = (Get-CimInstance -Class Win32_Battery).EstimatedChargeRemaining
+'battery_current_max_capacity' = (Get-CimInstance -Namespace "root\wmi" -ClassName "BatteryFullChargedCapacity").BatteryFullChargedCapacity
+'battery_design_capacity' = (Get-WmiObject -Namespace "root\wmi" -Class "BatteryStaticData").DesignedCapacity
+'battery_health' = (((Get-CimInstance -Namespace "root\wmi" -Class "BatteryFullChargedCapacity").BatteryFullChargedCapacity) / (Get-WmiObject -Namespace "root\wmi" -Class "BatteryStaticData").DesignedCapacity) * 100
+'battery_charge_cycles' = (Get-WmiObject -Namespace "root\wmi" -ClassName BatteryCycleCount).CycleCount
 'updated_from_windows' = $true
 }
 
