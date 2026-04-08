@@ -424,7 +424,7 @@ if ($null -ne $win32BatteryObj) {
 	if ($null -ne $batteryCycleCountObj) {
 		$batteryCycleCountRaw = $batteryCycleCountObj.CycleCount
 		$batteryCycleCount = [System.Int64]0
-		if ([System.Int64]::TryParse($batteryCycleCountObj.CycleCount, [ref]$batteryCycleCount) -and $batteryCycleCount -ge 0) {
+		if ([System.Int64]::TryParse($batteryCycleCountRaw, [ref]$batteryCycleCount) -and $batteryCycleCount -ge 0) {
 			$arr['battery_charge_cycles'] = $batteryCycleCount
 		} else {
 			Write-Host "Battery cycle count class not found."
