@@ -169,8 +169,14 @@ if (-not [System.String]::IsNullOrWhiteSpace($computerInfoObj.OSDisplayVersion))
 
 # Windows build number
 $arr['windows_build_number'] = $null
-if (-not [System.String]::IsNullOrWhiteSpace($computerInfoObj.OsBuildNumber)) {
-	$arr['windows_build_number'] = [System.String]$computerInfoObj.OsBuildNumber.Trim()
+$windowsBuildNumberRaw = $computerInfoObj.OsBuildNumber
+if (-not [System.String]::IsNullOrWhiteSpace($windowsBuildNumberRaw)) {
+	$windowsBuildNumber = [System.Int64]0
+	if ([System.Int64]::TryParse([string]$windowsBuildNumberRaw, [ref]$windowsBuildNumber) -and $windowsBuildNumber -gt 0) {
+		$arr['windows_build_number'] = $windowsBuildNumber
+	} else {
+		Write-Host "Windows build number not found in WMI."
+	}
 } else {
 	Write-Host "Windows build number not found in WMI."
 }
@@ -362,15 +368,17 @@ try {
 
 # Wi-Fi MAC address
 $arr['wifi_mac_addr'] = $null
-try {
-	$wifiMac = (Get-CimInstance -Class Win32_NetworkAdapterConfiguration | Where-Object { $_.IPEnabled -and $_.Description -match "Wireless" } | Select-Object -ExpandProperty MACAddress | Select-Object -First 1)
+# Interface type 71 is for wireless interfaces
+$wifiInterface = Get-NetAdapter -Physical | Where-Object { $_.Status -eq "Up" -and $_.InterfaceType -eq 71 } | Select-Object -First 1
+if ($null -ne $wifiInterface) {
+	$wifiMac = ($wifiInterface | Select-Object -ExpandProperty MacAddress)
 	if (-not [System.String]::IsNullOrWhiteSpace($wifiMac)) {
 		$arr['wifi_mac_addr'] = [System.String]$wifiMac.Trim().Replace("-", ":")
 	} else {
 		Write-Host "Wi-Fi MAC address not found."
 	}
-} catch {
-	Write-Host "Error retrieving Wi-Fi MAC address: $_"
+} else {
+	Write-Host "Wi-Fi interface not found."
 }
 
 # Battery manufacturer
@@ -434,7 +442,7 @@ if ($null -ne $win32BatteryObj) {
 		Write-Host "Battery health cannot be calculated due to missing design capacity or current max capacity."
 	}
 } else {
-	Write-Host "No battery found."
+	Write-Host "Battery not found."
 }
 
 # Updated from Windows boolean
