@@ -5,7 +5,7 @@ Set-Variable -Name "win32ComputerSystemProductObj" -Value (Get-CimInstance -Clas
 # Set-Variable -Name "win32OperatingSystemObj" -Value (Get-CimInstance -Class Win32_OperatingSystem)
 Set-Variable -Name "win32MemoryObj" -Value (Get-CimInstance -Class Win32_PhysicalMemory)
 Set-Variable -Name "win32ProcessorObj" -Value (Get-CimInstance -Class Win32_Processor)
-Set-Variable -Name "win32DiskDriveObj" -Value (Get-CimInstance -Class Win32_DiskDrive)
+Set-Variable -Name "win32DiskDriveObj" -Value (Get-CimInstance -Class Win32_DiskDrive -Filter "MediaType != 'Removable Media' AND interfaceType = 'SCSI'")
 Set-Variable -Name "win32LogicalDiskObj" -Value (Get-CimInstance -Class Win32_LogicalDisk -Filter "DriveType = '3' AND Name = 'C:'")
 Set-Variable -Name "win32BatteryObj" -Value (Get-CimInstance -Class Win32_Battery -ErrorAction SilentlyContinue)
 Set-Variable -Name "batteryStaticDataObj" -Value (Get-WmiObject -Namespace "root\wmi" -Class "BatteryStaticData" -ErrorAction SilentlyContinue)
@@ -411,10 +411,12 @@ if ($null -ne $win32BatteryObj) {
 
 	# Battery current max capacity class
 	if ($null -ne $batteryFullChargedCapacityObj) {
-		if ($null -ne $batteryFullChargedCapacityObj.BatteryFullChargedCapacity -and [System.Int64]$batteryFullChargedCapacityObj.BatteryFullChargedCapacity -gt 0) {
-			$arr['battery_current_max_capacity'] = [System.Int64]$batteryFullChargedCapacityObj.BatteryFullChargedCapacity
+		$batteryCurrentMaxCapacityRaw = $batteryFullChargedCapacityObj.FullChargedCapacity
+		$batteryCurrentMaxCapacity = [System.Int64]0
+		if ([System.Int64]::TryParse($batteryCurrentMaxCapacityRaw, [ref]$batteryCurrentMaxCapacity) -and $batteryCurrentMaxCapacity -gt 0) {
+			$arr['battery_current_max_capacity'] = $batteryCurrentMaxCapacity
 		} else {
-			Write-Host "Battery current max capacity not found."
+			Write-Host "Cannot parse battery current max capacity."
 		}
 	} else {
 		Write-Host "BatteryFullChargedCapacity WMI class not found."
@@ -427,7 +429,7 @@ if ($null -ne $win32BatteryObj) {
 		if ([System.Int64]::TryParse($batteryCycleCountRaw, [ref]$batteryCycleCount) -and $batteryCycleCount -ge 0) {
 			$arr['battery_charge_cycles'] = $batteryCycleCount
 		} else {
-			Write-Host "Battery cycle count class not found."
+			Write-Host "Cannot parse battery cycle count."
 		}
 	} else {
 		Write-Host "BatteryCycleCount WMI class not found."
