@@ -27,7 +27,7 @@ while true; do
 			battCharePcnt=$(cat ${i}/device/capacity)
 			battStatus=$(cat ${i}/device/status)
 			#battModel=$(cat ${i}/device/model_name)
-			/sbin/uit-client-cli-send "api_post|${tagNum}|battery_charge_pcnt|${battCharePcnt}"
+			/sbin/uit-client-cli-send "${tagNum}|battery_charge_pcnt|${battCharePcnt}"
 		fi
 
 		if [[ $deviceName == "nvme" ]]; then
@@ -163,6 +163,6 @@ while true; do
 	clientAppUptime=$((clientAppUptime + timeToLoop))
 	echo "${clientAppUptime}" > /root/client_app_uptime
 
-	/sbin/uit-client-cli-send "${tagNum}|system_uptime|${endingSystemUptime}"
 	/sbin/uit-client-cli-send "${tagNum}|client_app_uptime|${clientAppUptime}"
+	/sbin/uit-client-cli-send "${tagNum}|system_uptime|${endingSystemUptime}"
 done
