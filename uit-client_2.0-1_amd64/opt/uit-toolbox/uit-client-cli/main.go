@@ -274,10 +274,9 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 		if err != nil || uptimeSeconds < 0 {
 			return nil, fmt.Errorf("invalid system_uptime value: %w", err)
 		}
-		uptimeDuration := time.Duration(uptimeSeconds) * time.Second
 		httpRequestPayload.Value = &ClientUptime{
 			Tagnumber:    httpRequestPayload.Tagnumber,
-			SystemUptime: uptimeDuration * time.Second,
+			SystemUptime: uptimeSeconds,
 		}
 		httpRequestConfig.URL = url.URL{Path: "/api/client/uptime"}
 		httpRequestConfig.Method = "POST"
@@ -287,10 +286,9 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 		if err != nil || uptimeSeconds < 0 {
 			return nil, fmt.Errorf("invalid client_app_uptime value: %w", err)
 		}
-		uptimeDuration := time.Duration(uptimeSeconds) * time.Second
 		httpRequestPayload.Value = &ClientUptime{
 			Tagnumber:       httpRequestPayload.Tagnumber,
-			ClientAppUptime: uptimeDuration * time.Second,
+			ClientAppUptime: uptimeSeconds,
 		}
 		httpRequestConfig.URL = url.URL{Path: "/api/client/uptime"}
 		httpRequestConfig.Method = "POST"

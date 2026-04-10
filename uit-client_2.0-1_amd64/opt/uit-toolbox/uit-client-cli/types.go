@@ -2,7 +2,6 @@ package main
 
 import (
 	"net/url"
-	"time"
 )
 
 type ClientConfig struct {
@@ -52,7 +51,7 @@ type BatteryData struct {
 }
 
 type ClientUptime struct {
-	Tagnumber       int64         `json:"tagnumber"`
-	ClientAppUptime time.Duration `json:"client_app_uptime"`
-	SystemUptime    time.Duration `json:"system_uptime"`
+	Tagnumber       int64 `json:"tagnumber"`
+	ClientAppUptime int64 `json:"client_app_uptime"`
+	SystemUptime    int64 `json:"system_uptime"`
 }
