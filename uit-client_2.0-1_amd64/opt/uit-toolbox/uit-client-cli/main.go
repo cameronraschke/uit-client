@@ -55,22 +55,26 @@ var clientConfig atomic.Pointer[ClientConfig]
 
 func GetClientConfig() (*ClientConfig, error) {
 	reqURL := &url.URL{
-		Host:   "10.0.0.1:8080",
-		Scheme: "http",
-		Path:   "/static/client/configs/uit-client",
+		Host:     "10.0.0.1:8080",
+		Scheme:   "https",
+		Path:     "/static/client/configs/uit-client",
+		RawQuery: "json=true",
 	}
 	queries := url.Values{}
 	queries.Set("json", "true")
 	reqURL.RawQuery = queries.Encode()
 
-	resp, err := http.Get(reqURL.String())
+	httpRequestData := new(HTTPRequestData)
+	httpRequestData.URL = *reqURL
+	httpRequestData.Method = "GET"
+
+	jsonBody, err := sendRequest(httpRequestData)
 	if err != nil {
 		return nil, fmt.Errorf("error in GetClientConfig: %w", err)
 	}
-	defer resp.Body.Close()
 
 	var configData ClientConfig
-	if err := json.NewDecoder(resp.Body).Decode(&configData); err != nil {
+	if err := json.NewDecoder(jsonBody).Decode(&configData); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal GetClientConfig response: %w", err)
 	}
 
@@ -158,7 +162,7 @@ func handleInput(ctx context.Context, stdinData string, wg *sync.WaitGroup) {
 		return
 	}
 
-	if err := sendRequest(httpRequestData); err != nil {
+	if _, err := sendRequest(httpRequestData); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to send request: %v\n", err)
 		return
 	}
@@ -203,18 +207,15 @@ func createArrayFromInput(input string) (*HTTPRequestData, error) {
 	return httpRequestData, nil
 }
 
-func sendRequest(data *HTTPRequestData) error {
+func sendRequest(data *HTTPRequestData) (io.Reader, error) {
 	if data.Method != "POST" && data.Method != "GET" {
-		return fmt.Errorf("unsupported HTTP method: %s", data.Method)
-	}
-	if strings.TrimSpace(data.Key) == "" {
-		return fmt.Errorf("key cannot be empty")
+		return nil, fmt.Errorf("unsupported HTTP method: %s", data.Method)
 	}
 	if strings.TrimSpace(data.URL.Path) == "" {
-		return fmt.Errorf("relative URL cannot be empty")
+		return nil, fmt.Errorf("relative URL cannot be empty")
 	}
 	if data == nil {
-		return fmt.Errorf("data cannot be nil")
+		return nil, fmt.Errorf("data cannot be nil")
 	}
 
 	tlsConfig := &tls.Config{
@@ -223,11 +224,18 @@ func sendRequest(data *HTTPRequestData) error {
 	}
 
 	tr := &http.Transport{
-		MaxIdleConns:       10,
-		IdleConnTimeout:    30,
-		DisableCompression: true,
-		TLSClientConfig:    tlsConfig,
+		MaxIdleConns:        10,
+		IdleConnTimeout:     30,
+		DisableCompression:  true,
+		TLSClientConfig:     tlsConfig,
+		TLSHandshakeTimeout: 10,
 	}
+	tr.RegisterProtocol("https", &http.Transport{
+		TLSClientConfig: tlsConfig,
+	})
+	tr.Protocols.SetHTTP1(false)
+	tr.Protocols.SetUnencryptedHTTP2(false)
+	tr.Protocols.SetHTTP2(true)
 
 	client := &http.Client{
 		Transport: tr,
@@ -245,12 +253,12 @@ func sendRequest(data *HTTPRequestData) error {
 
 	req, err := http.NewRequest(data.Method, requestURL.String(), nil)
 	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
+		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 	jsonData, err := json.Marshal(data)
 	if err != nil {
-		return fmt.Errorf("failed to marshal data: %w", err)
+		return nil, fmt.Errorf("failed to marshal data: %w", err)
 	}
 	if data.Method == "POST" {
 		req.Body = io.NopCloser(strings.NewReader(string(jsonData)))
@@ -260,13 +268,13 @@ func sendRequest(data *HTTPRequestData) error {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("request failed: %w", err)
+		return nil, fmt.Errorf("request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("server returned an HTTP error: %d", resp.StatusCode)
+		return nil, fmt.Errorf("server returned an HTTP error: %d", resp.StatusCode)
 	}
 
-	return nil
+	return resp.Body, nil
 }
