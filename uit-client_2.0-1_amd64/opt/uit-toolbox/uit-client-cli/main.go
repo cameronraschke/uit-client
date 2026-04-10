@@ -50,10 +50,17 @@ type HTTPRequestConfig struct {
 }
 
 type HTTPRequestPayload struct {
-	Tagnumber int64   `json:"tagnumber"`
-	Key       string  `json:"key"`
-	Value     any     `json:"value"`
-	UUID      *string `json:"uuid,omitempty"`
+	Tagnumber int64
+	Key       string
+	Value     any
+	UUID      *string
+}
+
+type CPUData struct {
+	Tagnumber     int64    `json:"tagnumber"`
+	UsagePercent  *float64 `json:"cpu_usage"`
+	MHz           *float64 `json:"cpu_mhz"`
+	MillidegreesC *float64 `json:"cpu_millidegrees_c"`
 }
 
 var clientConfig atomic.Pointer[ClientConfig]
@@ -223,9 +230,13 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 	switch httpRequestPayload.Key {
 	case "cpu_usage":
 		httpRequestPayload.Key = "cpu_usage"
-		httpRequestPayload.Value, err = strconv.ParseFloat(inputArr[2], 64)
-		if err != nil || httpRequestPayload.Value.(float64) < 0 || httpRequestPayload.Value.(float64) > 110 {
+		cpuUsage, err := strconv.ParseFloat(inputArr[2], 64)
+		if err != nil || cpuUsage < 0 || cpuUsage > 110 {
 			return nil, fmt.Errorf("invalid cpu_usage value: %w", err)
+		}
+		httpRequestPayload.Value = &CPUData{
+			Tagnumber:    httpRequestPayload.Tagnumber,
+			UsagePercent: &cpuUsage,
 		}
 		httpRequestConfig.URL = url.URL{Path: "/api/client/cpu/usage"}
 		httpRequestConfig.Method = "POST"
@@ -299,7 +310,7 @@ func sendRequest(data *HTTPRequest) ([]byte, error) {
 	}
 
 	// HTTP body
-	jsonData, err := json.Marshal(data)
+	jsonData, err := json.Marshal(data.Payload.Value)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal data: %w", err)
 	}
