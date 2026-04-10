@@ -39,20 +39,21 @@ type ClientConfig struct {
 	UIT_WEBMASTER_EMAIL  string `json:"UIT_WEBMASTER_EMAIL"`
 }
 
-type InputData struct {
-	TagNum int64
-	Key    string
-	Value  any
-	UUID   *string
+type HTTPRequest struct {
+	Config  *HTTPRequestConfig
+	Payload *HTTPRequestPayload
 }
 
-type HTTPRequestData struct {
-	TagNum int64   `json:"tag_num"`
-	Key    string  `json:"key"`
-	Value  any     `json:"value"`
-	UUID   *string `json:"uuid,omitempty"`
-	URL    url.URL `json:"url"`
-	Method string  `json:"http_method"`
+type HTTPRequestConfig struct {
+	URL    url.URL
+	Method string
+}
+
+type HTTPRequestPayload struct {
+	Tagnumber int64   `json:"tagnumber"`
+	Key       string  `json:"key"`
+	Value     any     `json:"value"`
+	UUID      *string `json:"uuid,omitempty"`
 }
 
 var clientConfig atomic.Pointer[ClientConfig]
@@ -68,11 +69,16 @@ func GetClientConfig() (*ClientConfig, error) {
 	queries.Set("json", "true")
 	reqURL.RawQuery = queries.Encode()
 
-	httpRequestData := new(HTTPRequestData)
-	httpRequestData.URL = *reqURL
-	httpRequestData.Method = "GET"
+	httpRequestConfig := new(HTTPRequestConfig)
+	httpRequestConfig.URL = *reqURL
+	httpRequestConfig.Method = "GET"
 
-	jsonBody, err := sendRequest(httpRequestData)
+	httpRequest := &HTTPRequest{
+		Config:  httpRequestConfig,
+		Payload: nil,
+	}
+
+	jsonBody, err := sendRequest(httpRequest)
 	if err != nil {
 		return nil, fmt.Errorf("error in GetClientConfig: %w", err)
 	}
@@ -167,20 +173,22 @@ func handleInput(ctx context.Context, stdinData string, wg *sync.WaitGroup) {
 
 	fmt.Printf("received stdin data: %s\n", clean)
 
-	httpRequestData, err := createArrayFromInput(clean)
+	httpRequest, err := MapInputToHTTPRequest(clean)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to create array from input: %v\n", err)
 		return
 	}
 
-	if _, err := sendRequest(httpRequestData); err != nil {
+	if _, err := sendRequest(httpRequest); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to send request: %v\n", err)
 		return
 	}
 }
 
-func createArrayFromInput(input string) (*HTTPRequestData, error) {
-	httpRequestData := new(HTTPRequestData)
+func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
+	if strings.TrimSpace(input) == "" {
+		return nil, fmt.Errorf("input cannot be empty or whitespace")
+	}
 
 	inputArr := strings.Split(input, "|")
 	if len(inputArr) < 3 {
@@ -199,39 +207,46 @@ func createArrayFromInput(input string) (*HTTPRequestData, error) {
 		return nil, fmt.Errorf("input has empty UUID")
 	}
 
+	httpRequestConfig := new(HTTPRequestConfig)
+	httpRequestPayload := new(HTTPRequestPayload)
+
 	var err error
-	httpRequestData.TagNum, err = strconv.ParseInt(inputArr[0], 10, 64)
+	httpRequestPayload.Tagnumber, err = strconv.ParseInt(inputArr[0], 10, 64)
 	if err != nil {
 		return nil, fmt.Errorf("invalid TagNum: %w", err)
 	}
-	httpRequestData.Key = inputArr[1]
+	httpRequestPayload.Key = inputArr[1]
 	if len(inputArr) == 4 && strings.TrimSpace(inputArr[3]) != "" {
-		httpRequestData.UUID = &inputArr[3]
+		httpRequestPayload.UUID = &inputArr[3]
 	}
 
-	switch httpRequestData.Key {
+	switch httpRequestPayload.Key {
 	case "cpu_usage":
-		httpRequestData.Value, err = strconv.ParseFloat(inputArr[2], 64)
-		if err != nil {
+		httpRequestPayload.Key = "cpu_usage"
+		httpRequestPayload.Value, err = strconv.ParseFloat(inputArr[2], 64)
+		if err != nil || httpRequestPayload.Value.(float64) < 0 || httpRequestPayload.Value.(float64) > 110 {
 			return nil, fmt.Errorf("invalid cpu_usage value: %w", err)
 		}
-		httpRequestData.URL = url.URL{Path: "/api/client/cpu/usage"}
-		httpRequestData.Method = "POST"
+		httpRequestConfig.URL = url.URL{Path: "/api/client/cpu/usage"}
+		httpRequestConfig.Method = "POST"
 	default:
-		return nil, fmt.Errorf("unsupported key: '%s'", httpRequestData.Key)
+		return nil, fmt.Errorf("unsupported key: '%s'", httpRequestPayload.Key)
 	}
 
-	return httpRequestData, nil
+	return &HTTPRequest{
+		Config:  httpRequestConfig,
+		Payload: httpRequestPayload,
+	}, nil
 }
 
-func sendRequest(data *HTTPRequestData) ([]byte, error) {
-	if data == nil {
-		return nil, fmt.Errorf("data variable cannot be nil")
+func sendRequest(data *HTTPRequest) ([]byte, error) {
+	if data == nil || data.Config == nil {
+		return nil, fmt.Errorf("data variable and/or config is nil")
 	}
-	if data.Method != "POST" && data.Method != "GET" {
-		return nil, fmt.Errorf("unsupported HTTP method: %s", data.Method)
+	if data.Config.Method != "POST" && data.Config.Method != "GET" {
+		return nil, fmt.Errorf("unsupported HTTP method: %s", data.Config.Method)
 	}
-	if strings.TrimSpace(data.URL.Path) == "" {
+	if strings.TrimSpace(data.Config.URL.Path) == "" {
 		return nil, fmt.Errorf("relative URL cannot be empty")
 	}
 
@@ -260,18 +275,18 @@ func sendRequest(data *HTTPRequestData) ([]byte, error) {
 		},
 	}
 
-	if data.URL.Path == "" {
+	if data.Config.URL.Path == "" {
 		return nil, fmt.Errorf("URL path cannot be empty")
 	}
 
 	requestURL := &url.URL{
 		Scheme:   "https",
-		Path:     data.URL.Path,
-		RawQuery: data.URL.RawQuery,
+		Path:     data.Config.URL.Path,
+		RawQuery: data.Config.URL.RawQuery,
 	}
 
-	if data.URL.Host != "" {
-		requestURL.Host = data.URL.Host
+	if data.Config.URL.Host != "" {
+		requestURL.Host = data.Config.URL.Host
 	} else {
 		tmpConfig := clientConfig.Load()
 		if tmpConfig == nil {
@@ -289,12 +304,12 @@ func sendRequest(data *HTTPRequestData) ([]byte, error) {
 		return nil, fmt.Errorf("failed to marshal data: %w", err)
 	}
 	var bodyReader io.Reader = http.NoBody
-	if data.Method == "POST" {
+	if data.Config.Method == "POST" {
 		bodyReader = bytes.NewReader(jsonData)
 	}
 
 	// HTTP request
-	req, err := http.NewRequest(data.Method, requestURL.String(), bodyReader)
+	req, err := http.NewRequest(data.Config.Method, requestURL.String(), bodyReader)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
