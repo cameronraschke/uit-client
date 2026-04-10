@@ -90,6 +90,10 @@ func main() {
 		fmt.Fprintf(os.Stderr, "failed to get client config: %v\n", err)
 		return
 	}
+	if config == nil {
+		fmt.Fprintf(os.Stderr, "client config is nil\n")
+		os.Exit(1)
+	}
 	clientConfig.Store(config)
 
 	stdinCh := make(chan string)
@@ -172,6 +176,9 @@ func createArrayFromInput(input string) (*HTTPRequestData, error) {
 	httpRequestData := new(HTTPRequestData)
 
 	inputArr := strings.Split(input, "|")
+	if len(inputArr) < 3 {
+		return nil, fmt.Errorf("input must have at least 3 parts separated by '|', got %d", len(inputArr))
+	}
 	if inputArr[0] == "" {
 		return nil, fmt.Errorf("input missing tag number")
 	}
@@ -181,7 +188,7 @@ func createArrayFromInput(input string) (*HTTPRequestData, error) {
 	if inputArr[2] == "" {
 		return nil, fmt.Errorf("input missing value")
 	}
-	if len(inputArr) > 3 && inputArr[3] == "" {
+	if len(inputArr) == 4 && inputArr[3] == "" {
 		return nil, fmt.Errorf("input has empty UUID")
 	}
 
@@ -191,7 +198,7 @@ func createArrayFromInput(input string) (*HTTPRequestData, error) {
 		return nil, fmt.Errorf("invalid TagNum: %w", err)
 	}
 	httpRequestData.Key = inputArr[1]
-	if strings.TrimSpace(inputArr[3]) != "" {
+	if len(inputArr) == 4 && strings.TrimSpace(inputArr[3]) != "" {
 		httpRequestData.UUID = &inputArr[3]
 	}
 
@@ -208,14 +215,14 @@ func createArrayFromInput(input string) (*HTTPRequestData, error) {
 }
 
 func sendRequest(data *HTTPRequestData) (io.Reader, error) {
+	if data == nil {
+		return nil, fmt.Errorf("data variable cannot be nil")
+	}
 	if data.Method != "POST" && data.Method != "GET" {
 		return nil, fmt.Errorf("unsupported HTTP method: %s", data.Method)
 	}
 	if strings.TrimSpace(data.URL.Path) == "" {
 		return nil, fmt.Errorf("relative URL cannot be empty")
-	}
-	if data == nil {
-		return nil, fmt.Errorf("data cannot be nil")
 	}
 
 	tlsConfig := &tls.Config{
@@ -246,9 +253,17 @@ func sendRequest(data *HTTPRequestData) (io.Reader, error) {
 
 	requestURL := &url.URL{
 		Scheme:   "https",
-		Host:     fmt.Sprintf("%s:%s", clientConfig.Load().UIT_WEB_HTTPS_HOST, clientConfig.Load().UIT_WEB_HTTPS_PORT),
 		Path:     data.URL.Path,
 		RawQuery: data.URL.RawQuery,
+	}
+
+	if data.URL.Host != "" {
+		requestURL.Host = data.URL.Host
+	} else {
+		if clientConfig.Load() == nil {
+			return nil, fmt.Errorf("client config is not loaded, cannot send request")
+		}
+		requestURL.Host = fmt.Sprintf("%s:%s", clientConfig.Load().UIT_WEB_HTTPS_HOST, clientConfig.Load().UIT_WEB_HTTPS_PORT)
 	}
 
 	req, err := http.NewRequest(data.Method, requestURL.String(), nil)
