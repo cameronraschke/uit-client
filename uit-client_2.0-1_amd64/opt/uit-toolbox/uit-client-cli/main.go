@@ -277,7 +277,7 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 		uptimeDuration := time.Duration(uptimeSeconds) * time.Second
 		httpRequestPayload.Value = &ClientUptime{
 			Tagnumber:    httpRequestPayload.Tagnumber,
-			SystemUptime: uptimeDuration,
+			SystemUptime: uptimeDuration * time.Second,
 		}
 		httpRequestConfig.URL = url.URL{Path: "/api/client/uptime"}
 		httpRequestConfig.Method = "POST"
@@ -290,7 +290,7 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 		uptimeDuration := time.Duration(uptimeSeconds) * time.Second
 		httpRequestPayload.Value = &ClientUptime{
 			Tagnumber:       httpRequestPayload.Tagnumber,
-			ClientAppUptime: uptimeDuration,
+			ClientAppUptime: uptimeDuration * time.Second,
 		}
 		httpRequestConfig.URL = url.URL{Path: "/api/client/uptime"}
 		httpRequestConfig.Method = "POST"
