@@ -27,7 +27,7 @@ while true; do
 			battCharePcnt=$(cat ${i}/device/capacity)
 			battStatus=$(cat ${i}/device/status)
 			#battModel=$(cat ${i}/device/model_name)
-			echo "api_post|${tagNum}|battery_charge_pcnt|${battCharePcnt}" | /opt/uit-toolbox/parse
+			/sbin/uit-client-cli-send "api_post|${tagNum}|battery_charge_pcnt|${battCharePcnt}"
 		fi
 
 		if [[ $deviceName == "nvme" ]]; then
@@ -88,9 +88,9 @@ while true; do
 	echo "api_post|${tagNum}|memory|${memUsage}|${memTotal}" | /opt/uit-toolbox/parse
 
 	# Get CPU temp and usage
-	cpu_usage=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | cut -d'%' -f1)
+	cpuUsage=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | cut -d'%' -f1)
 	avgTemp=0
-	echo "api_post|${tagNum}|cpu_usage|${cpu_usage}" | /opt/uit-toolbox/parse
+	/sbin/uit-client-cli-send "${tagNum}|cpu_usage|${cpuUsage}"
 	for i in $(find /sys/class/hwmon/ -mindepth 1 -maxdepth 1); do
 		hwmonName=$(cat ${i}/name)
 		if [[ $hwmonName == "coretemp" || $hwmonName == "acpitz" ]]; then
@@ -163,5 +163,6 @@ while true; do
 	clientAppUptime=$((clientAppUptime + timeToLoop))
 	echo "${clientAppUptime}" > /root/client_app_uptime
 
-	echo "api_post|${tagNum}|uptime|${clientAppUptime}|${endingSystemUptime}" | /opt/uit-toolbox/parse
+	/sbin/uit-client-cli-send "${tagNum}|system_uptime|${endingSystemUptime}"
+	/sbin/uit-client-cli-send "${tagNum}|client_app_uptime|${clientAppUptime}"
 done

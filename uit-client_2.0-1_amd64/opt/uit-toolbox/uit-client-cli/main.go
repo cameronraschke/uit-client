@@ -24,47 +24,6 @@ import (
 	"time"
 )
 
-type ClientConfig struct {
-	UIT_CLIENT_DB_USER   string `json:"UIT_CLIENT_DB_USER"`
-	UIT_CLIENT_DB_PASSWD string `json:"UIT_CLIENT_DB_PASSWD"`
-	UIT_CLIENT_DB_NAME   string `json:"UIT_CLIENT_DB_NAME"`
-	UIT_CLIENT_DB_HOST   string `json:"UIT_CLIENT_DB_HOST"`
-	UIT_CLIENT_DB_PORT   string `json:"UIT_CLIENT_DB_PORT"`
-	UIT_CLIENT_NTP_HOST  string `json:"UIT_CLIENT_NTP_HOST"`
-	UIT_CLIENT_PING_HOST string `json:"UIT_CLIENT_PING_HOST"`
-	UIT_SERVER_HOSTNAME  string `json:"UIT_SERVER_HOSTNAME"`
-	UIT_WEB_HTTP_HOST    string `json:"UIT_WEB_HTTP_HOST"`
-	UIT_WEB_HTTP_PORT    string `json:"UIT_WEB_HTTP_PORT"`
-	UIT_WEB_HTTPS_HOST   string `json:"UIT_WEB_HTTPS_HOST"`
-	UIT_WEB_HTTPS_PORT   string `json:"UIT_WEB_HTTPS_PORT"`
-	UIT_WEBMASTER_NAME   string `json:"UIT_WEBMASTER_NAME"`
-	UIT_WEBMASTER_EMAIL  string `json:"UIT_WEBMASTER_EMAIL"`
-}
-
-type HTTPRequest struct {
-	Config  *HTTPRequestConfig
-	Payload *HTTPRequestPayload
-}
-
-type HTTPRequestConfig struct {
-	URL    url.URL
-	Method string
-}
-
-type HTTPRequestPayload struct {
-	Tagnumber int64
-	Key       string
-	Value     any
-	UUID      *string
-}
-
-type CPUData struct {
-	Tagnumber     int64    `json:"tagnumber"`
-	UsagePercent  *float64 `json:"cpu_usage"`
-	MHz           *float64 `json:"cpu_mhz"`
-	MillidegreesC *float64 `json:"cpu_millidegrees_c"`
-}
-
 var clientConfig atomic.Pointer[ClientConfig]
 
 const unixSocketPath = "/run/uit-client/uit-client-cli.sock"
@@ -297,6 +256,44 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 	}
 
 	switch httpRequestPayload.Key {
+	case "battery_charge_pcnt":
+		httpRequestPayload.Key = "battery_charge_pcnt"
+		batteryPcnt, err := strconv.ParseFloat(inputArr[2], 64)
+		if err != nil || batteryPcnt < 0 || batteryPcnt > 110 {
+			return nil, fmt.Errorf("invalid battery_charge_pcnt value: %w", err)
+		}
+		httpRequestPayload.Value = &BatteryData{
+			Tagnumber: httpRequestPayload.Tagnumber,
+			Percent:   &batteryPcnt,
+		}
+		httpRequestConfig.URL = url.URL{Path: "/api/client/battery/charge"}
+		httpRequestConfig.Method = "POST"
+	case "system_uptime":
+		httpRequestPayload.Key = "system_uptime"
+		uptimeSeconds, err := strconv.ParseInt(inputArr[2], 10, 64)
+		if err != nil || uptimeSeconds < 0 {
+			return nil, fmt.Errorf("invalid system_uptime value: %w", err)
+		}
+		uptimeDuration := time.Duration(uptimeSeconds) * time.Second
+		httpRequestPayload.Value = &ClientUptime{
+			Tagnumber:    httpRequestPayload.Tagnumber,
+			SystemUptime: uptimeDuration,
+		}
+		httpRequestConfig.URL = url.URL{Path: "/api/client/uptime"}
+		httpRequestConfig.Method = "POST"
+	case "client_app_uptime":
+		httpRequestPayload.Key = "client_app_uptime"
+		uptimeSeconds, err := strconv.ParseInt(inputArr[2], 10, 64)
+		if err != nil || uptimeSeconds < 0 {
+			return nil, fmt.Errorf("invalid client_app_uptime value: %w", err)
+		}
+		uptimeDuration := time.Duration(uptimeSeconds) * time.Second
+		httpRequestPayload.Value = &ClientUptime{
+			Tagnumber:       httpRequestPayload.Tagnumber,
+			ClientAppUptime: uptimeDuration,
+		}
+		httpRequestConfig.URL = url.URL{Path: "/api/client/uptime"}
+		httpRequestConfig.Method = "POST"
 	case "cpu_usage":
 		httpRequestPayload.Key = "cpu_usage"
 		cpuUsage, err := strconv.ParseFloat(inputArr[2], 64)
