@@ -44,8 +44,14 @@ while IFS= read -r -d '' file; do
 done < <(find /opt/uit-toolbox/windows/uit-toolbox-client.ps1 -type f -print0; find /usr/sbin/ -type f -name 'uit-*' -print0; find /opt/uit-toolbox/include.php -type f -print0; find /opt/uit-toolbox/parse -type f -print0; find /opt/uit-toolbox/select -type f -print0)
 
 
+if [[ -f /tmp/uit-client ]]; then
+	rm -f /tmp/uit-client
+fi
+if [[ -f /tmp/uit-client-cli ]]; then
+	rm -f /tmp/uit-client-cli
+fi
 curl --silent --show-error 'https://10.0.0.1:31411/client/pkg/uit-client' --output /tmp/uit-client
-while [ ! -f /tmp/uit-client ]; do
+while [[ ! -f /tmp/uit-client ]]; do
   echo "Failed to download Go binary, trying again..."
   curl --silent --show-error 'https://10.0.0.1:31411/client/pkg/uit-client' --output /tmp/uit-client
   sleep 1
@@ -54,7 +60,7 @@ chmod 700 /tmp/uit-client
 mv /tmp/uit-client /usr/sbin/uit-client
 
 curl --silent --show-error 'https://10.0.0.1:31411/client/pkg/uit-client-cli' --output /tmp/uit-client-cli
-while [ ! -f /tmp/uit-client-cli ]; do
+while [[ ! -f /tmp/uit-client-cli ]]; do
   echo "Failed to download Go binary, trying again..."
   curl --silent --show-error 'https://10.0.0.1:31411/client/pkg/uit-client-cli' --output /tmp/uit-client-cli
   sleep 1
