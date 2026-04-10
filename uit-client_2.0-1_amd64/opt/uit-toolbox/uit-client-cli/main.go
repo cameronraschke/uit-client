@@ -283,27 +283,25 @@ func sendRequest(data *HTTPRequestData) ([]byte, error) {
 		requestURL.Host = fmt.Sprintf("%s:%s", tmpConfig.UIT_WEB_HTTPS_HOST, tmpConfig.UIT_WEB_HTTPS_PORT)
 	}
 
-	req, err := http.NewRequest(data.Method, requestURL.String(), nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
 	// HTTP body
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal data: %w", err)
 	}
+	var bodyReader io.Reader = http.NoBody
 	if data.Method == "POST" {
-		req.Body = io.NopCloser(strings.NewReader(string(jsonData)))
-	} else {
-		req.Body = http.NoBody
+		bodyReader = bytes.NewReader(jsonData)
+	}
+
+	// HTTP request
+	req, err := http.NewRequest(data.Method, requestURL.String(), bodyReader)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	// HTTP headers
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Type", "application/json; charset=utf-8")
 	req.Header.Set("User-Agent", "UIT-Client-CLI")
-	req.Header.Set("Content-Encoding", "utf-8")
-	req.Header.Set("Content-Length", fmt.Sprintf("%d", len(jsonData)))
 
 	// Server response
 	resp, err := client.Do(req)
