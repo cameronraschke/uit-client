@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"crypto/tls"
 	"encoding/json"
@@ -16,6 +17,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"syscall"
+	"time"
 )
 
 type ClientConfig struct {
@@ -72,9 +74,12 @@ func GetClientConfig() (*ClientConfig, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error in GetClientConfig: %w", err)
 	}
+	if len(jsonBody) == 0 {
+		return nil, fmt.Errorf("received nil or empty response body in GetClientConfig")
+	}
 
 	var configData ClientConfig
-	if err := json.NewDecoder(jsonBody).Decode(&configData); err != nil {
+	if err := json.NewDecoder(bytes.NewReader(jsonBody)).Decode(&configData); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal GetClientConfig response: %w", err)
 	}
 
@@ -88,10 +93,10 @@ func main() {
 	config, err := GetClientConfig()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to get client config: %v\n", err)
-		return
+		os.Exit(1)
 	}
-	if config == nil {
-		fmt.Fprintf(os.Stderr, "client config is nil\n")
+	if config == nil || strings.TrimSpace(config.UIT_WEB_HTTPS_HOST) == "" || strings.TrimSpace(config.UIT_WEB_HTTPS_PORT) == "" {
+		fmt.Fprintf(os.Stderr, "client config is invalid\n")
 		os.Exit(1)
 	}
 	clientConfig.Store(config)
@@ -214,7 +219,7 @@ func createArrayFromInput(input string) (*HTTPRequestData, error) {
 	return httpRequestData, nil
 }
 
-func sendRequest(data *HTTPRequestData) (io.Reader, error) {
+func sendRequest(data *HTTPRequestData) ([]byte, error) {
 	if data == nil {
 		return nil, fmt.Errorf("data variable cannot be nil")
 	}
@@ -232,14 +237,11 @@ func sendRequest(data *HTTPRequestData) (io.Reader, error) {
 
 	tr := &http.Transport{
 		MaxIdleConns:        10,
-		IdleConnTimeout:     30,
+		IdleConnTimeout:     30 * time.Second,
 		DisableCompression:  true,
 		TLSClientConfig:     tlsConfig,
-		TLSHandshakeTimeout: 10,
+		TLSHandshakeTimeout: 10 * time.Second,
 	}
-	tr.RegisterProtocol("https", &http.Transport{
-		TLSClientConfig: tlsConfig,
-	})
 	tr.Protocols.SetHTTP1(false)
 	tr.Protocols.SetUnencryptedHTTP2(false)
 	tr.Protocols.SetHTTP2(true)
@@ -251,6 +253,10 @@ func sendRequest(data *HTTPRequestData) (io.Reader, error) {
 		},
 	}
 
+	if data.URL.Path == "" {
+		return nil, fmt.Errorf("URL path cannot be empty")
+	}
+
 	requestURL := &url.URL{
 		Scheme:   "https",
 		Path:     data.URL.Path,
@@ -260,10 +266,14 @@ func sendRequest(data *HTTPRequestData) (io.Reader, error) {
 	if data.URL.Host != "" {
 		requestURL.Host = data.URL.Host
 	} else {
-		if clientConfig.Load() == nil {
+		tmpConfig := clientConfig.Load()
+		if tmpConfig == nil {
 			return nil, fmt.Errorf("client config is not loaded, cannot send request")
 		}
-		requestURL.Host = fmt.Sprintf("%s:%s", clientConfig.Load().UIT_WEB_HTTPS_HOST, clientConfig.Load().UIT_WEB_HTTPS_PORT)
+		if strings.TrimSpace(tmpConfig.UIT_WEB_HTTPS_HOST) == "" || strings.TrimSpace(tmpConfig.UIT_WEB_HTTPS_PORT) == "" {
+			return nil, fmt.Errorf("client config has invalid host or port for HTTPS")
+		}
+		requestURL.Host = fmt.Sprintf("%s:%s", tmpConfig.UIT_WEB_HTTPS_HOST, tmpConfig.UIT_WEB_HTTPS_PORT)
 	}
 
 	req, err := http.NewRequest(data.Method, requestURL.String(), nil)
@@ -291,5 +301,10 @@ func sendRequest(data *HTTPRequestData) (io.Reader, error) {
 		return nil, fmt.Errorf("server returned an HTTP error: %d", resp.StatusCode)
 	}
 
-	return resp.Body, nil
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	return body, nil
 }
