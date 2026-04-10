@@ -85,5 +85,6 @@ mv /tmp/uit-client-cli-send /usr/sbin/uit-client-cli-send
 /usr/bin/chmod 750 /opt/uit-toolbox/ -R
 /usr/bin/chown root:root /opt/uit-toolbox/ -R
 
+sudo systemctl daemon-reload
 sudo systemctl enable --now uit-client-cli.socket
 sudo systemctl enable --now uit-client-cli.service
