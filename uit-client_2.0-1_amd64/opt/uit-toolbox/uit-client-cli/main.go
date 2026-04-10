@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -215,10 +216,17 @@ func sendRequest(data *HTTPRequestData) error {
 	if data == nil {
 		return fmt.Errorf("data cannot be nil")
 	}
+
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: false,
+		MinVersion:         tls.VersionTLS13,
+	}
+
 	tr := &http.Transport{
 		MaxIdleConns:       10,
 		IdleConnTimeout:    30,
 		DisableCompression: true,
+		TLSClientConfig:    tlsConfig,
 	}
 
 	client := &http.Client{
