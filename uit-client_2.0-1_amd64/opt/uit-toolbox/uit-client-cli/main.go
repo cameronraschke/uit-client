@@ -287,7 +287,8 @@ func sendRequest(data *HTTPRequestData) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
-	req.Header.Set("Content-Type", "application/json")
+
+	// HTTP body
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal data: %w", err)
@@ -298,6 +299,13 @@ func sendRequest(data *HTTPRequestData) ([]byte, error) {
 		req.Body = http.NoBody
 	}
 
+	// HTTP headers
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", "UIT-Client-CLI")
+	req.Header.Set("Content-Encoding", "utf-8")
+	req.Header.Set("Content-Length", fmt.Sprintf("%d", len(jsonData)))
+
+	// Server response
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
