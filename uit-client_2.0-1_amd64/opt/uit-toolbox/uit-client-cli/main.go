@@ -266,7 +266,7 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 			Tagnumber: httpRequestPayload.Tagnumber,
 			Percent:   &batteryPcnt,
 		}
-		httpRequestConfig.URL = url.URL{Path: "/api/client/battery/charge"}
+		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware/battery"}
 		httpRequestConfig.Method = "POST"
 	case "system_uptime":
 		httpRequestPayload.Key = "system_uptime"
