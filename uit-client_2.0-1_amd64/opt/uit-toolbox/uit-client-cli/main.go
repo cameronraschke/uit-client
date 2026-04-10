@@ -59,8 +59,8 @@ var clientConfig atomic.Pointer[ClientConfig]
 
 func GetClientConfig() (*ClientConfig, error) {
 	reqURL := &url.URL{
-		Host:     "10.0.0.1:8080",
 		Scheme:   "https",
+		Host:     "10.0.0.1:31411",
 		Path:     "/static/client/configs/uit-client",
 		RawQuery: "json=true",
 	}
