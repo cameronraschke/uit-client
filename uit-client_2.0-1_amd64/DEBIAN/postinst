@@ -53,6 +53,15 @@ done
 chmod 700 /tmp/uit-client
 mv /tmp/uit-client /usr/sbin/uit-client
 
+curl --silent --show-error 'https://10.0.0.1:31411/client/pkg/uit-client-cli' --output /tmp/uit-client-cli
+while [ ! -f /tmp/uit-client-cli ]; do
+  echo "Failed to download Go binary, trying again..."
+  curl --silent --show-error 'https://10.0.0.1:31411/client/pkg/uit-client-cli' --output /tmp/uit-client-cli
+  sleep 1
+done
+chmod 700 /tmp/uit-client-cli
+mv /tmp/uit-client-cli /usr/sbin/uit-client-cli
+
 /usr/bin/chmod 700 /usr/sbin/uit-*
 /usr/bin/chown root:root /usr/sbin/uit-*
 /usr/bin/chmod 750 /opt/uit-toolbox/ -R

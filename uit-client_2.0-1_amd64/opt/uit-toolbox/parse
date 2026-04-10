@@ -293,6 +293,7 @@ if ($arr[0] === "api_get") {
 	}
 	curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
 	curl_setopt($ch, CURLOPT_URL, $baseURL . $url);
+	curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2_0);
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 	curl_setopt($ch, CURLOPT_HTTPHEADER, array(
 		'User-Agent: uit-client'
@@ -863,6 +864,7 @@ if ($arr[0] === "api_post") {
 		return;
 	}
 	curl_setopt($ch, CURLOPT_POST, true);
+	curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2_0);
 	curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
 	curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
 	curl_setopt($ch, CURLOPT_URL, $baseURL . $url . '?' . urlencode($key));
