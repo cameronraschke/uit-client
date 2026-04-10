@@ -209,13 +209,16 @@ func createArrayFromInput(input string) (*HTTPRequestData, error) {
 		httpRequestData.UUID = &inputArr[3]
 	}
 
-	if httpRequestData.Key == "cpu_usage" {
+	switch httpRequestData.Key {
+	case "cpu_usage":
 		httpRequestData.Value, err = strconv.ParseFloat(inputArr[2], 64)
 		if err != nil {
 			return nil, fmt.Errorf("invalid cpu_usage value: %w", err)
 		}
 		httpRequestData.URL = url.URL{Path: "/api/client/cpu/usage"}
 		httpRequestData.Method = "POST"
+	default:
+		return nil, fmt.Errorf("unsupported key: '%s'", httpRequestData.Key)
 	}
 
 	return httpRequestData, nil
