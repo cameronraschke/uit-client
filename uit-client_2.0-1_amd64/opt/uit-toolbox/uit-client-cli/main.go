@@ -244,9 +244,11 @@ func sendRequest(data *HTTPRequestData) ([]byte, error) {
 		TLSClientConfig:     tlsConfig,
 		TLSHandshakeTimeout: 10 * time.Second,
 	}
-	tr.Protocols.SetHTTP1(false)
-	tr.Protocols.SetUnencryptedHTTP2(false)
-	tr.Protocols.SetHTTP2(true)
+	protocols := http.Protocols{}
+	protocols.SetHTTP1(false)
+	protocols.SetUnencryptedHTTP2(false)
+	protocols.SetHTTP2(true)
+	tr.Protocols = &protocols
 
 	client := &http.Client{
 		Transport: tr,
