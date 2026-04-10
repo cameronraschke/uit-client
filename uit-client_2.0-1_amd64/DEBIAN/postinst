@@ -88,3 +88,6 @@ mv /tmp/uit-client-cli-send /usr/sbin/uit-client-cli-send
 sudo systemctl daemon-reload
 sudo systemctl enable --now uit-client-cli.socket
 sudo systemctl enable --now uit-client-cli.service
+
+systemctl restart uit-client-cli.socket
+systemctl restart uit-client-cli.service
