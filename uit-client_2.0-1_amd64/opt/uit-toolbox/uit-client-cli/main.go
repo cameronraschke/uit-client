@@ -8,8 +8,10 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -65,6 +67,8 @@ type CPUData struct {
 
 var clientConfig atomic.Pointer[ClientConfig]
 
+const unixSocketPath = "/run/uit-client/uit-client-cli.sock"
+
 func GetClientConfig() (*ClientConfig, error) {
 	reqURL := &url.URL{
 		Scheme:   "https",
@@ -116,56 +120,121 @@ func main() {
 	}
 	clientConfig.Store(config)
 
-	stdinCh := make(chan string)
-	errCh := make(chan error, 1)
+	listener, inherited, err := getUnixSocketListener()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to acquire unix socket listener: %v\n", err)
+		os.Exit(1)
+	}
+	defer func() {
+		_ = listener.Close()
+		if !inherited {
+			_ = os.Remove(unixSocketPath)
+		}
+	}()
 
-	go readStdinToChannel(ctx, os.Stdin, stdinCh, errCh)
+	go func() {
+		<-ctx.Done()
+		_ = listener.Close()
+	}()
 
 	var wg sync.WaitGroup
 	for {
-		select {
-		case <-ctx.Done():
-			wg.Wait()
-			return
-		case err := <-errCh:
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "stdin read error: %v\n", err)
-			}
-			wg.Wait()
-			return
-		case data, ok := <-stdinCh:
-			if !ok {
+		conn, err := listener.Accept()
+		if err != nil {
+			if ctx.Err() != nil || errors.Is(err, net.ErrClosed) {
 				wg.Wait()
 				return
 			}
-
-			wg.Add(1)
-			go handleInput(ctx, data, &wg)
+			fmt.Fprintf(os.Stderr, "unix socket accept error: %v\n", err)
+			continue
 		}
+
+		wg.Add(1)
+		go handleConnection(ctx, conn, &wg)
 	}
 }
 
-func readStdinToChannel(ctx context.Context, input *os.File, out chan<- string, errCh chan<- error) {
-	defer close(out)
+func getUnixSocketListener() (net.Listener, bool, error) {
+	listener, err := inheritedUnixSocketListener()
+	if err == nil {
+		return listener, true, nil
+	}
+	if !errors.Is(err, os.ErrNotExist) {
+		return nil, false, err
+	}
 
-	scanner := bufio.NewScanner(input)
+	listener, err = net.Listen("unix", unixSocketPath)
+	if err != nil {
+		return nil, false, err
+	}
+
+	if err := os.Chmod(unixSocketPath, 0660); err != nil {
+		_ = listener.Close()
+		_ = os.Remove(unixSocketPath)
+		return nil, false, fmt.Errorf("failed to chmod unix socket: %w", err)
+	}
+
+	return listener, false, nil
+}
+
+func inheritedUnixSocketListener() (net.Listener, error) {
+	listenPID := os.Getenv("LISTEN_PID")
+	listenFDs := os.Getenv("LISTEN_FDS")
+	if listenPID == "" || listenFDs == "" {
+		return nil, os.ErrNotExist
+	}
+
+	pid, err := strconv.Atoi(listenPID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid LISTEN_PID: %w", err)
+	}
+	if pid != os.Getpid() {
+		return nil, os.ErrNotExist
+	}
+
+	fds, err := strconv.Atoi(listenFDs)
+	if err != nil {
+		return nil, fmt.Errorf("invalid LISTEN_FDS: %w", err)
+	}
+	if fds < 1 {
+		return nil, os.ErrNotExist
+	}
+
+	file := os.NewFile(uintptr(3), "systemd-unix-socket")
+	if file == nil {
+		return nil, fmt.Errorf("failed to access inherited systemd socket")
+	}
+	defer file.Close()
+
+	listener, err := net.FileListener(file)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create listener from inherited socket: %w", err)
+	}
+
+	return listener, nil
+}
+
+func handleConnection(ctx context.Context, conn net.Conn, wg *sync.WaitGroup) {
+	defer wg.Done()
+	defer conn.Close()
+
+	scanner := bufio.NewScanner(conn)
 	for scanner.Scan() {
-		line := scanner.Text()
-
 		select {
 		case <-ctx.Done():
 			return
-		case out <- line:
+		default:
 		}
+
+		handleInput(ctx, scanner.Text())
 	}
 
-	if err := scanner.Err(); err != nil {
-		errCh <- err
+	if err := scanner.Err(); err != nil && ctx.Err() == nil {
+		fmt.Fprintf(os.Stderr, "unix socket read error: %v\n", err)
 	}
 }
 
-func handleInput(ctx context.Context, stdinData string, wg *sync.WaitGroup) {
-	defer wg.Done()
+func handleInput(ctx context.Context, stdinData string) {
 
 	select {
 	case <-ctx.Done():

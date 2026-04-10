@@ -50,6 +50,9 @@ fi
 if [[ -f /tmp/uit-client-cli ]]; then
 	rm -f /tmp/uit-client-cli
 fi
+if [[ -f /tmp/uit-client-cli-send ]]; then
+	rm -f /tmp/uit-client-cli-send
+fi
 curl --silent --show-error 'https://10.0.0.1:31411/client/pkg/uit-client' --output /tmp/uit-client
 while [[ ! -f /tmp/uit-client ]]; do
   echo "Failed to download Go binary, trying again..."
@@ -68,7 +71,18 @@ done
 chmod 700 /tmp/uit-client-cli
 mv /tmp/uit-client-cli /usr/sbin/uit-client-cli
 
+curl --silent --show-error 'https://10.0.0.1:31411/client/pkg/uit-client-cli-send' --output /tmp/uit-client-cli-send
+while [[ ! -f /tmp/uit-client-cli-send ]]; do
+	echo "Failed to download Go binary, trying again..."
+	curl --silent --show-error 'https://10.0.0.1:31411/client/pkg/uit-client-cli-send' --output /tmp/uit-client-cli-send
+	sleep 1
+done
+chmod 700 /tmp/uit-client-cli-send
+mv /tmp/uit-client-cli-send /usr/sbin/uit-client-cli-send
+
 /usr/bin/chmod 700 /usr/sbin/uit-*
 /usr/bin/chown root:root /usr/sbin/uit-*
 /usr/bin/chmod 750 /opt/uit-toolbox/ -R
 /usr/bin/chown root:root /opt/uit-toolbox/ -R
+
+sudo systemctl enable --now uit-client.socket

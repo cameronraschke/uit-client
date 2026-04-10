@@ -1,0 +1,16 @@
+[Unit]
+Description=UIT Client CLI daemon
+After=network-online.target
+Wants=network-online.target
+Requires=uit-client-cli.socket
+
+[Service]
+Type=simple
+ExecStart=/usr/sbin/uit-client-cli
+Restart=always
+RestartSec=2
+User=root
+Group=root
+
+[Install]
+WantedBy=multi-user.target
