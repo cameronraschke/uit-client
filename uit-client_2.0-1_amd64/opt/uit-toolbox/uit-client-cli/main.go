@@ -310,12 +310,18 @@ func sendRequest(data *HTTPRequest) ([]byte, error) {
 	}
 
 	// HTTP body
-	jsonData, err := json.Marshal(data.Payload.Value)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal data: %w", err)
-	}
 	var bodyReader io.Reader = http.NoBody
 	if data.Config.Method == "POST" {
+		if data.Payload == nil {
+			return nil, fmt.Errorf("payload cannot be nil")
+		}
+		if data.Payload.Value == nil {
+			return nil, fmt.Errorf("payload value cannot be nil")
+		}
+		jsonData, err := json.Marshal(data.Payload.Value)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal data: %w", err)
+		}
 		bodyReader = bytes.NewReader(jsonData)
 	}
 
