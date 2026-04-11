@@ -206,7 +206,7 @@ func handleInput(ctx context.Context, stdinData string) {
 		return
 	}
 
-	fmt.Printf("received stdin data: %s\n", clean)
+	// fmt.Printf("received stdin data: %s\n", clean)
 
 	httpRequest, err := MapInputToHTTPRequest(clean)
 	if err != nil {
@@ -259,8 +259,11 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 	case "battery_charge_pcnt":
 		httpRequestPayload.Key = "battery_charge_pcnt"
 		batteryPcnt, err := strconv.ParseFloat(inputArr[2], 64)
-		if err != nil || batteryPcnt < 0 || batteryPcnt > 110 {
-			return nil, fmt.Errorf("invalid battery_charge_pcnt value: %w", err)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing battery_charge_pcnt value: %w", err)
+		}
+		if batteryPcnt < 0 || batteryPcnt > 110 {
+			return nil, fmt.Errorf("battery_charge_pcnt value out of range: %f", batteryPcnt)
 		}
 		httpRequestPayload.Value = &BatteryData{
 			Tagnumber: httpRequestPayload.Tagnumber,
@@ -271,8 +274,11 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 	case "system_uptime":
 		httpRequestPayload.Key = "system_uptime"
 		uptimeSeconds, err := strconv.ParseInt(inputArr[2], 10, 64)
-		if err != nil || uptimeSeconds < 0 {
-			return nil, fmt.Errorf("invalid system_uptime value: %w", err)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse system_uptime value: %w", err)
+		}
+		if uptimeSeconds < 0 {
+			return nil, fmt.Errorf("system_uptime value cannot be negative: %d", uptimeSeconds)
 		}
 		httpRequestPayload.Value = &ClientUptime{
 			Tagnumber:    httpRequestPayload.Tagnumber,
@@ -283,8 +289,11 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 	case "client_app_uptime":
 		httpRequestPayload.Key = "client_app_uptime"
 		uptimeSeconds, err := strconv.ParseInt(inputArr[2], 10, 64)
-		if err != nil || uptimeSeconds < 0 {
-			return nil, fmt.Errorf("invalid client_app_uptime value: %w", err)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse client_app_uptime value: %w", err)
+		}
+		if uptimeSeconds < 0 {
+			return nil, fmt.Errorf("client_app_uptime value cannot be negative: %d", uptimeSeconds)
 		}
 		httpRequestPayload.Value = &ClientUptime{
 			Tagnumber:       httpRequestPayload.Tagnumber,
@@ -295,8 +304,11 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 	case "cpu_usage":
 		httpRequestPayload.Key = "cpu_usage"
 		cpuUsage, err := strconv.ParseFloat(inputArr[2], 64)
-		if err != nil || cpuUsage < 0 || cpuUsage > 110 {
-			return nil, fmt.Errorf("invalid cpu_usage value: %w", err)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse cpu_usage value: %w", err)
+		}
+		if cpuUsage < 0 || cpuUsage > 110 {
+			return nil, fmt.Errorf("cpu_usage value out of range: %f", cpuUsage)
 		}
 		httpRequestPayload.Value = &CPUData{
 			Tagnumber:    httpRequestPayload.Tagnumber,

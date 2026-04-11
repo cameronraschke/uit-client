@@ -1,20 +1,67 @@
+//go:build linux && amd64
+
 package main
 
 import (
+	"flag"
 	"fmt"
 	"io"
 	"net"
 	"os"
-	"strings"
+	"slices"
 	"time"
 )
 
 const unixSocketPath = "/run/uit-client/uit-client-cli.sock"
 
+var (
+	allowedKeys = []string{
+		"battery_charge_pcnt",
+		"client_app_uptime",
+		"system_uptime",
+		"cpu_usage",
+	}
+)
+
+func isKeyAllowed(key string) bool {
+	if slices.Contains(allowedKeys, key) {
+		return true
+	}
+	return false
+}
+
 func main() {
-	line, err := inputLine(os.Args[1:])
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
+	tagnumber := flag.Int64("tag", 0, "Tag number of client (required)")
+	key := flag.String("key", "", "Key of request to send (required)")
+	value := flag.String("value", "", "Value of request to send (required)")
+	uuid := flag.String("uuid", "", "Optional UUID of request/transaction")
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage: %s -tag <tagnumber> -key <key> -value <value> [-uuid <uuid>]\n", os.Args[0])
+		flag.PrintDefaults()
+	}
+	flag.Parse()
+
+	if len(os.Args) <= 1 {
+		fmt.Fprintf(os.Stderr, "no arguments provided\n")
+		flag.PrintDefaults()
+		os.Exit(1)
+	}
+
+	if *tagnumber == 0 {
+		fmt.Fprintf(os.Stderr, "tag number is required\n")
+		os.Exit(1)
+	}
+	if *key == "" {
+		fmt.Fprintf(os.Stderr, "key is required\n")
+		os.Exit(1)
+	}
+	if *value == "" {
+		fmt.Fprintf(os.Stderr, "value is required\n")
+		os.Exit(1)
+	}
+	if !isKeyAllowed(*key) {
+		fmt.Fprintf(os.Stderr, "key is not allowed\n")
+		fmt.Fprintf(os.Stderr, "allowed keys are: %v\n", allowedKeys)
 		os.Exit(1)
 	}
 
@@ -25,30 +72,12 @@ func main() {
 	}
 	defer conn.Close()
 
+	line := fmt.Sprintf("%d|%s|%s", *tagnumber, *key, *value)
+	if *uuid != "" {
+		line = fmt.Sprintf("%d|%s|%s|%s", *tagnumber, *key, *value, *uuid)
+	}
 	if _, err := io.WriteString(conn, line+"\n"); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to send request: %v\n", err)
 		os.Exit(1)
 	}
-}
-
-func inputLine(args []string) (string, error) {
-	if len(args) > 0 {
-		line := strings.TrimSpace(strings.Join(args, " "))
-		if line == "" {
-			return "", fmt.Errorf("input line cannot be empty")
-		}
-		return line, nil
-	}
-
-	stdin, err := io.ReadAll(os.Stdin)
-	if err != nil {
-		return "", fmt.Errorf("failed to read stdin: %w", err)
-	}
-
-	line := strings.TrimSpace(string(stdin))
-	if line == "" {
-		return "", fmt.Errorf("usage: uit-client-cli-send 'TAG|KEY|VALUE[|UUID]' or pipe a line on stdin")
-	}
-
-	return line, nil
 }
