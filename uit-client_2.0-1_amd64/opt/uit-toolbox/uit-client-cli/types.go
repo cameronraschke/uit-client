@@ -1,3 +1,5 @@
+//go:build linux && amd64
+
 package main
 
 import (
@@ -54,4 +56,12 @@ type ClientUptime struct {
 	Tagnumber       int64  `json:"tagnumber"`
 	ClientAppUptime *int64 `json:"client_app_uptime"`
 	SystemUptime    *int64 `json:"system_uptime"`
+}
+
+type MemoryDataRequest struct {
+	Tagnumber       *int64  `json:"tagnumber"`
+	TotalUsageKB    *int64  `json:"memory_usage_kb"`
+	TotalCapacityKB *int64  `json:"memory_capacity_kb"`
+	Type            *string `json:"type"`
+	SpeedMHz        *int64  `json:"speed_mhz"`
 }

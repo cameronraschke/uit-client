@@ -20,6 +20,8 @@ var (
 		"client_app_uptime",
 		"system_uptime",
 		"cpu_usage",
+		"memory_usage_kb",
+		"memory_capacity_kb",
 	}
 )
 
@@ -47,15 +49,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	if *tagnumber == 0 {
+	if tagnumber == nil || *tagnumber == 0 {
 		fmt.Fprintf(os.Stderr, "tag number is required\n")
 		os.Exit(1)
 	}
-	if *key == "" {
+	if key == nil || *key == "" {
 		fmt.Fprintf(os.Stderr, "key is required\n")
 		os.Exit(1)
 	}
-	if *value == "" {
+	if value == nil || *value == "" {
 		fmt.Fprintf(os.Stderr, "value is required\n")
 		os.Exit(1)
 	}

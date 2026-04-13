@@ -85,7 +85,7 @@ while true; do
 	memTotal=$(cat /proc/meminfo  | grep -i memTotal | awk '{ print $2 }')
 	memAvailable=$(cat /proc/meminfo  | grep -i memAvailable | awk '{ print $2 }')
 	memUsage=$(( memTotal - memAvailable ))
-	echo "api_post|${tagNum}|memory|${memUsage}|${memTotal}" | /opt/uit-toolbox/parse
+	/sbin/uit-client-cli-send --tag "${tagNum}" --key memory_usage_kb --value "${memUsage}"
 
 	# Get CPU temp and usage
 	cpuUsage=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | cut -d'%' -f1)
