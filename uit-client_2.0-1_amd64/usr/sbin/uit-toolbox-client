@@ -402,7 +402,7 @@ fi
 	memorySerial=$(dmidecode --type memory | grep -P '\tSerial Number' | awk '{ print $3 }' | tr '\n' '-' | sed 's/-$//g')
 		printf "%s" "api_post|${tagNum}|memory_serial|${memorySerial}|${UUID}" | /opt/uit-toolbox/parse
 	memoryCapacity=$(grep '^MemTotal' /proc/meminfo | awk '{ print $2 }')
-		/sbin/uit-client-cli-send --tag "${tagNum}" --key "memory_capacity_kb" --value "${memoryCapacity}"
+		/sbin/uit-cli --tag "${tagNum}" --key "memory_capacity_kb" --value "${memoryCapacity}"
 	memSpeed=$(dmidecode --type 17 2>/dev/null | grep '^[[:space:]]*Speed\:' | head -n1 | sed 's/[^0-9]//g')
 		printf "%s" "api_post|${tagNum}|memory_speed_mhz|${memSpeed}|${UUID}" | /opt/uit-toolbox/parse
 

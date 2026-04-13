@@ -47,11 +47,11 @@ done < <(find /opt/uit-toolbox/windows/uit-toolbox-client.ps1 -type f -print0; f
 if [[ -f /tmp/uit-client ]]; then
 	rm -f /tmp/uit-client
 fi
-if [[ -f /tmp/uit-client-cli ]]; then
-	rm -f /tmp/uit-client-cli
+if [[ -f /tmp/uit-client-cli-service ]]; then
+	rm -f /tmp/uit-client-cli-service
 fi
-if [[ -f /tmp/uit-client-cli-send ]]; then
-	rm -f /tmp/uit-client-cli-send
+if [[ -f /tmp/uit-cli ]]; then
+	rm -f /tmp/uit-cli
 fi
 curl --silent --show-error 'https://10.0.0.1:31411/client/pkg/uit-client' --output /tmp/uit-client
 while [[ ! -f /tmp/uit-client ]]; do
@@ -62,23 +62,23 @@ done
 chmod 700 /tmp/uit-client
 mv /tmp/uit-client /usr/sbin/uit-client
 
-curl --silent --show-error 'https://10.0.0.1:31411/client/pkg/uit-client-cli' --output /tmp/uit-client-cli
-while [[ ! -f /tmp/uit-client-cli ]]; do
+curl --silent --show-error 'https://10.0.0.1:31411/client/pkg/uit-client-cli-service' --output /tmp/uit-client-cli-service
+while [[ ! -f /tmp/uit-client-cli-service ]]; do
   echo "Failed to download Go binary, trying again..."
-  curl --silent --show-error 'https://10.0.0.1:31411/client/pkg/uit-client-cli' --output /tmp/uit-client-cli
+  curl --silent --show-error 'https://10.0.0.1:31411/client/pkg/uit-client-cli-service' --output /tmp/uit-client-cli-service
   sleep 1
 done
-chmod 700 /tmp/uit-client-cli
-mv /tmp/uit-client-cli /usr/sbin/uit-client-cli
+chmod 700 /tmp/uit-client-cli-service
+mv /tmp/uit-client-cli-service /usr/sbin/uit-client-cli-service
 
-curl --silent --show-error 'https://10.0.0.1:31411/client/pkg/uit-client-cli-send' --output /tmp/uit-client-cli-send
-while [[ ! -f /tmp/uit-client-cli-send ]]; do
+curl --silent --show-error 'https://10.0.0.1:31411/client/pkg/uit-cli' --output /tmp/uit-cli
+while [[ ! -f /tmp/uit-cli ]]; do
 	echo "Failed to download Go binary, trying again..."
-	curl --silent --show-error 'https://10.0.0.1:31411/client/pkg/uit-client-cli-send' --output /tmp/uit-client-cli-send
+	curl --silent --show-error 'https://10.0.0.1:31411/client/pkg/uit-cli' --output /tmp/uit-cli
 	sleep 1
 done
-chmod 700 /tmp/uit-client-cli-send
-mv /tmp/uit-client-cli-send /usr/sbin/uit-client-cli-send
+chmod 700 /tmp/uit-cli
+mv /tmp/uit-cli /usr/sbin/uit-cli
 
 /usr/bin/chmod 700 /usr/sbin/uit-*
 /usr/bin/chown root:root /usr/sbin/uit-*
@@ -86,8 +86,8 @@ mv /tmp/uit-client-cli-send /usr/sbin/uit-client-cli-send
 /usr/bin/chown root:root /opt/uit-toolbox/ -R
 
 sudo systemctl daemon-reload
-sudo systemctl enable --now uit-client-cli.socket
-sudo systemctl enable --now uit-client-cli.service
+sudo systemctl enable --now uit-client-cli-service.socket
+sudo systemctl enable --now uit-client-cli-service.service
 
-systemctl restart uit-client-cli.socket
-systemctl restart uit-client-cli.service
+systemctl restart uit-client-cli-service.socket
+systemctl restart uit-client-cli-service.service

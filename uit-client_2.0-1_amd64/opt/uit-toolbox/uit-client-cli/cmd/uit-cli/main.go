@@ -12,7 +12,15 @@ import (
 	"time"
 )
 
-const unixSocketPath = "/run/uit-client/uit-client-cli.sock"
+type ParsedInputDTO struct {
+	RequestType string  `json:"request_type"`
+	Tagnumber   int64   `json:"tagnumber"`
+	Key         string  `json:"key"`
+	Value       string  `json:"value"`
+	UUID        *string `json:"uuid,omitempty"`
+}
+
+const unixSocketPath = "/run/uit-client/uit-client-cli-service.sock"
 
 var (
 	allowedKeys = []string{
