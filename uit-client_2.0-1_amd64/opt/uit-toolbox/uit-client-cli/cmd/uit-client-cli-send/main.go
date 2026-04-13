@@ -22,6 +22,9 @@ var (
 		"cpu_usage",
 		"memory_usage_kb",
 		"memory_capacity_kb",
+		"cpu_current_usage",
+		"cpu_current_mhz",
+		"cpu_millidegrees_c",
 	}
 )
 
