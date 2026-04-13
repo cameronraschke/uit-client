@@ -73,7 +73,7 @@ func handleInput(ctx context.Context, stdinData string) {
 
 	// fmt.Printf("received stdin data: %s\n", clean)
 
-	httpRequest, err := MapInputToHTTPRequest(clean)
+	httpRequest, err := MapInputToPOSTRequest(clean)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to create array from input: %v\n", err)
 		return

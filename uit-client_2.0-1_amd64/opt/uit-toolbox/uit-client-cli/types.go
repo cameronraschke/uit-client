@@ -40,10 +40,10 @@ type HTTPRequestPayload struct {
 	UUID      *string
 }
 
-type CPUData struct {
-	Tagnumber     int64    `json:"tagnumber"`
-	UsagePercent  *float64 `json:"cpu_usage"`
-	MHz           *float64 `json:"cpu_mhz"`
+type CPUDataRequest struct {
+	Tagnumber     *int64   `json:"tagnumber"`
+	UsagePercent  *float64 `json:"cpu_current_usage"`
+	MHz           *float64 `json:"cpu_current_mhz"`
 	MillidegreesC *float64 `json:"cpu_millidegrees_c"`
 }
 

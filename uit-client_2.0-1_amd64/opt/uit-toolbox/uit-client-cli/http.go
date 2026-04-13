@@ -124,7 +124,8 @@ func sendHTTPRequest(data *HTTPRequest) ([]byte, error) {
 	return body, nil
 }
 
-func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
+func MapInputToPOSTRequest(input string) (*HTTPRequest, error) {
+	// This will only create POST requests
 	if strings.TrimSpace(input) == "" {
 		return nil, fmt.Errorf("input cannot be empty or whitespace")
 	}
@@ -159,6 +160,8 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 		httpRequestPayload.UUID = &inputArr[3]
 	}
 
+	httpRequestConfig.Method = "POST"
+
 	switch httpRequestPayload.Key {
 	case "battery_charge_pcnt":
 		httpRequestPayload.Key = "battery_charge_pcnt"
@@ -174,7 +177,6 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 			Percent:   &batteryPcnt,
 		}
 		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware/battery"}
-		httpRequestConfig.Method = "POST"
 	case "system_uptime":
 		httpRequestPayload.Key = "system_uptime"
 		uptimeSeconds, err := strconv.ParseInt(inputArr[2], 10, 64)
@@ -205,20 +207,50 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 		}
 		httpRequestConfig.URL = url.URL{Path: "/api/client/uptime"}
 		httpRequestConfig.Method = "POST"
-	case "cpu_usage":
-		httpRequestPayload.Key = "cpu_usage"
+	case "cpu_current_usage":
+		httpRequestPayload.Key = "cpu_current_usage"
 		cpuUsage, err := strconv.ParseFloat(inputArr[2], 64)
 		if err != nil {
-			return nil, fmt.Errorf("unable to parse cpu_usage value: %w", err)
+			return nil, fmt.Errorf("unable to parse cpu_current_usage value: %w", err)
 		}
 		if cpuUsage < 0 || cpuUsage > 110 {
-			return nil, fmt.Errorf("cpu_usage value out of range: %f", cpuUsage)
+			return nil, fmt.Errorf("cpu_current_usage value out of range: %f", cpuUsage)
 		}
-		httpRequestPayload.Value = &CPUData{
-			Tagnumber:    httpRequestPayload.Tagnumber,
+		httpRequestPayload.Value = &CPUDataRequest{
+			Tagnumber:    &httpRequestPayload.Tagnumber,
 			UsagePercent: &cpuUsage,
 		}
 		httpRequestConfig.URL = url.URL{Path: "/api/client/cpu/usage"}
+		httpRequestConfig.Method = "POST"
+	case "cpu_current_mhz":
+		httpRequestPayload.Key = "cpu_current_mhz"
+		cpuUsageMHz, err := strconv.ParseFloat(inputArr[2], 64)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse cpu_current_mhz value: %w", err)
+		}
+		if cpuUsageMHz < 0 || cpuUsageMHz > 110 {
+			return nil, fmt.Errorf("cpu_current_mhz value out of range: %f", cpuUsageMHz)
+		}
+		httpRequestPayload.Value = &CPUDataRequest{
+			Tagnumber: &httpRequestPayload.Tagnumber,
+			MHz:       &cpuUsageMHz,
+		}
+		httpRequestConfig.URL = url.URL{Path: "/api/client/cpu/mhz"}
+		httpRequestConfig.Method = "POST"
+	case "cpu_millidegrees_c":
+		httpRequestPayload.Key = "cpu_millidegrees_c"
+		cpuTempMilliC, err := strconv.ParseFloat(inputArr[2], 64)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse cpu_millidegrees_c value: %w", err)
+		}
+		if cpuTempMilliC < 0 {
+			return nil, fmt.Errorf("cpu_millidegrees_c value cannot be negative: %f", cpuTempMilliC)
+		}
+		httpRequestPayload.Value = &CPUDataRequest{
+			Tagnumber:     &httpRequestPayload.Tagnumber,
+			MillidegreesC: &cpuTempMilliC,
+		}
+		httpRequestConfig.URL = url.URL{Path: "/api/client/cpu/temp"}
 		httpRequestConfig.Method = "POST"
 	case "memory_usage_kb":
 		httpRequestPayload.Key = "memory_usage_kb"

@@ -103,16 +103,16 @@ while true; do
 			avgTemp=$(( avgTemp / ${#cpuTemps[@]} ))
 		fi
 	done
-	echo "api_post|${tagNum}|cpu_temp|${avgTemp}" | /opt/uit-toolbox/parse
+	/sbin/uit-client-cli-send --tag "${tagNum}" --key cpu_millidegrees_c --value "${avgTemp}"
 
 	# CPU frequency
 	cpuMHzArr=( $(cat /proc/cpuinfo | grep 'cpu MHz' | awk '{ print $4 }') )
 	cpuMhzSum=0
 	for i in ${cpuMHzArr[@]}; do 
-		cpuMhzSum=$(echo "$cpuMhzSum + $i" | bc); 
+		cpuMhzSum=$(echo "$cpuMhzSum + $i" | bc);
 	done
 	cpuMhzAvg=$(echo "scale=2; $cpuMhzSum / ${#cpuMHzArr[@]}" | bc)
-	echo "api_post|${tagNum}|cpu_mhz|${cpuMhzAvg}" | /opt/uit-toolbox/parse
+	/sbin/uit-client-cli-send --tag "${tagNum}" --key cpu_mhz --value "${cpuMhzAvg}"
 
 	# Get network link speed
 	for i in $(ip addr | awk '/state UP/ {print $2}' | sed 's/://g'); do
