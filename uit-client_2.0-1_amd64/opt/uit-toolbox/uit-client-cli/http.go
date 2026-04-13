@@ -223,8 +223,8 @@ func MapInputToPOSTRequest(input string) (*HTTPRequest, error) {
 		if err != nil {
 			return nil, fmt.Errorf("unable to parse cpu_current_mhz value: %w", err)
 		}
-		if cpuCurrentMHz <= 0 || cpuCurrentMHz > 110 {
-			return nil, fmt.Errorf("cpu_current_mhz value out of range: %f", cpuCurrentMHz)
+		if cpuCurrentMHz <= 0 {
+			return nil, fmt.Errorf("cpu_current_mhz value must be greater than 0: %f", cpuCurrentMHz)
 		}
 		httpRequestPayload.Value = &CPUDataRequest{
 			Tagnumber: &httpRequestPayload.Tagnumber,
