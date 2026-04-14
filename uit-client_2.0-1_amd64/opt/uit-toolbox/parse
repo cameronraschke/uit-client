@@ -328,7 +328,7 @@ if ($arr[0] === "api_post") {
 	$encodedValue=curl_escape($ch, $value);
 
 	if ($key == "live_image") {
-		$url = "/api/live_image?tagnumber=" . $encodedTag;
+		$url = "/api/client/live_image?tagnumber=" . $encodedTag;
 		$pngFileName = "/tmp/screenshot.png";
 		$pngImage = imagecreatefrompng($pngFileName);
 		if (!$pngImage) {
