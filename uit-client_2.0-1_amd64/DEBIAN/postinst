@@ -53,14 +53,6 @@ fi
 if [[ -f /tmp/uit-cli ]]; then
 	rm -f /tmp/uit-cli
 fi
-curl --silent --show-error 'https://10.0.0.1:31411/client/pkg/uit-client' --output /tmp/uit-client
-while [[ ! -f /tmp/uit-client ]]; do
-  echo "Failed to download Go binary, trying again..."
-  curl --silent --show-error 'https://10.0.0.1:31411/client/pkg/uit-client' --output /tmp/uit-client
-  sleep 1
-done
-chmod 700 /tmp/uit-client
-mv /tmp/uit-client /usr/sbin/uit-client
 
 curl --silent --show-error 'https://10.0.0.1:31411/client/pkg/uit-clientd' --output /tmp/uit-clientd
 while [[ ! -f /tmp/uit-clientd ]]; do
