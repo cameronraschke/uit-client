@@ -2,11 +2,11 @@
 Description=UIT Client CLI daemon
 After=network-online.target
 Wants=network-online.target
-Requires=uit-client-cli-service.socket
+Requires=uit-clientd.socket
 
 [Service]
 Type=simple
-ExecStart=/usr/sbin/uit-client-cli-service
+ExecStart=/usr/sbin/uit-clientd
 Restart=always
 RestartSec=2
 User=root

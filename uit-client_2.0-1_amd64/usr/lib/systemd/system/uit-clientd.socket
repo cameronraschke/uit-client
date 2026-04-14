@@ -2,7 +2,7 @@
 Description=UIT Client CLI socket
 
 [Socket]
-ListenStream=/run/uit-client/uit-client-cli-service.sock
+ListenStream=/run/uit-client/uit-clientd.sock
 SocketMode=0660
 SocketUser=root
 SocketGroup=root

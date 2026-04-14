@@ -20,7 +20,7 @@ type ParsedInputDTO struct {
 	UUID        *string `json:"uuid,omitempty"`
 }
 
-const unixSocketPath = "/run/uit-client/uit-client-cli-service.sock"
+const unixSocketPath = "/run/uit-client/uit-clientd.sock"
 
 var (
 	allowedKeys = []string{

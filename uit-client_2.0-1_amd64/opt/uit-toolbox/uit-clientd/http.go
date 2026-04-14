@@ -103,7 +103,7 @@ func sendHTTPRequest(data *HTTPRequest) ([]byte, error) {
 
 	// HTTP headers
 	req.Header.Set("Content-Type", "application/json; charset=utf-8")
-	req.Header.Set("User-Agent", "UIT-Client-CLI")
+	req.Header.Set("User-Agent", "UIT-Client-CLI Daemon")
 
 	// Server response
 	resp, err := sharedHTTPClient.Do(req)

@@ -20,7 +20,7 @@ import (
 
 var clientConfig atomic.Pointer[ClientConfig]
 
-const unixSocketPath = "/run/uit-client/uit-client-cli-service.sock"
+const unixSocketPath = "/run/uit-client/uit-clientd.sock"
 
 func GetClientConfig() (*ClientConfig, error) {
 	reqURL := &url.URL{

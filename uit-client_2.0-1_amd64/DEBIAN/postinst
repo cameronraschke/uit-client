@@ -47,8 +47,8 @@ done < <(find /opt/uit-toolbox/windows/uit-toolbox-client.ps1 -type f -print0; f
 if [[ -f /tmp/uit-client ]]; then
 	rm -f /tmp/uit-client
 fi
-if [[ -f /tmp/uit-client-cli-service ]]; then
-	rm -f /tmp/uit-client-cli-service
+if [[ -f /tmp/uit-clientd ]]; then
+	rm -f /tmp/uit-clientd
 fi
 if [[ -f /tmp/uit-cli ]]; then
 	rm -f /tmp/uit-cli
@@ -62,14 +62,14 @@ done
 chmod 700 /tmp/uit-client
 mv /tmp/uit-client /usr/sbin/uit-client
 
-curl --silent --show-error 'https://10.0.0.1:31411/client/pkg/uit-client-cli-service' --output /tmp/uit-client-cli-service
-while [[ ! -f /tmp/uit-client-cli-service ]]; do
+curl --silent --show-error 'https://10.0.0.1:31411/client/pkg/uit-clientd' --output /tmp/uit-clientd
+while [[ ! -f /tmp/uit-clientd ]]; do
   echo "Failed to download Go binary, trying again..."
-  curl --silent --show-error 'https://10.0.0.1:31411/client/pkg/uit-client-cli-service' --output /tmp/uit-client-cli-service
+  curl --silent --show-error 'https://10.0.0.1:31411/client/pkg/uit-clientd' --output /tmp/uit-clientd
   sleep 1
 done
-chmod 700 /tmp/uit-client-cli-service
-mv /tmp/uit-client-cli-service /usr/sbin/uit-client-cli-service
+chmod 700 /tmp/uit-clientd
+mv /tmp/uit-clientd /usr/sbin/uit-clientd
 
 curl --silent --show-error 'https://10.0.0.1:31411/client/pkg/uit-cli' --output /tmp/uit-cli
 while [[ ! -f /tmp/uit-cli ]]; do
@@ -86,8 +86,8 @@ mv /tmp/uit-cli /usr/sbin/uit-cli
 /usr/bin/chown root:root /opt/uit-toolbox/ -R
 
 sudo systemctl daemon-reload
-sudo systemctl enable --now uit-client-cli-service.socket
-sudo systemctl enable --now uit-client-cli-service.service
+sudo systemctl enable --now uit-clientd.socket
+sudo systemctl enable --now uit-clientd.service
 
-systemctl restart uit-client-cli-service.socket
-systemctl restart uit-client-cli-service.service
+systemctl restart uit-clientd.socket
+systemctl restart uit-clientd.service
