@@ -223,6 +223,16 @@ if (-not [System.String]::IsNullOrWhiteSpace($computerInfoObj.CsDNSHostName)) {
 	Write-Host "AD domain user not found in WMI."
 }
 
+# AD distinguished name
+$arr['ad_distinguished_name'] = $null
+Get-ADComputer -Identity $env:COMPUTERNAME -Properties DistinguishedName -ErrorAction SilentlyContinue | ForEach-Object {
+	if (-not [System.String]::IsNullOrWhiteSpace($_.DistinguishedName)) {
+		$arr['ad_distinguished_name'] = [System.String]$_.DistinguishedName.Trim()
+	} else {
+		Write-Host "AD distinguished name not found for computer $env:COMPUTERNAME."
+	}
+}
+
 # Memory capacity in KB
 $arr['memory_capacity_kb'] = $null
 try {
