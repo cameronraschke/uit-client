@@ -11,6 +11,7 @@ Set-Variable -Name "win32BatteryObj" -Value (Get-CimInstance -Class Win32_Batter
 Set-Variable -Name "batteryStaticDataObj" -Value (Get-WmiObject -Namespace "root\wmi" -Class "BatteryStaticData" -ErrorAction SilentlyContinue)
 Set-Variable -Name "batteryCycleCountObj" -Value (Get-WmiObject -Namespace "root\wmi" -ClassName BatteryCycleCount -ErrorAction SilentlyContinue)
 Set-Variable -Name "batteryFullChargedCapacityObj" -Value (Get-CimInstance -Namespace "root\wmi" -ClassName "BatteryFullChargedCapacity" -ErrorAction SilentlyContinue)
+Set-Variable -Name "dsregObj" -Value (dsregcmd /status)
 
 $arr = @{}
 
@@ -212,16 +213,27 @@ $arr['ad_domain'] = $null
 if (-not [System.String]::IsNullOrWhiteSpace($computerInfoObj.CsDomain)) {
 	$arr['ad_domain'] = [System.String]($computerInfoObj.CsDomain).Trim()
 } else {
-	Write-Host "AD domain not found in WMI"
+	Write-Host "AD domain not found in WMI."
 }
 
-# AD domain user
-$arr['ad_domain_user'] = $null
+# computer name
+$arr['computer_name'] = $null
 if (-not [System.String]::IsNullOrWhiteSpace($computerInfoObj.CsDNSHostName)) {
-	$arr['ad_domain_user'] = [System.String]($computerInfoObj.CsDNSHostName).Trim()
+	$arr['computer_name'] = [System.String]($computerInfoObj.CsDNSHostName).Trim()
 } else {
-	Write-Host "AD domain user not found in WMI."
+	Write-Host "AD domain computer name not found in WMI."
 }
+
+#AD domain computer name
+$arr['ad_computer_name'] = $null
+($dsregObj | Out-String -Stream | Select-String -Pattern "Device Name" | ForEach-Object { $_ -replace '\s', '' } | ForEach-Object { $_ -replace '^.*:', '' }) | ForEach-Object {
+	if (-not [System.String]::IsNullOrWhiteSpace($_)) {
+		$arr['ad_computer_name'] = [System.String]$_
+	} else {
+		Write-Host "AD domain computer name not found from dsregcmd output."
+	}
+}
+
 
 # AD distinguished name
 $arr['ad_distinguished_name'] = $null
@@ -231,6 +243,21 @@ Get-ADComputer -Identity $env:COMPUTERNAME -Properties DistinguishedName -ErrorA
 	} else {
 		Write-Host "AD distinguished name not found for computer $env:COMPUTERNAME."
 	}
+}
+
+# List of AD admin users
+$arr['ad_admin_users'] = $null
+$arr['ad_admin_users'] = (Get-LocalGroupMember -Group "Administrators" -ErrorAction SilentlyContinue | Where-Object { ($_.ObjectClass -eq "User") -and ($_.PrincipalSource -eq "ActiveDirectory") } | Select-Object -ExpandProperty Name | Sort-Object) -join ";"
+
+# Is intune joined 
+$arr['is_intune_joined'] = $null
+try {
+	$isAzureJoined = [System.Boolean]($dsregObj | Out-String -Stream | Select-String -Pattern "AzureAdJoined" | ForEach-Object { $_ -replace '\s', '' } | ForEach-Object { $_ -replace '^.*:', '' }) -eq "YES"
+	$isEntraJoined = [System.Boolean]($dsregObj | Out-String -Stream | Select-String -Pattern "DomainJoined" | ForEach-Object { $_ -replace '\s', '' } | ForEach-Object { $_ -replace '^.*:', '' }) -eq "YES"
+	$isIntuneJoined = $isAzureJoined -and $isEntraJoined
+	$arr['is_intune_joined'] = [System.Boolean]($isIntuneJoined)
+} catch {
+	Write-Host "Error determining Intune join status: $_"
 }
 
 # Memory capacity in KB
