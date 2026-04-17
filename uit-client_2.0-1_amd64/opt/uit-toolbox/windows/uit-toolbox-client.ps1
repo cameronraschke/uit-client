@@ -252,9 +252,9 @@ $arr['ad_admin_users'] = (Get-LocalGroupMember -Group "Administrators" -ErrorAct
 # Is intune joined 
 $arr['is_intune_joined'] = $null
 try {
-	$isAzureJoined = [System.Boolean]($dsregObj | Out-String -Stream | Select-String -Pattern "AzureAdJoined" | ForEach-Object { $_ -replace '\s', '' } | ForEach-Object { $_ -replace '^.*:', '' }) -eq "YES"
-	$isEntraJoined = [System.Boolean]($dsregObj | Out-String -Stream | Select-String -Pattern "DomainJoined" | ForEach-Object { $_ -replace '\s', '' } | ForEach-Object { $_ -replace '^.*:', '' }) -eq "YES"
-	$isIntuneJoined = $isAzureJoined -and $isEntraJoined
+	$isAzureJoined = (($dsregObj | Out-String -Stream | Select-String -Pattern "AzureAdJoined" | ForEach-Object { $_ -replace '\s', '' } | ForEach-Object { $_ -replace '^.*:', '' }) -eq "YES")
+	$isDomainJoined = (($dsregObj | Out-String -Stream | Select-String -Pattern "DomainJoined" | ForEach-Object { $_ -replace '\s', '' } | ForEach-Object { $_ -replace '^.*:', '' }) -eq "YES")
+	$isIntuneJoined = $isAzureJoined -and $isDomainJoined	
 	$arr['is_intune_joined'] = [System.Boolean]($isIntuneJoined)
 } catch {
 	Write-Host "Error determining Intune join status: $_"
