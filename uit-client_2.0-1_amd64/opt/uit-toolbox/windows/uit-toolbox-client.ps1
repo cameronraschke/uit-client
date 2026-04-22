@@ -1,3 +1,15 @@
+$tagNum = Read-Host "Enter tag number (100000-999999)"
+$okayToGo = Read-Host "You entered tag number $tagNum. Is this correct? (Y/N)"
+if ($okayToGo -ne "Y") {
+	Write-Host "Exiting. Please run the script again and enter the correct tag number."
+	exit
+}
+if ($tagNum -notmatch "^\d{6}$" -or [int]$tagNum -lt 100000 -or [int]$tagNum -gt 999999) {
+	Write-Host "Invalid tag number. Please enter a 6-digit number between 100000 and 999999."
+	exit
+}
+
+
 Set-Variable -Name "computerInfoObj" -Value (Get-ComputerInfo)
 Set-Variable -Name "win32CompSysObj" -Value (Get-CimInstance -Class Win32_ComputerSystem)
 Set-Variable -Name "win32ComputerSystemProductObj" -Value (Get-CimInstance -Class Win32_ComputerSystemProduct)
@@ -17,16 +29,6 @@ $arr = @{}
 
 # Tag number
 $arr['tagnumber'] = $null
-$tagNum = Read-Host "Enter tag number (100000-999999)"
-$okayToGo = Read-Host "You entered tag number $tagNum. Is this correct? (Y/N)"
-if ($okayToGo -ne "Y") {
-	Write-Host "Exiting. Please run the script again and enter the correct tag number."
-	exit
-}
-if ($tagNum -notmatch "^\d{6}$" -or [int]$tagNum -lt 100000 -or [int]$tagNum -gt 999999) {
-	Write-Host "Invalid tag number. Please enter a 6-digit number between 100000 and 999999."
-	exit
-}
 $arr["tagnumber"] = [System.Int64]$tagNum
 
 # System serial
