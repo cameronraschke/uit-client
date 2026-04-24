@@ -19,14 +19,14 @@ $assignedAccessConfiguration = @"
 	        <App AppUserModelId="{6D809377-6AF0-444B-8957-A3773F02200E}\Windows NT\Accessories\wordpad.exe" />
           <App AppUserModelId="Microsoft.ZuneMusic_8wekyb3d8bbwe!Microsoft.ZuneMusic" />
           <App AppUserModelId="Microsoft.MicrosoftOfficeHub_8wekyb3d8bbwe!Microsoft.MicrosoftOfficeHub" />
-          <App DesktopAppPath="C:\Program Files\ Microsoft Office\root\Office16\MSACCESS.EXE" />
-          <App DesktopAppPath="C:\Program Files\ Microsoft Office\root\Office16\EXCEL.EXE" />
-          <App DesktopAppPath="C:\Program Files\ Microsoft Office\root\Office16\MSPUB.EXE" />
-          <App DesktopAppPath="C:\Program Files\ Microsoft Office\root\Office16\ONENOTE.EXE" />
-          <App DesktopAppPath="C:\Program Files\ Microsoft Office\root\Office16\POWERPNT.EXE" />
-          <App DesktopAppPath="C:\Program Files\ Microsoft Office\root\Office16\WINWORD.EXE" />
-          <App DesktopAppPath="C:\Program Files\ Microsoft Office\root\Office16\protocolhandler.exe" />
-          <App DesktopAppPath="C:\Program Files\ Microsoft Office\root\Office16\officeappguardwin32.exe" />
+          <App DesktopAppPath="C:\Program Files\Microsoft Office\root\Office16\MSACCESS.EXE" />
+          <App DesktopAppPath="C:\Program Files\Microsoft Office\root\Office16\EXCEL.EXE" />
+          <App DesktopAppPath="C:\Program Files\Microsoft Office\root\Office16\MSPUB.EXE" />
+          <App DesktopAppPath="C:\Program Files\Microsoft Office\root\Office16\ONENOTE.EXE" />
+          <App DesktopAppPath="C:\Program Files\Microsoft Office\root\Office16\POWERPNT.EXE" />
+          <App DesktopAppPath="C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE" />
+          <App DesktopAppPath="C:\Program Files\Microsoft Office\root\Office16\protocolhandler.exe" />
+          <App DesktopAppPath="C:\Program Files\Microsoft Office\root\Office16\officeappguardwin32.exe" />
           <App AppUserModelId="Microsoft.OutlookForWindows_8wekyb3d8bbwe!Microsoft.OutlookforWindows" />
           <App AppUserModelId="MSTeams_8wekyb3d8bbwe!MSTeams" />
           <App AppUserModelId="MSEdge" />
@@ -58,9 +58,9 @@ $assignedAccessConfiguration = @"
           {"desktopAppLink":"%ALLUSERSPROFILE%\\Microsoft\\Windows\\Start Menu\\Programs\\Word.lnk"},
           {"desktopAppLink":"%ALLUSERSPROFILE%\\Microsoft\\Windows\\Start Menu\\Programs\\OneNote.lnk"},
           {"desktopAppLink":"%ALLUSERSPROFILE%\\Microsoft\\Windows\\Start Menu\\Programs\\PowerPoint.lnk"},
-          {"desktopAppLink":"%ALLUSERSPROFILE%\\Microsoft\\Windows\\Start Menu\\Programs\\Excel.lnk"}
+          {"desktopAppLink":"%ALLUSERSPROFILE%\\Microsoft\\Windows\\Start Menu\\Programs\\Excel.lnk"},
           {"packagedAppId":"MSTeams_8wekyb3d8bbwe!MSTeams"},
-          {"packagedAppId":"Microsoft.OutlookForWindows_8wekyb3d8bbwe!Microsoft.OutlookforWindows"},
+          {"packagedAppId":"Microsoft.OutlookForWindows_8wekyb3d8bbwe!Microsoft.OutlookforWindows"}
         ]
         }]]></v5:StartPins>
 	    <Taskbar ShowTaskbar="true" />
