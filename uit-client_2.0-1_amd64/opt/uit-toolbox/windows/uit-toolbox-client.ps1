@@ -27,6 +27,9 @@ Set-Variable -Name "dsregObj" -Value (dsregcmd /status)
 
 $arr = @{}
 
+# Current timestamp
+$arr['last_hardware_check'] = [System.DateTime]::UtcNow.ToString("yyyy-MM-dd'T'HH:mm:sszzz")
+
 # Tag number
 $arr['tagnumber'] = $null
 $arr["tagnumber"] = [System.Int64]$tagNum
