@@ -11,22 +11,25 @@ $assignedAccessConfiguration = @"
     <Profile Id="{bd2d365d-da9b-4577-bffd-22d5fcd98477}">
       <AllAppsList>
         <AllowedApps>
-          <App AppUserModelId="Microsoft.Paint_8wekyb3d8bbwe!App" />
-          <App AppUserModelId="Microsoft.MicrosoftOfficeHub_8wekyb3d8bbwe!Microsoft.MicrosoftOfficeHub" />
-	        <App AppUserModelId="{6D809377-6AF0-444B-8957-A3773F02200E}\Windows NT\Accessories\wordpad.exe" />
-          <App AppUserModelId="Microsoft.WindowsNotepad_8wekyb3d8bbwe!App" />
-          <App AppUserModelId="Microsoft.Windows.Photos_8wekyb3d8bbwe!App" />
-          <App AppUserModelId="Microsoft.ZuneMusic_8wekyb3d8bbwe!Microsoft.ZuneMusic" />
-          <App AppUserModelId="Microsoft.WindowsCalculator_8wekyb3d8bbwe!App" />
           <App AppUserModelId="Microsoft.Windows.Explorer" />
-          <App AppUserModelId="Microsoft.Office.EXCEL.EXE.15" />
-          <App AppUserModelId="Microsoft.Office.ONENOTE.EXE.15" />
+          <App AppUserModelId="Microsoft.WindowsCalculator_8wekyb3d8bbwe!App" />
+          <App AppUserModelId="Microsoft.WindowsNotepad_8wekyb3d8bbwe!App" />
+          <App AppUserModelId="Microsoft.Paint_8wekyb3d8bbwe!App" />
+          <App AppUserModelId="Microsoft.Windows.Photos_8wekyb3d8bbwe!App" />
+	        <App AppUserModelId="{6D809377-6AF0-444B-8957-A3773F02200E}\Windows NT\Accessories\wordpad.exe" />
+          <App AppUserModelId="Microsoft.ZuneMusic_8wekyb3d8bbwe!Microsoft.ZuneMusic" />
+          <App AppUserModelId="Microsoft.MicrosoftOfficeHub_8wekyb3d8bbwe!Microsoft.MicrosoftOfficeHub" />
+          <App DesktopAppPath="C:\Program Files\ Microsoft Office\root\Office16\MSACCESS.EXE" />
+          <App DesktopAppPath="C:\Program Files\ Microsoft Office\root\Office16\EXCEL.EXE" />
+          <App DesktopAppPath="C:\Program Files\ Microsoft Office\root\Office16\MSPUB.EXE" />
+          <App DesktopAppPath="C:\Program Files\ Microsoft Office\root\Office16\ONENOTE.EXE" />
+          <App DesktopAppPath="C:\Program Files\ Microsoft Office\root\Office16\POWERPNT.EXE" />
+          <App DesktopAppPath="C:\Program Files\ Microsoft Office\root\Office16\WINWORD.EXE" />
+          <App DesktopAppPath="C:\Program Files\ Microsoft Office\root\Office16\protocolhandler.exe" />
+          <App DesktopAppPath="C:\Program Files\ Microsoft Office\root\Office16\officeappguardwin32.exe" />
           <App AppUserModelId="Microsoft.OutlookForWindows_8wekyb3d8bbwe!Microsoft.OutlookforWindows" />
-          <App AppUserModelId="Microsoft.Office.OUTLOOK.EXE.15" />
-          <App AppUserModelId="Microsoft.Office.POWERPNT.EXE.15" />
-          <App AppUserModelId="Microsoft.Office.WINWORD.EXE.15" />
-          <App AppUserModelId="MSEdge" />
           <App AppUserModelId="MSTeams_8wekyb3d8bbwe!MSTeams" />
+          <App AppUserModelId="MSEdge" />
           <App DesktopAppPath="C:\Program Files\Google\Chrome\Application\chrome.exe" />
           <App DesktopAppPath="C:\Program Files\Mozilla Firefox\firefox.exe" />
           <App DesktopAppPath="C:\Program Files\Mozilla Firefox\private_browsing.exe" />
@@ -51,12 +54,13 @@ $assignedAccessConfiguration = @"
           {"desktopAppLink":"%ALLUSERSPROFILE%\\Microsoft\\Windows\\Start Menu\\Programs\\Google Chrome.lnk"},
           {"desktopAppLink":"%ALLUSERSPROFILE%\\Microsoft\\Windows\\Start Menu\\Programs\\Firefox.lnk"},
           {"desktopAppLink":"%ALLUSERSPROFILE%\\Microsoft\\Windows\\Start Menu\\Programs\\Firefox Private Browsing.lnk"},
+          {"packagedAppId":"Microsoft.MicrosoftOfficeHub_8wekyb3d8bbwe!Microsoft.MicrosoftOfficeHub"},
           {"desktopAppLink":"%ALLUSERSPROFILE%\\Microsoft\\Windows\\Start Menu\\Programs\\Word.lnk"},
           {"desktopAppLink":"%ALLUSERSPROFILE%\\Microsoft\\Windows\\Start Menu\\Programs\\OneNote.lnk"},
-          {"packagedAppId":"MSTeams_8wekyb3d8bbwe!MSTeams"},
-          {"packagedAppId":"Microsoft.OutlookForWindows_8wekyb3d8bbwe!Microsoft.OutlookforWindows"},
           {"desktopAppLink":"%ALLUSERSPROFILE%\\Microsoft\\Windows\\Start Menu\\Programs\\PowerPoint.lnk"},
           {"desktopAppLink":"%ALLUSERSPROFILE%\\Microsoft\\Windows\\Start Menu\\Programs\\Excel.lnk"}
+          {"packagedAppId":"MSTeams_8wekyb3d8bbwe!MSTeams"},
+          {"packagedAppId":"Microsoft.OutlookForWindows_8wekyb3d8bbwe!Microsoft.OutlookforWindows"},
         ]
         }]]></v5:StartPins>
 	    <Taskbar ShowTaskbar="true" />
