@@ -9,7 +9,7 @@ while true; do
 		sleep 5
 		continue
 	fi
-	tagNum=$(uit-client --serial "${systemSerial}" --key "client_lookup_by_serial" --value "${systemSerial}" --get)
+	tagNum=$(uit-cli --serial "${systemSerial}" --key "client_lookup_by_serial" --value "${systemSerial}" --get | jq -r '.tagnumber' 2>/dev/null)
 	if [[ -z $tagNum ]]; then
 		sleep 5
 		continue

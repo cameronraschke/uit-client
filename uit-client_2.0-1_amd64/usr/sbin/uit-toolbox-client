@@ -441,7 +441,7 @@ function findIdentityInDB {
 	tput reset
 	printf '\n'
 
-	tagNum=$(uit-client --serial "${systemSerial}" --key "client_lookup_by_serial" --value "${systemSerial}" --get 2>/dev/null)
+	tagNum=$(uit-cli --serial "${systemSerial}" --key "client_lookup_by_serial" --value "${systemSerial}" --get | jq -r '.tagnumber' 2>/dev/null)
 	if [[ $tagNum != "NULL" ]]; then
 		UUID=""
 		UUID=$(cat /proc/sys/kernel/random/uuid)
