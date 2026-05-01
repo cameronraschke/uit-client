@@ -283,7 +283,7 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 	case "client_lookup_by_serial":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/lookup"}
 		query := httpRequestConfig.URL.Query()
-		query.Set("serial", inputPayload.StringValue)
+		query.Set("system_serial", inputPayload.StringValue)
 		httpRequestConfig.URL.RawQuery = query.Encode()
 	case "init":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/init"}
