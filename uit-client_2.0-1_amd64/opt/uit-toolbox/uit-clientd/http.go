@@ -68,10 +68,12 @@ func sendHTTPRequest(data *HTTPRequest) ([]byte, error) {
 		RawQuery: data.Config.URL.RawQuery,
 	}
 
-	q := requestURL.Query()
-	q.Set("key", data.Payload.Key)
-	q.Set("system_serial", data.Payload.SystemSerial)
-	requestURL.RawQuery = q.Encode()
+	if data.Payload != nil {
+		q := requestURL.Query()
+		q.Set("key", data.Payload.Key)
+		q.Set("system_serial", data.Payload.SystemSerial)
+		requestURL.RawQuery = q.Encode()
+	}
 
 	if data.Config.URL.Host != "" {
 		requestURL.Host = data.Config.URL.Host
