@@ -437,7 +437,7 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 			MillidegreesC: &cpuTempMilliC,
 		}
 	case "disk_errors":
-		httpRequestConfig.URL = url.URL{Path: "/api/client/disk/errors"}
+		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
 		diskErrors, err := strconv.ParseInt(inputPayload.StringValue, 10, 64)
 		if err != nil {
 			return nil, fmt.Errorf("unable to parse disk_errors value: %w", err)
@@ -468,7 +468,7 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 			DiskModel:       &inputPayload.StringValue,
 		}
 	case "disk_power_cycles":
-		httpRequestConfig.URL = url.URL{Path: "/api/client/disk/power_cycles"}
+		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
 		diskPowerCycles, err := strconv.ParseInt(inputPayload.StringValue, 10, 64)
 		if err != nil {
 			return nil, fmt.Errorf("unable to parse disk_power_cycles value: %w", err)
@@ -483,7 +483,7 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 			DiskPowerCycles: &diskPowerCycles,
 		}
 	case "disk_power_on_hours":
-		httpRequestConfig.URL = url.URL{Path: "/api/client/disk/power_on_hours"}
+		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
 		diskPowerOnHours, err := strconv.ParseInt(inputPayload.StringValue, 10, 64)
 		if err != nil {
 			return nil, fmt.Errorf("unable to parse disk_power_on_hours value: %w", err)
@@ -498,7 +498,7 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 			DiskPowerOnHours: &diskPowerOnHours,
 		}
 	case "disk_reads_kb":
-		httpRequestConfig.URL = url.URL{Path: "/api/client/disk/reads"}
+		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
 		diskReadsKB, err := strconv.ParseInt(inputPayload.StringValue, 10, 64)
 		if err != nil {
 			return nil, fmt.Errorf("unable to parse disk_reads_kb value: %w", err)
