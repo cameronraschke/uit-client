@@ -42,10 +42,11 @@ type HTTPRequestConfig struct {
 }
 
 type HTTPRequestPayload struct {
-	Tagnumber int64
-	Key       string
-	Value     any
-	UUID      *string
+	Tagnumber    int64
+	SystemSerial string
+	Key          string
+	Value        any
+	UUID         *string
 }
 
 type CPUDataRequest struct {

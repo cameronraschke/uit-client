@@ -134,30 +134,40 @@ func MapInputToPOSTRequest(input string) (*HTTPRequest, error) {
 	if len(inputArr) < 3 {
 		return nil, fmt.Errorf("input must have at least 3 parts separated by '|', got %d", len(inputArr))
 	}
-	if inputArr[0] == "" {
-		return nil, fmt.Errorf("input missing tag number")
+
+	// Tag number
+	tagNumStr := strings.TrimSpace(inputArr[0])
+	if tagNumStr == "" {
+		return nil, fmt.Errorf("tag number cannot be empty")
 	}
-	if inputArr[1] == "" {
-		return nil, fmt.Errorf("input missing key")
+	tagNum, err := strconv.ParseInt(tagNumStr, 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("invalid tag number: %w", err)
 	}
-	if inputArr[2] == "" {
-		return nil, fmt.Errorf("input missing value")
+	// Key
+	key := strings.TrimSpace(inputArr[1])
+	if key == "" {
+		return nil, fmt.Errorf("key is empty")
 	}
-	if len(inputArr) == 4 && inputArr[3] == "" {
-		return nil, fmt.Errorf("input has empty UUID")
+	// Value
+	value := strings.TrimSpace(inputArr[2])
+	if value == "" {
+		return nil, fmt.Errorf("value is empty")
+	}
+	// UUID is optional, but if provided it cannot be empty
+	transactionUUID := strings.TrimSpace(inputArr[3])
+	if len(inputArr) == 4 && transactionUUID == "" {
+		return nil, fmt.Errorf("UUID is empty")
 	}
 
 	httpRequestConfig := new(HTTPRequestConfig)
 	httpRequestPayload := new(HTTPRequestPayload)
 
-	var err error
-	httpRequestPayload.Tagnumber, err = strconv.ParseInt(inputArr[0], 10, 64)
-	if err != nil {
-		return nil, fmt.Errorf("invalid TagNum: %w", err)
-	}
-	httpRequestPayload.Key = inputArr[1]
+	httpRequestPayload.Tagnumber = tagNum
+	httpRequestPayload.Key = key
+	httpRequestPayload.Value = value
 	if len(inputArr) == 4 && strings.TrimSpace(inputArr[3]) != "" {
-		httpRequestPayload.UUID = &inputArr[3]
+		httpRequestPayload.UUID = &transactionUUID
 	}
 
 	httpRequestConfig.Method = "POST"
@@ -167,7 +177,7 @@ func MapInputToPOSTRequest(input string) (*HTTPRequest, error) {
 	switch httpRequestPayload.Key {
 	case "battery_charge_pcnt":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware/battery"}
-		batteryPcnt, err := strconv.ParseFloat(inputArr[2], 64)
+		batteryPcnt, err := strconv.ParseFloat(value, 64)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing battery_charge_pcnt value: %w", err)
 		}
@@ -180,7 +190,7 @@ func MapInputToPOSTRequest(input string) (*HTTPRequest, error) {
 		}
 	case "system_uptime":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/uptime"}
-		uptimeSeconds, err := strconv.ParseInt(inputArr[2], 10, 64)
+		uptimeSeconds, err := strconv.ParseInt(value, 10, 64)
 		if err != nil {
 			return nil, fmt.Errorf("unable to parse system_uptime value: %w", err)
 		}
@@ -193,7 +203,7 @@ func MapInputToPOSTRequest(input string) (*HTTPRequest, error) {
 		}
 	case "client_app_uptime":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/uptime"}
-		uptimeSeconds, err := strconv.ParseInt(inputArr[2], 10, 64)
+		uptimeSeconds, err := strconv.ParseInt(value, 10, 64)
 		if err != nil {
 			return nil, fmt.Errorf("unable to parse client_app_uptime value: %w", err)
 		}
@@ -206,7 +216,7 @@ func MapInputToPOSTRequest(input string) (*HTTPRequest, error) {
 		}
 	case "cpu_current_usage":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/cpu/usage"}
-		cpuUsage, err := strconv.ParseFloat(inputArr[2], 64)
+		cpuUsage, err := strconv.ParseFloat(value, 64)
 		if err != nil {
 			return nil, fmt.Errorf("unable to parse cpu_current_usage value: %w", err)
 		}
@@ -219,7 +229,7 @@ func MapInputToPOSTRequest(input string) (*HTTPRequest, error) {
 		}
 	case "cpu_current_mhz":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/cpu/mhz"}
-		cpuCurrentMHz, err := strconv.ParseFloat(inputArr[2], 64)
+		cpuCurrentMHz, err := strconv.ParseFloat(value, 64)
 		if err != nil {
 			return nil, fmt.Errorf("unable to parse cpu_current_mhz value: %w", err)
 		}
@@ -232,7 +242,7 @@ func MapInputToPOSTRequest(input string) (*HTTPRequest, error) {
 		}
 	case "cpu_millidegrees_c":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/cpu/temp"}
-		cpuTempMilliC, err := strconv.ParseFloat(inputArr[2], 64)
+		cpuTempMilliC, err := strconv.ParseFloat(value, 64)
 		if err != nil {
 			return nil, fmt.Errorf("unable to parse cpu_millidegrees_c value: %w", err)
 		}
@@ -245,7 +255,7 @@ func MapInputToPOSTRequest(input string) (*HTTPRequest, error) {
 		}
 	case "memory_usage_kb":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/memory/usage"}
-		memoryUsageKB, err := strconv.ParseInt(inputArr[2], 10, 64)
+		memoryUsageKB, err := strconv.ParseInt(value, 10, 64)
 		if err != nil {
 			return nil, fmt.Errorf("unable to parse memory_usage_kb value: %w", err)
 		}
@@ -258,7 +268,7 @@ func MapInputToPOSTRequest(input string) (*HTTPRequest, error) {
 		}
 	case "memory_capacity_kb":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/memory/capacity"}
-		memoryCapacityKB, err := strconv.ParseInt(inputArr[2], 10, 64)
+		memoryCapacityKB, err := strconv.ParseInt(value, 10, 64)
 		if err != nil {
 			return nil, fmt.Errorf("unable to parse memory_capacity_kb value: %w", err)
 		}
@@ -269,6 +279,10 @@ func MapInputToPOSTRequest(input string) (*HTTPRequest, error) {
 			Tagnumber:       &httpRequestPayload.Tagnumber,
 			TotalCapacityKB: &memoryCapacityKB,
 		}
+	case "client_lookup_by_serial":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/lookup"}
+		httpRequestConfig.URL.Query().Set("serial", value)
+		httpRequestConfig.Method = "GET"
 	default:
 		return nil, fmt.Errorf("unsupported key: '%s'", httpRequestPayload.Key)
 	}

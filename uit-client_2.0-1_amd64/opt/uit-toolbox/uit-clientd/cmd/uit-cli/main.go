@@ -33,6 +33,7 @@ var (
 		"cpu_current_usage",
 		"cpu_current_mhz",
 		"cpu_millidegrees_c",
+		"client_lookup_by_serial",
 	}
 )
 
@@ -45,11 +46,12 @@ func isKeyAllowed(key string) bool {
 
 func main() {
 	tagnumber := flag.Int64("tag", 0, "Tag number of client (required)")
+	serial := flag.String("serial", "", "System serial number of client (optional, used for lookups)")
 	key := flag.String("key", "", "Key of request to send (required)")
 	value := flag.String("value", "", "Value of request to send (required)")
 	uuid := flag.String("uuid", "", "Optional UUID of request/transaction")
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: %s -tag <tagnumber> -key <key> -value <value> [-uuid <uuid>]\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s [-tag <tagnumber> | -serial <serial>] -key <key> -value <value> [-uuid <uuid>]\n", os.Args[0])
 		flag.PrintDefaults()
 	}
 	flag.Parse()
@@ -60,8 +62,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	if tagnumber == nil || *tagnumber == 0 {
-		fmt.Fprintf(os.Stderr, "tag number is required\n")
+	if (tagnumber == nil || *tagnumber == 0) && (serial == nil || *serial == "") {
+		fmt.Fprintf(os.Stderr, "either tag number or serial number is required\n")
 		os.Exit(1)
 	}
 	if key == nil || *key == "" {
@@ -86,8 +88,15 @@ func main() {
 	defer conn.Close()
 
 	line := fmt.Sprintf("%d|%s|%s", *tagnumber, *key, *value)
+	if *serial != "" {
+		line = fmt.Sprintf("%s|%s|%s", *serial, *key, *value)
+	}
 	if *uuid != "" {
-		line = fmt.Sprintf("%d|%s|%s|%s", *tagnumber, *key, *value, *uuid)
+		if *serial != "" {
+			line = fmt.Sprintf("%s|%s|%s|%s", *serial, *key, *value, *uuid)
+		} else {
+			line = fmt.Sprintf("%d|%s|%s|%s", *tagnumber, *key, *value, *uuid)
+		}
 	}
 	if _, err := io.WriteString(conn, line+"\n"); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to send request: %v\n", err)

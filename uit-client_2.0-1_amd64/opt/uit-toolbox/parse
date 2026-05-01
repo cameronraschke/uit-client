@@ -269,11 +269,6 @@ if ($arr[0] === "api_get") {
 	if (isset($arr[2])) $queryKey = curl_escape($ch, $arr[2]);
 	if (isset($arr[3])) $queryVal = curl_escape($ch, $arr[3]);
 
-	if ($key === "client_lookup") {
-		$url = "/api/client/lookup?".$queryKey."=".$queryVal;
-		$key = "tagnumber";
-	}
-
 	if ($key === "server_time") {
 		$url = "/api/server_time";
 	}
