@@ -441,12 +441,12 @@ function findIdentityInDB {
 	tput reset
 	printf '\n'
 
-	tagNum=$(printf "%s" "api_get|client_lookup|system_serial|${systemSerial}" | /opt/uit-toolbox/parse)
+	tagNum=$(uit-client --serial "${systemSerial}" --key "client_lookup_by_serial" --value "${systemSerial}" --get 2>/dev/null)
 	if [[ $tagNum != "NULL" ]]; then
 		UUID=""
 		UUID=$(cat /proc/sys/kernel/random/uuid)
 
-		printf "%s" "init|${UUID}|${tagNum}|${systemSerial}|${etherAddr}|${wifiMac}|$(cat /sys/class/tpm/tpm0/tpm_version_major)" | /opt/uit-toolbox/parse
+		uit-cli --tag "${tagNum}" --key "init" --value "${systemSerial}" 2>/dev/null
 		coproc uit_cpu { uit-cpu 2>/dev/null; }
 		coproc uit_network { uit-network 2>/dev/null; }
 		coproc uit_sql { uit-sql 2>/dev/null; }

@@ -85,7 +85,14 @@ func handleConnection(ctx context.Context, conn net.Conn, wg *sync.WaitGroup) {
 		default:
 		}
 
-		handleInput(ctx, scanner.Text())
+		response, err := handleInput(ctx, scanner.Text())
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "failed to handle input: %v\n", err)
+			_, _ = fmt.Fprintf(conn, "ERROR: %v\n", err)
+			continue
+		}
+
+		_, _ = fmt.Fprintf(conn, "%s\n", response)
 	}
 
 	if err := scanner.Err(); err != nil && ctx.Err() == nil {

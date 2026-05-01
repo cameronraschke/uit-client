@@ -11,45 +11,6 @@ $arr = explode('|', $input);
 
 $dbPSQL = new dbPSQL();
 
-
-if ($arr[0] == "init") {
-	$uuid = $arr[1];
-	$tagNum = $arr[2];
-	$serial = $arr[3];
-	$macAddr = $arr[4];
-	$wifiMac = $arr[5];
-	$tpmVersion = $arr[6];
-
-	$dbPSQL->insertJob($uuid);
-
-	$dbPSQL->updateJob("tagnumber", $tagNum, $uuid);
-	$dbPSQL->updateJob("system_serial", $serial, $uuid);
-	$dbPSQL->updateJob("etheraddress", $macAddr, $uuid);
-	if (strFilter($macAddr) === 0) {
-		$dbPSQL->updateSystemData($tagNum, "etheraddress", $macAddr);
-	}
-	if (strFilter($wifiMac) === 0) {
-		$dbPSQL->updateSystemData($tagNum, "wifi_mac", $wifiMac);
-	}
-	$dbPSQL->updateJob("date", $date, $uuid);
-
-	function queryTime($queryTime) {
-		$dbPSQL = new dbPSQL();
-		$time = updateTimeValue();
-		$dbPSQL->Pselect("SELECT COUNT(time) AS count FROM jobstats WHERE time = :time", array(':time' => $queryTime));
-		foreach ($dbPSQL->get() as $key => $value) {
-			return $value["count"];
-		}
-	}
-
-	do {
-		sleep(1);
-		$time = updateTimeValue();
-	} while (queryTime($time) > 0);
-
-	$dbPSQL->updateJob("time", $time, $uuid);
-}
-
 if ($arr[0] == "location") {
 
 	if (empty($arr[7])) {

@@ -124,8 +124,8 @@ func sendHTTPRequest(data *HTTPRequest) ([]byte, error) {
 	return body, nil
 }
 
-func MapInputToPOSTRequest(input string) (*HTTPRequest, error) {
-	// This will only create POST requests
+func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
+	// Input arrives as a single JSON line over the unix socket.
 	if strings.TrimSpace(input) == "" {
 		return nil, fmt.Errorf("input cannot be empty or whitespace")
 	}
@@ -135,26 +135,45 @@ func MapInputToPOSTRequest(input string) (*HTTPRequest, error) {
 		return nil, fmt.Errorf("failed to unmarshal input into HTTPRequestPayload: %w", err)
 	}
 
-	// Tag number
-	if inputPayload.Tagnumber <= 0 || inputPayload.Tagnumber > 999999 {
-		return nil, fmt.Errorf("invalid tag number: %d", inputPayload.Tagnumber)
-	}
 	// Key
 	if strings.TrimSpace(inputPayload.Key) == "" {
 		return nil, fmt.Errorf("key is empty")
 	}
+
+	method := strings.ToUpper(strings.TrimSpace(inputPayload.RequestType))
+	if method == "" {
+		method = "POST"
+	}
+	if method != "POST" && method != "GET" {
+		return nil, fmt.Errorf("unsupported request_type: %s", inputPayload.RequestType)
+	}
+
+	if expectedMethod, constrained := expectedMethodForKey(inputPayload.Key); constrained && method != expectedMethod {
+		return nil, fmt.Errorf("key '%s' requires %s method", inputPayload.Key, expectedMethod)
+	}
+
+	// Tag number is required for POST requests, optional for GET.
+	if method == "POST" {
+		if inputPayload.Tagnumber <= 0 || inputPayload.Tagnumber > 999999 {
+			return nil, fmt.Errorf("invalid tag number: %d", inputPayload.Tagnumber)
+		}
+	} else if inputPayload.Tagnumber != 0 && (inputPayload.Tagnumber <= 0 || inputPayload.Tagnumber > 999999) {
+		return nil, fmt.Errorf("invalid tag number: %d", inputPayload.Tagnumber)
+	}
+
 	// Value
-	if strings.TrimSpace(inputPayload.StringValue) == "" {
+	if inputPayload.Key != "init" && strings.TrimSpace(inputPayload.StringValue) == "" {
 		return nil, fmt.Errorf("value is empty")
 	}
 	// UUID is optional, but if provided it cannot be empty
-	if inputPayload.UUID != nil && strings.TrimSpace(*inputPayload.UUID) == "" {
+	if inputPayload.TransactionUUID != nil && strings.TrimSpace(*inputPayload.TransactionUUID) == "" {
 		return nil, fmt.Errorf("UUID is empty")
 	}
 
 	httpRequestConfig := new(HTTPRequestConfig)
 
-	httpRequestConfig.Method = inputPayload.RequestType
+	inputPayload.RequestType = method
+	httpRequestConfig.Method = method
 
 	switch inputPayload.Key {
 	case "battery_charge_pcnt":
@@ -266,6 +285,30 @@ func MapInputToPOSTRequest(input string) (*HTTPRequest, error) {
 		query := httpRequestConfig.URL.Query()
 		query.Set("serial", inputPayload.StringValue)
 		httpRequestConfig.URL.RawQuery = query.Encode()
+	case "init":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/init"}
+		query := httpRequestConfig.URL.Query()
+		query.Set("init", inputPayload.StringValue)
+		httpRequestConfig.URL.RawQuery = query.Encode()
+		inputPayload.Value = &ClientInitRequest{
+			Tagnumber:       &inputPayload.Tagnumber,
+			SystemSerial:    &inputPayload.SystemSerial,
+			TransactionUUID: inputPayload.TransactionUUID,
+		}
+	case "ethernet_mac":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
+		query := httpRequestConfig.URL.Query()
+		query.Set("ethernet_mac", inputPayload.StringValue)
+		httpRequestConfig.URL.RawQuery = query.Encode()
+		if inputPayload.TransactionUUID == nil || strings.TrimSpace(*inputPayload.TransactionUUID) == "" {
+			return nil, fmt.Errorf("UUID is required for ethernet_mac key")
+		}
+		inputPayload.Value = &ClientHardwareView{
+			Tagnumber:       &inputPayload.Tagnumber,
+			TransactionUUID: *inputPayload.TransactionUUID,
+			EthernetMAC:     &inputPayload.StringValue,
+		}
+
 	default:
 		return nil, fmt.Errorf("unsupported key: '%s'", inputPayload.Key)
 	}
@@ -274,4 +317,13 @@ func MapInputToPOSTRequest(input string) (*HTTPRequest, error) {
 		Config:  httpRequestConfig,
 		Payload: inputPayload,
 	}, nil
+}
+
+func expectedMethodForKey(key string) (string, bool) {
+	switch key {
+	case "client_lookup_by_serial":
+		return "GET", true
+	default:
+		return "", false
+	}
 }

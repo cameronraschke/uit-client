@@ -58,31 +58,37 @@ func GetClientConfig() (*ClientConfig, error) {
 	return &configData, nil
 }
 
-func handleInput(ctx context.Context, stdinData string) {
+func handleInput(ctx context.Context, stdinData string) (string, error) {
 
 	select {
 	case <-ctx.Done():
-		return
+		return "", ctx.Err()
 	default:
 	}
 
 	clean := strings.TrimSpace(stdinData)
 	if clean == "" {
-		return
+		return "", fmt.Errorf("input cannot be empty or whitespace")
 	}
 
 	// fmt.Printf("received stdin data: %s\n", clean)
 
-	httpRequest, err := MapInputToPOSTRequest(clean)
+	httpRequest, err := MapInputToHTTPRequest(clean)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to create array from input: %v\n", err)
-		return
+		return "", err
 	}
 
-	if _, err := sendHTTPRequest(httpRequest); err != nil {
+	res, err := sendHTTPRequest(httpRequest)
+	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to send request: %v\n", err)
-		return
+		return "", err
 	}
+	if len(res) == 0 {
+		return "", nil
+	}
+
+	return string(res), nil
 }
 
 func main() {

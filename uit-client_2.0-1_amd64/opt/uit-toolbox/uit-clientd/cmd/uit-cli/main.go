@@ -3,6 +3,7 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -10,17 +11,18 @@ import (
 	"net"
 	"os"
 	"slices"
+	"strings"
 	"time"
 )
 
 type HTTPRequestPayload struct {
-	RequestType  string  `json:"request_type"`
-	Tagnumber    int64   `json:"tagnumber"`
-	SystemSerial string  `json:"system_serial"`
-	Key          string  `json:"key"`
-	StringValue  string  `json:"string_value,omitempty"`
-	Value        any     `json:"value"`
-	UUID         *string `json:"uuid,omitempty"`
+	RequestType     string  `json:"request_type"`
+	Tagnumber       int64   `json:"tagnumber"`
+	SystemSerial    string  `json:"system_serial"`
+	Key             string  `json:"key"`
+	StringValue     string  `json:"string_value,omitempty"`
+	Value           any     `json:"value"`
+	TransactionUUID *string `json:"transaction_uuid,omitempty"`
 }
 
 const unixSocketPath = "/run/uit-client/uit-clientd.sock"
@@ -36,6 +38,10 @@ var (
 		"cpu_current_mhz",
 		"cpu_millidegrees_c",
 		"client_lookup_by_serial",
+		"init",
+		"ethernet_mac",
+		"wifi_mac",
+		"tpm_version",
 	}
 )
 
@@ -44,6 +50,15 @@ func isKeyAllowed(key string) bool {
 		return true
 	}
 	return false
+}
+
+func expectedMethodForKey(key string) (string, bool) {
+	switch key {
+	case "client_lookup_by_serial":
+		return "GET", true
+	default:
+		return "", false
+	}
 }
 
 func main() {
@@ -75,21 +90,6 @@ func main() {
 		}
 	}
 
-	// No tag/serial needed for GET requests
-	if (tagnumber == nil || *tagnumber == 0) && (serial == nil || *serial == "") {
-		fmt.Fprintf(os.Stderr, "either tag number or serial number is required\n")
-		os.Exit(1)
-	}
-	// No value needed for GET requests
-	if methodGET != nil && *methodGET {
-		if value == nil || *value == "" {
-			fmt.Fprintf(os.Stderr, "value is required\n")
-			os.Exit(1)
-		}
-	}
-	httpPayload.Tagnumber = *tagnumber
-	httpPayload.SystemSerial = *serial
-
 	// Key is required
 	if key == nil || *key == "" {
 		fmt.Fprintf(os.Stderr, "key is required\n")
@@ -100,13 +100,37 @@ func main() {
 		fmt.Fprintf(os.Stderr, "allowed keys are: %v\n", allowedKeys)
 		os.Exit(1)
 	}
+
+	if expectedMethod, constrained := expectedMethodForKey(*key); constrained && httpPayload.RequestType != expectedMethod {
+		fmt.Fprintf(os.Stderr, "key '%s' requires %s method\n", *key, expectedMethod)
+		os.Exit(1)
+	}
+
+	httpPayload.Tagnumber = *tagnumber
+	httpPayload.SystemSerial = *serial
+
+	if httpPayload.RequestType == "POST" {
+		if tagnumber == nil || *tagnumber <= 0 || *tagnumber > 999999 {
+			fmt.Fprintf(os.Stderr, "tag number is required and must be between 1 and 999999 for POST requests\n")
+			os.Exit(1)
+		}
+	} else if tagnumber != nil && *tagnumber != 0 && (*tagnumber < 0 || *tagnumber > 999999) {
+		fmt.Fprintf(os.Stderr, "tag number must be between 1 and 999999 when provided\n")
+		os.Exit(1)
+	}
+
+	if *key != "init" && (value == nil || *value == "") {
+		fmt.Fprintf(os.Stderr, "value is required\n")
+		os.Exit(1)
+	}
+
 	httpPayload.Key = *key
 
 	// Value
 	httpPayload.StringValue = *value
 
 	// Transaction UUID
-	httpPayload.UUID = transactionUUID
+	httpPayload.TransactionUUID = transactionUUID
 
 	conn, err := net.DialTimeout("unix", unixSocketPath, 5*time.Second)
 	if err != nil {
@@ -124,4 +148,26 @@ func main() {
 		fmt.Fprintf(os.Stderr, "failed to send request: %v\n", err)
 		os.Exit(1)
 	}
+
+	if err := conn.SetReadDeadline(time.Now().Add(10 * time.Second)); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to set read deadline: %v\n", err)
+		os.Exit(1)
+	}
+
+	response, err := bufio.NewReader(conn).ReadString('\n')
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to read response: %v\n", err)
+		os.Exit(1)
+	}
+
+	response = strings.TrimSpace(response)
+	if response == "" {
+		return
+	}
+	if strings.HasPrefix(response, "ERROR: ") {
+		fmt.Fprintln(os.Stderr, strings.TrimPrefix(response, "ERROR: "))
+		os.Exit(1)
+	}
+
+	fmt.Fprintln(os.Stdout, response)
 }
