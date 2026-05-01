@@ -6,14 +6,6 @@ import (
 	"net/url"
 )
 
-type ParsedInputDTO struct {
-	RequestType string  `json:"request_type"`
-	Tagnumber   int64   `json:"tagnumber"`
-	Key         string  `json:"key"`
-	Value       string  `json:"value"`
-	UUID        *string `json:"uuid,omitempty"`
-}
-
 type ClientConfig struct {
 	UIT_CLIENT_DB_USER   string `json:"UIT_CLIENT_DB_USER"`
 	UIT_CLIENT_DB_PASSWD string `json:"UIT_CLIENT_DB_PASSWD"`

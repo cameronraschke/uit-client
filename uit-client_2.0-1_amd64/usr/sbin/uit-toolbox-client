@@ -288,79 +288,76 @@ fi
 	#t32 = Boot Status
 
 	# Ethernet MAC Address
-	printf "%s" "api_post|${tagNum}|ethernet_mac|${etherAddr}|${UUID}" | /opt/uit-toolbox/parse
+	uit-cli --serial "${systemSerial}" --key "ethernet_mac" --value "${etherAddr}" --uuid "${UUID}"
 
 	# WiFi MAC Address
-	printf "%s" "api_post|${tagNum}|wifi_mac|${wifiMac}|${UUID}" | /opt/uit-toolbox/parse
+	uit-cli --serial "${systemSerial}" --key "wifi_mac" --value "${wifiMac}" --uuid "${UUID}"
 
 	# System Manufacturer
 	systemManufacturer=$(dmidecode --string system-manufacturer)
-	printf "%s" "api_post|${tagNum}|system_manufacturer|${systemManufacturer}|${UUID}" | /opt/uit-toolbox/parse
+	uit-cli --serial "${systemSerial}" --key "system_manufacturer" --value "${systemManufacturer}" --uuid "${UUID}"
 
 	# System Model Name
 	systemModel=$(dmidecode --string system-product-name)
 	if [[ -z $systemModel ]]; then
 		systemModel=$(cat /sys/class/dmi/id/product_name)
 	fi
-	printf "%s" "api_post|${tagNum}|system_model|${systemModel}|${UUID}" | /opt/uit-toolbox/parse
+	uit-cli --serial "${systemSerial}" --key "system_model" --value "${systemModel}" --uuid "${UUID}"
 
 	# System UUID
 	systemUUID=$(dmidecode --string system-uuid)
 	if [[ -z $systemUUID ]]; then
 		systemUUID=$(cat /sys/class/dmi/id/product_uuid)
 	fi
-	printf "%s" "api_post|${tagNum}|system_uuid|${systemUUID}|${UUID}" | /opt/uit-toolbox/parse
+	uit-cli --serial "${systemSerial}" --key "system_uuid" --value "${systemUUID}" --uuid "${UUID}"
 
 	# System SKU
 	systemSKU=$(dmidecode --string system-sku-number)
 	if [[ -z $systemSKU ]]; then
 		systemSKU=$(cat /sys/class/dmi/id/product_sku)
 	fi
-	printf "%s" "api_post|${tagNum}|system_sku|${systemSKU}|${UUID}" | /opt/uit-toolbox/parse
+	uit-cli --serial "${systemSerial}" --key "system_sku" --value "${systemSKU}" --uuid "${UUID}"
 
 	# Chassis Type
 	chassisType=$(dmidecode --string chassis-type | head -n1)
-	printf "%s" "api_post|${tagNum}|chassis_type|${chassisType}|${UUID}" | /opt/uit-toolbox/parse
+	uit-cli --serial "${systemSerial}" --key "chassis_type" --value "${chassisType}" --uuid "${UUID}"
 
 	# CPU Manufacturer
 	cpuManufacturer=$(dmidecode --string processor-manufacturer)
-	printf "%s" "api_post|${tagNum}|cpu_manufacturer|${cpuManufacturer}|${UUID}" | /opt/uit-toolbox/parse
+	uit-cli --serial "${systemSerial}" --key "cpu_manufacturer" --value "${cpuManufacturer}" --uuid "${UUID}"
 
 	# CPU Model
 	cpuModel=$(dmidecode --string processor-version)
-	printf "%s" "api_post|${tagNum}|cpu_model|${cpuModel}|${UUID}" | /opt/uit-toolbox/parse
+	uit-cli --serial "${systemSerial}" --key "cpu_model" --value "${cpuModel}" --uuid "${UUID}"
 
 	# CPU Max Speed
 	cpuMaxSpeed=$(dmidecode -t4 | grep 'Max Speed' | sed 's/[^0-9]//g')
-	printf "%s" "api_post|${tagNum}|cpu_max_speed_mhz|${cpuMaxSpeed}|${UUID}" | /opt/uit-toolbox/parse
+	uit-cli --serial "${systemSerial}" --key "cpu_max_speed_mhz" --value "${cpuMaxSpeed}" --uuid "${UUID}"
 
 	# CPU Core Count
 	cpuCoreCount=$(dmidecode -t4 | grep 'Core Count' | sed 's/Core Count: //g' | sed 's/^[[:space:]]*//g')
-	printf "%s" "api_post|${tagNum}|cpu_core_count|${cpuCoreCount}|${UUID}" | /opt/uit-toolbox/parse
+	uit-cli --serial "${systemSerial}" --key "cpu_core_count" --value "${cpuCoreCount}" --uuid "${UUID}"
 
 	# CPU Thread Count
 	cpuThreadCount=$(dmidecode -t4 | grep 'Thread Count' | sed 's/Thread Count: //g' | sed 's/^[[:space:]]*//g')
-	printf "%s" "api_post|${tagNum}|cpu_thread_count|${cpuThreadCount}|${UUID}" | /opt/uit-toolbox/parse
+	uit-cli --serial "${systemSerial}" --key "cpu_thread_count" --value "${cpuThreadCount}" --uuid "${UUID}"
 
 	# Motherboard Manufacturer
 	motherboardManufacturer=$(dmidecode --string baseboard-manufacturer)
-	printf "%s" "api_post|${tagNum}|motherboard_manufacturer|${motherboardManufacturer}|${UUID}" | /opt/uit-toolbox/parse
+	uit-cli --serial "${systemSerial}" --key "motherboard_manufacturer" --value "${motherboardManufacturer}" --uuid "${UUID}"
 
 	# Motherboard Serial
 	motherboardSerial=$(dmidecode --string baseboard-serial-number)
-	printf "%s" "api_post|${tagNum}|motherboard_serial|${motherboardSerial}|${UUID}" | /opt/uit-toolbox/parse
+	uit-cli --serial "${systemSerial}" --key "motherboard_serial" --value "${motherboardSerial}" --uuid "${UUID}"
 
 	biosVersion=$(dmidecode --string bios-version 2>/dev/null)
-		printf "%s" "api_post|${tagNum}|bios_version|${biosVersion}|${UUID}" | /opt/uit-toolbox/parse
+	uit-cli --serial "${systemSerial}" --key "bios_version" --value "${biosVersion}" --uuid "${UUID}"
 	biosDate=$(dmidecode --string bios-release-date 2>/dev/null)
-		printf "%s" "api_post|${tagNum}|bios_release_date|${biosDate}|${UUID}" | /opt/uit-toolbox/parse
+	uit-cli --serial "${systemSerial}" --key "bios_release_date" --value "${biosDate}" --uuid "${UUID}"
 	biosFirmwareRev=$(dmidecode --string firmware-revision 2>/dev/null)
-		printf "%s" "api_post|${tagNum}|bios_firmware|${biosFirmwareRev}|${UUID}" | /opt/uit-toolbox/parse
+	uit-cli --serial "${systemSerial}" --key "bios_firmware" --value "${biosFirmwareRev}" --uuid "${UUID}"
 	systemSerial=$(dmidecode --string system-serial-number 2>/dev/null)
-		printf "%s" "general|system_serial|${systemSerial}|${UUID}" | /opt/uit-toolbox/parse
-		printf "%s" "api_post|${tagNum}|system_serial|${systemSerial}|${UUID}" | /opt/uit-toolbox/parse
-		printf "%s" "api_post|${tagNum}|health_system_serial|${systemSerial}|${UUID}" | /opt/uit-toolbox/parse
-
+	
 	###Disk Data
 	collectDiskData
 
@@ -402,7 +399,7 @@ fi
 	memorySerial=$(dmidecode --type memory | grep -P '\tSerial Number' | awk '{ print $3 }' | tr '\n' '-' | sed 's/-$//g')
 		printf "%s" "api_post|${tagNum}|memory_serial|${memorySerial}|${UUID}" | /opt/uit-toolbox/parse
 	memoryCapacity=$(grep '^MemTotal' /proc/meminfo | awk '{ print $2 }')
-		/sbin/uit-cli --tag "${tagNum}" --key "memory_capacity_kb" --value "${memoryCapacity}"
+		/sbin/uit-cli --serial "${systemSerial}" --key "memory_capacity_kb" --value "${memoryCapacity}"
 	memSpeed=$(dmidecode --type 17 2>/dev/null | grep '^[[:space:]]*Speed\:' | head -n1 | sed 's/[^0-9]//g')
 		printf "%s" "api_post|${tagNum}|memory_speed_mhz|${memSpeed}|${UUID}" | /opt/uit-toolbox/parse
 

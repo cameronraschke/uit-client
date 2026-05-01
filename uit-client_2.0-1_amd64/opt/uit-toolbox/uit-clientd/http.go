@@ -217,19 +217,37 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 			SystemSerial: systemSerial,
 			Percent:      &batteryPcnt,
 		}
-	case "system_uptime":
-		httpRequestConfig.URL = url.URL{Path: "/api/client/uptime"}
-		uptimeSeconds, err := strconv.ParseInt(inputPayload.StringValue, 10, 64)
-		if err != nil {
-			return nil, fmt.Errorf("unable to parse system_uptime value: %w", err)
+	case "bios_firmware":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
+		inputPayload.Value = &ClientHardwareView{
+			Tagnumber:       tagnumber,
+			SystemSerial:    systemSerial,
+			TransactionUUID: *inputPayload.TransactionUUID,
+			BiosFirmware:    &inputPayload.StringValue,
 		}
-		if uptimeSeconds < 0 {
-			return nil, fmt.Errorf("system_uptime value cannot be negative: %d", uptimeSeconds)
+	case "bios_release_date":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
+		inputPayload.Value = &ClientHardwareView{
+			Tagnumber:       tagnumber,
+			SystemSerial:    systemSerial,
+			TransactionUUID: *inputPayload.TransactionUUID,
+			BiosReleaseDate: &inputPayload.StringValue,
 		}
-		inputPayload.Value = &ClientUptime{
+	case "bios_version":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
+		inputPayload.Value = &ClientHardwareView{
+			Tagnumber:       tagnumber,
+			SystemSerial:    systemSerial,
+			TransactionUUID: *inputPayload.TransactionUUID,
+			BiosVersion:     &inputPayload.StringValue,
+		}
+
+	case "chassis_type":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
+		inputPayload.Value = &ClientHardwareView{
 			Tagnumber:    tagnumber,
 			SystemSerial: systemSerial,
-			SystemUptime: &uptimeSeconds,
+			ChassisType:  &inputPayload.StringValue,
 		}
 	case "client_app_uptime":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/uptime"}
@@ -244,6 +262,41 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 			Tagnumber:       tagnumber,
 			SystemSerial:    systemSerial,
 			ClientAppUptime: &uptimeSeconds,
+		}
+	case "client_lookup_by_serial":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/lookup"}
+		query := httpRequestConfig.URL.Query()
+		query.Set("system_serial", inputPayload.StringValue)
+		httpRequestConfig.URL.RawQuery = query.Encode()
+	case "cpu_core_count":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
+		cpuCoreCount, err := strconv.ParseInt(inputPayload.StringValue, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse cpu_core_count value: %w", err)
+		}
+		if cpuCoreCount <= 0 {
+			return nil, fmt.Errorf("cpu_core_count value must be greater than 0: %d", cpuCoreCount)
+		}
+		inputPayload.Value = &ClientHardwareView{
+			Tagnumber:       tagnumber,
+			SystemSerial:    systemSerial,
+			TransactionUUID: *inputPayload.TransactionUUID,
+			CPUCoreCount:    &cpuCoreCount,
+		}
+	case "cpu_thread_count":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
+		cpuThreadCount, err := strconv.ParseInt(inputPayload.StringValue, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse cpu_thread_count value: %w", err)
+		}
+		if cpuThreadCount <= 0 {
+			return nil, fmt.Errorf("cpu_thread_count value must be greater than 0: %d", cpuThreadCount)
+		}
+		inputPayload.Value = &ClientHardwareView{
+			Tagnumber:       tagnumber,
+			SystemSerial:    systemSerial,
+			TransactionUUID: *inputPayload.TransactionUUID,
+			CPUThreadCount:  &cpuThreadCount,
 		}
 	case "cpu_current_usage":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/cpu/usage"}
@@ -273,6 +326,37 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 			SystemSerial: systemSerial,
 			MHz:          &cpuCurrentMHz,
 		}
+	case "cpu_manufacturer":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
+		inputPayload.Value = &ClientHardwareView{
+			Tagnumber:       tagnumber,
+			SystemSerial:    systemSerial,
+			TransactionUUID: *inputPayload.TransactionUUID,
+			CPUManufacturer: &inputPayload.StringValue,
+		}
+	case "cpu_max_speed_mhz":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
+		cpuMaxSpeedMHz, err := strconv.ParseInt(inputPayload.StringValue, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse cpu_max_speed_mhz value: %w", err)
+		}
+		if cpuMaxSpeedMHz <= 0 {
+			return nil, fmt.Errorf("cpu_max_speed_mhz value must be greater than 0: %d", cpuMaxSpeedMHz)
+		}
+		inputPayload.Value = &ClientHardwareView{
+			Tagnumber:       tagnumber,
+			SystemSerial:    systemSerial,
+			TransactionUUID: *inputPayload.TransactionUUID,
+			CPUMaxSpeedMhz:  &cpuMaxSpeedMHz,
+		}
+	case "cpu_model":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
+		inputPayload.Value = &ClientHardwareView{
+			Tagnumber:       tagnumber,
+			SystemSerial:    systemSerial,
+			TransactionUUID: *inputPayload.TransactionUUID,
+			CPUModel:        &inputPayload.StringValue,
+		}
 	case "cpu_millidegrees_c":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/cpu/temp"}
 		cpuTempMilliC, err := strconv.ParseFloat(inputPayload.StringValue, 64)
@@ -287,19 +371,26 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 			SystemSerial:  systemSerial,
 			MillidegreesC: &cpuTempMilliC,
 		}
-	case "memory_usage_kb":
-		httpRequestConfig.URL = url.URL{Path: "/api/client/memory/usage"}
-		memoryUsageKB, err := strconv.ParseInt(inputPayload.StringValue, 10, 64)
-		if err != nil {
-			return nil, fmt.Errorf("unable to parse memory_usage_kb value: %w", err)
+	case "ethernet_mac":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
+		query := httpRequestConfig.URL.Query()
+		query.Set("ethernet_mac", inputPayload.StringValue)
+		httpRequestConfig.URL.RawQuery = query.Encode()
+		inputPayload.Value = &ClientHardwareView{
+			Tagnumber:       tagnumber,
+			SystemSerial:    systemSerial,
+			TransactionUUID: *inputPayload.TransactionUUID,
+			EthernetMAC:     &inputPayload.StringValue,
 		}
-		if memoryUsageKB <= 0 {
-			return nil, fmt.Errorf("memory_usage_kb has to be greater than 0: %d", memoryUsageKB)
-		}
-		inputPayload.Value = &MemoryDataRequest{
-			Tagnumber:    tagnumber,
-			SystemSerial: systemSerial,
-			TotalUsageKB: &memoryUsageKB,
+	case "init":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/init"}
+		query := httpRequestConfig.URL.Query()
+		query.Set("init", inputPayload.StringValue)
+		httpRequestConfig.URL.RawQuery = query.Encode()
+		inputPayload.Value = &ClientInitRequest{
+			Tagnumber:       tagnumber,
+			SystemSerial:    &inputPayload.SystemSerial,
+			TransactionUUID: inputPayload.TransactionUUID,
 		}
 	case "memory_capacity_kb":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/memory/capacity"}
@@ -315,33 +406,111 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 			SystemSerial:    systemSerial,
 			TotalCapacityKB: &memoryCapacityKB,
 		}
-	case "client_lookup_by_serial":
-		httpRequestConfig.URL = url.URL{Path: "/api/client/lookup"}
-		query := httpRequestConfig.URL.Query()
-		query.Set("system_serial", inputPayload.StringValue)
-		httpRequestConfig.URL.RawQuery = query.Encode()
-	case "init":
-		httpRequestConfig.URL = url.URL{Path: "/api/client/init"}
-		query := httpRequestConfig.URL.Query()
-		query.Set("init", inputPayload.StringValue)
-		httpRequestConfig.URL.RawQuery = query.Encode()
-		inputPayload.Value = &ClientInitRequest{
-			Tagnumber:       tagnumber,
-			SystemSerial:    &inputPayload.SystemSerial,
-			TransactionUUID: inputPayload.TransactionUUID,
+	case "memory_usage_kb":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/memory/usage"}
+		memoryUsageKB, err := strconv.ParseInt(inputPayload.StringValue, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse memory_usage_kb value: %w", err)
 		}
-	case "ethernet_mac":
+		if memoryUsageKB <= 0 {
+			return nil, fmt.Errorf("memory_usage_kb has to be greater than 0: %d", memoryUsageKB)
+		}
+		inputPayload.Value = &MemoryDataRequest{
+			Tagnumber:    tagnumber,
+			SystemSerial: systemSerial,
+			TotalUsageKB: &memoryUsageKB,
+		}
+	case "motherboard_manufacturer":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
 		query := httpRequestConfig.URL.Query()
-		query.Set("ethernet_mac", inputPayload.StringValue)
+		query.Set("motherboard_manufacturer", inputPayload.StringValue)
+		httpRequestConfig.URL.RawQuery = query.Encode()
+		inputPayload.Value = &ClientHardwareView{
+			Tagnumber:               tagnumber,
+			SystemSerial:            systemSerial,
+			TransactionUUID:         *inputPayload.TransactionUUID,
+			MotherboardManufacturer: &inputPayload.StringValue,
+		}
+	case "motherboard_serial":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
+		query := httpRequestConfig.URL.Query()
+		query.Set("motherboard_serial", inputPayload.StringValue)
+		httpRequestConfig.URL.RawQuery = query.Encode()
+		inputPayload.Value = &ClientHardwareView{
+			Tagnumber:         tagnumber,
+			SystemSerial:      systemSerial,
+			TransactionUUID:   *inputPayload.TransactionUUID,
+			MotherboardSerial: &inputPayload.StringValue,
+		}
+
+	case "system_manufacturer":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
+		inputPayload.Value = &ClientHardwareView{
+			Tagnumber:          tagnumber,
+			SystemSerial:       systemSerial,
+			TransactionUUID:    *inputPayload.TransactionUUID,
+			SystemManufacturer: &inputPayload.StringValue,
+		}
+	case "system_model":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
+		inputPayload.Value = &ClientHardwareView{
+			Tagnumber:       tagnumber,
+			SystemSerial:    systemSerial,
+			TransactionUUID: *inputPayload.TransactionUUID,
+			SystemModel:     &inputPayload.StringValue,
+		}
+	case "system_sku":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
+		inputPayload.Value = &ClientHardwareView{
+			Tagnumber:       tagnumber,
+			SystemSerial:    systemSerial,
+			TransactionUUID: *inputPayload.TransactionUUID,
+			SystemSKU:       &inputPayload.StringValue,
+		}
+	case "system_uptime":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/uptime"}
+		uptimeSeconds, err := strconv.ParseInt(inputPayload.StringValue, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse system_uptime value: %w", err)
+		}
+		if uptimeSeconds < 0 {
+			return nil, fmt.Errorf("system_uptime value cannot be negative: %d", uptimeSeconds)
+		}
+		inputPayload.Value = &ClientUptime{
+			Tagnumber:    tagnumber,
+			SystemSerial: systemSerial,
+			SystemUptime: &uptimeSeconds,
+		}
+	case "system_uuid":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
+		inputPayload.Value = &ClientHardwareView{
+			Tagnumber:       tagnumber,
+			SystemSerial:    systemSerial,
+			TransactionUUID: *inputPayload.TransactionUUID,
+			SystemUUID:      &inputPayload.StringValue,
+		}
+	case "tpm_version":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
+		query := httpRequestConfig.URL.Query()
+		query.Set("tpm_version", inputPayload.StringValue)
 		httpRequestConfig.URL.RawQuery = query.Encode()
 		inputPayload.Value = &ClientHardwareView{
 			Tagnumber:       tagnumber,
 			SystemSerial:    systemSerial,
 			TransactionUUID: *inputPayload.TransactionUUID,
-			EthernetMAC:     &inputPayload.StringValue,
+			TPMVersion:      &inputPayload.StringValue,
 		}
-
+	case "wifi_mac":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
+		query := httpRequestConfig.URL.Query()
+		query.Set("wifi_mac", inputPayload.StringValue)
+		httpRequestConfig.URL.RawQuery = query.Encode()
+		inputPayload.Value = &ClientHardwareView{
+			Tagnumber:       tagnumber,
+			SystemSerial:    systemSerial,
+			TransactionUUID: *inputPayload.TransactionUUID,
+			WiFiMAC:         &inputPayload.StringValue,
+		}
 	default:
 		return nil, fmt.Errorf("unsupported key: '%s'", inputPayload.Key)
 	}
