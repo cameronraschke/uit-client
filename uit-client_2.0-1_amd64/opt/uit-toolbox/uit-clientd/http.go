@@ -68,6 +68,11 @@ func sendHTTPRequest(data *HTTPRequest) ([]byte, error) {
 		RawQuery: data.Config.URL.RawQuery,
 	}
 
+	q := requestURL.Query()
+	q.Set("key", data.Payload.Key)
+	q.Set("system_serial", data.Payload.SystemSerial)
+	requestURL.RawQuery = q.Encode()
+
 	if data.Config.URL.Host != "" {
 		requestURL.Host = data.Config.URL.Host
 	} else {
@@ -310,9 +315,10 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 	case "chassis_type":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
 		inputPayload.Value = &ClientHardwareView{
-			Tagnumber:    tagnumber,
-			SystemSerial: systemSerial,
-			ChassisType:  &inputPayload.StringValue,
+			Tagnumber:       tagnumber,
+			SystemSerial:    systemSerial,
+			TransactionUUID: *inputPayload.TransactionUUID,
+			ChassisType:     &inputPayload.StringValue,
 		}
 	case "client_app_uptime":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/uptime"}
@@ -582,10 +588,11 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 		if memoryCapacityKB <= 0 {
 			return nil, fmt.Errorf("memory_capacity_kb has to be greater than 0: %d", memoryCapacityKB)
 		}
-		inputPayload.Value = &MemoryDataRequest{
-			Tagnumber:       tagnumber,
-			SystemSerial:    systemSerial,
-			TotalCapacityKB: &memoryCapacityKB,
+		inputPayload.Value = &ClientHardwareView{
+			Tagnumber:        tagnumber,
+			SystemSerial:     systemSerial,
+			TransactionUUID:  *inputPayload.TransactionUUID,
+			MemoryCapacityKB: &memoryCapacityKB,
 		}
 	case "memory_usage_kb":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/memory/usage"}

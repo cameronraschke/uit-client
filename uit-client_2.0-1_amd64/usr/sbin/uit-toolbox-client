@@ -399,7 +399,7 @@ fi
 	memorySerial=$(dmidecode --type memory | grep -P '\tSerial Number' | awk '{ print $3 }' | tr '\n' '-' | sed 's/-$//g')
 		uit-cli --serial "${systemSerial}" --key "memory_serial" --value "${memorySerial}" --uuid "${UUID}"
 	memoryCapacity=$(grep '^MemTotal' /proc/meminfo | awk '{ print $2 }')
-		uit-cli --serial "${systemSerial}" --key "memory_capacity_kb" --value "${memoryCapacity}" --uuid "${UUID}"
+		uit-cli --tag ${tagNum} --serial "${systemSerial}" --key "memory_capacity_kb" --value "${memoryCapacity}" --uuid "${UUID}"
 	memSpeed=$(dmidecode --type 17 2>/dev/null | grep '^[[:space:]]*Speed\:' | head -n1 | sed 's/[^0-9]//g')
 		uit-cli --serial "${systemSerial}" --key "memory_speed_mhz" --value "${memSpeed}" --uuid "${UUID}"
 
