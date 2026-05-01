@@ -127,6 +127,9 @@ func main() {
 		fmt.Fprintf(os.Stderr, "failed to send request: %v\n", err)
 		os.Exit(1)
 	}
+	if httpPayload.RequestType != "GET" {
+		return
+	}
 
 	if err := conn.SetReadDeadline(time.Now().Add(10 * time.Second)); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to set read deadline: %v\n", err)
