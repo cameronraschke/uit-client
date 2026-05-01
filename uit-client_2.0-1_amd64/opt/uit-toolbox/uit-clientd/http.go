@@ -17,6 +17,24 @@ import (
 
 var sharedHTTPClient = newHTTPClient()
 
+func expectedMethodForKey(key string) (string, bool) {
+	switch key {
+	case "client_lookup_by_serial":
+		return "GET", true
+	default:
+		return "", false
+	}
+}
+
+func isUUIDRequiredForKey(key string) bool {
+	switch key {
+	case "ethernet_mac":
+		return true
+	default:
+		return false
+	}
+}
+
 func newHTTPClient() *http.Client {
 	tlsConfig := &tls.Config{
 		InsecureSkipVerify: false,
@@ -151,23 +169,32 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 	if expectedMethod, constrained := expectedMethodForKey(inputPayload.Key); constrained && method != expectedMethod {
 		return nil, fmt.Errorf("key '%s' requires %s method", inputPayload.Key, expectedMethod)
 	}
-
-	// Tag number is required for POST requests, optional for GET.
-	if method == "POST" {
-		if inputPayload.Tagnumber <= 0 || inputPayload.Tagnumber > 999999 {
-			return nil, fmt.Errorf("invalid tag number: %d", inputPayload.Tagnumber)
-		}
-	} else if inputPayload.Tagnumber != 0 && (inputPayload.Tagnumber <= 0 || inputPayload.Tagnumber > 999999) {
-		return nil, fmt.Errorf("invalid tag number: %d", inputPayload.Tagnumber)
+	if strings.TrimSpace(inputPayload.SystemSerial) == "" {
+		return nil, fmt.Errorf("system_serial is required")
 	}
 
+	if inputPayload.Tagnumber != 0 && (inputPayload.Tagnumber < 1 || inputPayload.Tagnumber > 999999) {
+		return nil, fmt.Errorf("invalid tag number: %d", inputPayload.Tagnumber)
+	}
+	var tagnumber *int64
+	if inputPayload.Tagnumber > 0 {
+		tagnumber = &inputPayload.Tagnumber
+	}
+	systemSerial := &inputPayload.SystemSerial
+
 	// Value
-	if inputPayload.Key != "init" && strings.TrimSpace(inputPayload.StringValue) == "" {
+	if inputPayload.Key != "init" && inputPayload.Key != "client_lookup_by_serial" && strings.TrimSpace(inputPayload.StringValue) == "" {
 		return nil, fmt.Errorf("value is empty")
+	}
+	if inputPayload.Key == "client_lookup_by_serial" && strings.TrimSpace(inputPayload.StringValue) == "" {
+		inputPayload.StringValue = inputPayload.SystemSerial
 	}
 	// UUID is optional, but if provided it cannot be empty
 	if inputPayload.TransactionUUID != nil && strings.TrimSpace(*inputPayload.TransactionUUID) == "" {
 		return nil, fmt.Errorf("UUID is empty")
+	}
+	if isUUIDRequiredForKey(inputPayload.Key) && (inputPayload.TransactionUUID == nil || strings.TrimSpace(*inputPayload.TransactionUUID) == "") {
+		return nil, fmt.Errorf("UUID is required for key '%s'", inputPayload.Key)
 	}
 
 	httpRequestConfig := new(HTTPRequestConfig)
@@ -186,8 +213,9 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 			return nil, fmt.Errorf("battery_charge_pcnt value out of range: %f", batteryPcnt)
 		}
 		inputPayload.Value = &BatteryData{
-			Tagnumber: inputPayload.Tagnumber,
-			Percent:   &batteryPcnt,
+			Tagnumber:    tagnumber,
+			SystemSerial: systemSerial,
+			Percent:      &batteryPcnt,
 		}
 	case "system_uptime":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/uptime"}
@@ -199,7 +227,8 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 			return nil, fmt.Errorf("system_uptime value cannot be negative: %d", uptimeSeconds)
 		}
 		inputPayload.Value = &ClientUptime{
-			Tagnumber:    inputPayload.Tagnumber,
+			Tagnumber:    tagnumber,
+			SystemSerial: systemSerial,
 			SystemUptime: &uptimeSeconds,
 		}
 	case "client_app_uptime":
@@ -212,7 +241,8 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 			return nil, fmt.Errorf("client_app_uptime value cannot be negative: %d", uptimeSeconds)
 		}
 		inputPayload.Value = &ClientUptime{
-			Tagnumber:       inputPayload.Tagnumber,
+			Tagnumber:       tagnumber,
+			SystemSerial:    systemSerial,
 			ClientAppUptime: &uptimeSeconds,
 		}
 	case "cpu_current_usage":
@@ -225,7 +255,8 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 			return nil, fmt.Errorf("cpu_current_usage value out of range: %f", cpuUsage)
 		}
 		inputPayload.Value = &CPUDataRequest{
-			Tagnumber:    &inputPayload.Tagnumber,
+			Tagnumber:    tagnumber,
+			SystemSerial: systemSerial,
 			UsagePercent: &cpuUsage,
 		}
 	case "cpu_current_mhz":
@@ -238,8 +269,9 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 			return nil, fmt.Errorf("cpu_current_mhz value must be greater than 0: %f", cpuCurrentMHz)
 		}
 		inputPayload.Value = &CPUDataRequest{
-			Tagnumber: &inputPayload.Tagnumber,
-			MHz:       &cpuCurrentMHz,
+			Tagnumber:    tagnumber,
+			SystemSerial: systemSerial,
+			MHz:          &cpuCurrentMHz,
 		}
 	case "cpu_millidegrees_c":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/cpu/temp"}
@@ -251,7 +283,8 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 			return nil, fmt.Errorf("cpu_millidegrees_c value cannot be negative: %f", cpuTempMilliC)
 		}
 		inputPayload.Value = &CPUDataRequest{
-			Tagnumber:     &inputPayload.Tagnumber,
+			Tagnumber:     tagnumber,
+			SystemSerial:  systemSerial,
 			MillidegreesC: &cpuTempMilliC,
 		}
 	case "memory_usage_kb":
@@ -264,7 +297,8 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 			return nil, fmt.Errorf("memory_usage_kb has to be greater than 0: %d", memoryUsageKB)
 		}
 		inputPayload.Value = &MemoryDataRequest{
-			Tagnumber:    &inputPayload.Tagnumber,
+			Tagnumber:    tagnumber,
+			SystemSerial: systemSerial,
 			TotalUsageKB: &memoryUsageKB,
 		}
 	case "memory_capacity_kb":
@@ -277,7 +311,8 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 			return nil, fmt.Errorf("memory_capacity_kb has to be greater than 0: %d", memoryCapacityKB)
 		}
 		inputPayload.Value = &MemoryDataRequest{
-			Tagnumber:       &inputPayload.Tagnumber,
+			Tagnumber:       tagnumber,
+			SystemSerial:    systemSerial,
 			TotalCapacityKB: &memoryCapacityKB,
 		}
 	case "client_lookup_by_serial":
@@ -291,7 +326,7 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 		query.Set("init", inputPayload.StringValue)
 		httpRequestConfig.URL.RawQuery = query.Encode()
 		inputPayload.Value = &ClientInitRequest{
-			Tagnumber:       &inputPayload.Tagnumber,
+			Tagnumber:       tagnumber,
 			SystemSerial:    &inputPayload.SystemSerial,
 			TransactionUUID: inputPayload.TransactionUUID,
 		}
@@ -300,11 +335,9 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 		query := httpRequestConfig.URL.Query()
 		query.Set("ethernet_mac", inputPayload.StringValue)
 		httpRequestConfig.URL.RawQuery = query.Encode()
-		if inputPayload.TransactionUUID == nil || strings.TrimSpace(*inputPayload.TransactionUUID) == "" {
-			return nil, fmt.Errorf("UUID is required for ethernet_mac key")
-		}
 		inputPayload.Value = &ClientHardwareView{
-			Tagnumber:       &inputPayload.Tagnumber,
+			Tagnumber:       tagnumber,
+			SystemSerial:    systemSerial,
 			TransactionUUID: *inputPayload.TransactionUUID,
 			EthernetMAC:     &inputPayload.StringValue,
 		}
@@ -317,13 +350,4 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 		Config:  httpRequestConfig,
 		Payload: inputPayload,
 	}, nil
-}
-
-func expectedMethodForKey(key string) (string, bool) {
-	switch key {
-	case "client_lookup_by_serial":
-		return "GET", true
-	default:
-		return "", false
-	}
 }

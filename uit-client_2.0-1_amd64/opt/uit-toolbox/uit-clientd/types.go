@@ -48,29 +48,33 @@ type HTTPRequestPayload struct {
 	Key             string  `json:"key"`
 	StringValue     string  `json:"string_value,omitempty"`
 	Value           any     `json:"value"`
-	TransactionUUID *string `json:"transaction_uuid,omitempty"`
+	TransactionUUID *string `json:"transaction_uuid"`
 }
 
 type CPUDataRequest struct {
-	Tagnumber     *int64   `json:"tagnumber"`
+	Tagnumber     *int64   `json:"tagnumber,omitempty"`
+	SystemSerial  *string  `json:"system_serial,omitempty"`
 	UsagePercent  *float64 `json:"cpu_current_usage"`
 	MHz           *float64 `json:"cpu_current_mhz"`
 	MillidegreesC *float64 `json:"cpu_millidegrees_c"`
 }
 
 type BatteryData struct {
-	Tagnumber int64    `json:"tagnumber"`
-	Percent   *float64 `json:"battery_charge_pcnt"`
+	Tagnumber    *int64   `json:"tagnumber,omitempty"`
+	SystemSerial *string  `json:"system_serial,omitempty"`
+	Percent      *float64 `json:"battery_charge_pcnt"`
 }
 
 type ClientUptime struct {
-	Tagnumber       int64  `json:"tagnumber"`
-	ClientAppUptime *int64 `json:"client_app_uptime"`
-	SystemUptime    *int64 `json:"system_uptime"`
+	Tagnumber       *int64  `json:"tagnumber,omitempty"`
+	SystemSerial    *string `json:"system_serial,omitempty"`
+	ClientAppUptime *int64  `json:"client_app_uptime"`
+	SystemUptime    *int64  `json:"system_uptime"`
 }
 
 type MemoryDataRequest struct {
-	Tagnumber       *int64  `json:"tagnumber"`
+	Tagnumber       *int64  `json:"tagnumber,omitempty"`
+	SystemSerial    *string `json:"system_serial,omitempty"`
 	TotalUsageKB    *int64  `json:"memory_usage_kb"`
 	TotalCapacityKB *int64  `json:"memory_capacity_kb"`
 	Type            *string `json:"type"`

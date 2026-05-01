@@ -22,7 +22,7 @@ type HTTPRequestPayload struct {
 	Key             string  `json:"key"`
 	StringValue     string  `json:"string_value,omitempty"`
 	Value           any     `json:"value"`
-	TransactionUUID *string `json:"transaction_uuid,omitempty"`
+	TransactionUUID *string `json:"transaction_uuid"`
 }
 
 const unixSocketPath = "/run/uit-client/uit-clientd.sock"
@@ -61,15 +61,24 @@ func expectedMethodForKey(key string) (string, bool) {
 	}
 }
 
+func isUUIDRequiredForKey(key string) bool {
+	switch key {
+	case "ethernet_mac":
+		return true
+	default:
+		return false
+	}
+}
+
 func main() {
-	tagnumber := flag.Int64("tag", 0, "Tag number of client (required)")
-	serial := flag.String("serial", "", "System serial number of client (optional, used for lookups)")
+	tagnumber := flag.Int64("tag", 0, "Tag number of client (optional, sent in addition to serial)")
+	serial := flag.String("serial", "", "System serial number of client (required)")
 	key := flag.String("key", "", "Key of request to send (required)")
 	value := flag.String("value", "", "Value of request to send (required)")
 	transactionUUID := flag.String("uuid", "", "Optional UUID of request/transaction")
 	methodGET := flag.Bool("get", false, "Use GET method for the request (default is POST)")
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: %s [-tag <tagnumber> | -serial <serial>] -key <key> -value <value> [-uuid <uuid>] [-get]\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s -serial <serial> -key <key> [-value <value>] [-tag <tagnumber>] [-uuid <uuid>] [-get]\n", os.Args[0])
 		flag.PrintDefaults()
 	}
 	flag.Parse()
@@ -109,18 +118,22 @@ func main() {
 	httpPayload.Tagnumber = *tagnumber
 	httpPayload.SystemSerial = *serial
 
-	if httpPayload.RequestType == "POST" {
-		if tagnumber == nil || *tagnumber <= 0 || *tagnumber > 999999 {
-			fmt.Fprintf(os.Stderr, "tag number is required and must be between 1 and 999999 for POST requests\n")
-			os.Exit(1)
-		}
-	} else if tagnumber != nil && *tagnumber != 0 && (*tagnumber < 0 || *tagnumber > 999999) {
+	if serial == nil || strings.TrimSpace(*serial) == "" {
+		fmt.Fprintf(os.Stderr, "serial is required\n")
+		os.Exit(1)
+	}
+
+	if tagnumber != nil && *tagnumber != 0 && (*tagnumber < 1 || *tagnumber > 999999) {
 		fmt.Fprintf(os.Stderr, "tag number must be between 1 and 999999 when provided\n")
 		os.Exit(1)
 	}
 
-	if *key != "init" && (value == nil || *value == "") {
+	if *key != "init" && *key != "client_lookup_by_serial" && (value == nil || strings.TrimSpace(*value) == "") {
 		fmt.Fprintf(os.Stderr, "value is required\n")
+		os.Exit(1)
+	}
+	if isUUIDRequiredForKey(*key) && (transactionUUID == nil || strings.TrimSpace(*transactionUUID) == "") {
+		fmt.Fprintf(os.Stderr, "uuid is required for key '%s'\n", *key)
 		os.Exit(1)
 	}
 
@@ -128,9 +141,16 @@ func main() {
 
 	// Value
 	httpPayload.StringValue = *value
+	if *key == "client_lookup_by_serial" && strings.TrimSpace(httpPayload.StringValue) == "" {
+		httpPayload.StringValue = httpPayload.SystemSerial
+	}
 
 	// Transaction UUID
-	httpPayload.TransactionUUID = transactionUUID
+	if transactionUUID != nil && *transactionUUID != "" {
+		httpPayload.TransactionUUID = transactionUUID
+	} else {
+		httpPayload.TransactionUUID = nil
+	}
 
 	conn, err := net.DialTimeout("unix", unixSocketPath, 5*time.Second)
 	if err != nil {
