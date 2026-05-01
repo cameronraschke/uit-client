@@ -439,7 +439,8 @@ function findIdentityInDB {
 	printf '\n'
 
 	tagNum=$(uit-cli --serial "${systemSerial}" --key "client_lookup_by_serial" --value "${systemSerial}" --get | jq -r '.tagnumber' 2>/dev/null)
-	if [[ $tagNum != "NULL" ]]; then
+
+	if [[ -n $tagNum ]]; then
 		UUID=""
 		UUID=$(cat /proc/sys/kernel/random/uuid)
 
@@ -455,7 +456,7 @@ function findIdentityInDB {
 
 		UUID=$(cat /proc/sys/kernel/random/uuid)
 
-		uit-cli --tag "${tagNum}" --key "init" --value "${systemSerial}" 2>/dev/null
+		tagNum=$(uit-cli --serial "${systemSerial}" --key "client_lookup_by_serial" --value "${systemSerial}" --get | jq -r '.tagnumber' 2>/dev/null)
 		printf "%s" "location|custom|${tagNum}|${systemSerial}|new entry|0|" | /opt/uit-toolbox/parse
 		findIdentityInDB
 	fi

@@ -3,7 +3,12 @@ systemSerial=$(dmidecode --string system-serial-number 2>/dev/null)
 if [[ -z $systemSerial ]]; then
 	systemSerial=$(cat /sys/class/dmi/id/product_serial)
 fi
-tagNum=$(printf "%s" "api_get|client_lookup|system_serial|${systemSerial}" | /opt/uit-toolbox/parse)
+tagNum=$(uit-cli --serial "${systemSerial}" --key "client_lookup_by_serial" --value "${systemSerial}" --get | jq -r '.tagnumber' 2>/dev/null)
+while [[ -z $tagNum ]]; do
+	echo "Unable to find tag number for system serial ${systemSerial}"
+	sleep 5
+	tagNum=$(uit-cli --serial "${systemSerial}" --key "client_lookup_by_serial" --value "${systemSerial}" --get | jq -r '.tagnumber' 2>/dev/null)
+done
 
 while true; do
 	fbgrab - > /tmp/screenshot.png
