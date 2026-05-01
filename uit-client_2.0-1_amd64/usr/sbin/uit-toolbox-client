@@ -175,27 +175,27 @@ function collectDiskData {
 
 		# Disk model
 		diskModel=$(cat /sys/class/block/${DISK}/device/model 2>/dev/null)
-		printf "%s" "api_post|${tagNum}|disk_model|${diskModel}|${UUID}" | /opt/uit-toolbox/parse
+		uit-cli --serial ${systemSerial} --key "disk_model" --value "${diskModel}" --uuid "${UUID}"
 
 		# Disk Serial
 		diskSerial=$(cat /sys/class/block/${DISK}/device/serial 2>/dev/null)
-		printf "%s" "api_post|${tagNum}|disk_serial|${diskSerial}|${UUID}" | /opt/uit-toolbox/parse
+		uit-cli --serial ${systemSerial} --key "disk_serial" --value "${diskSerial}" --uuid "${UUID}"
 
 		# Disk Size
 		diskSize=$(cat /sys/class/block/${DISK}/size 2>/dev/null)
-		printf "%s" "api_post|${tagNum}|disk_size_kb|${diskSize}|${UUID}" | /opt/uit-toolbox/parse
+		uit-cli --serial ${systemSerial} --key "disk_size_kb" --value "${diskSize}" --uuid "${UUID}"
 
 		# Disk Power On Hours
 		diskPowerOnHours=$(cat /root/smartctl-data | grep -iP 'Power( |_)On( |_)Hours' | sed 's/[^0-9]//g')
-		printf "%s" "api_post|${tagNum}|disk_power_on_hours|${diskPowerOnHours}|${UUID}" | /opt/uit-toolbox/parse
+		uit-cli --serial ${systemSerial} --key "disk_power_on_hours" --value "${diskPowerOnHours}" --uuid "${UUID}"
 
 		# Disk firmware
 		diskFirmware=$(cat /root/smartctl-data | grep '^Firmware Version: ' | sed 's/Firmware Version: *//g')
-		printf "%s" "api_post|${tagNum}|disk_firmware|${diskFirmware}|${UUID}" | /opt/uit-toolbox/parse
+		uit-cli --serial ${systemSerial} --key "disk_firmware" --value "${diskFirmware}" --uuid "${UUID}"
 
 		# Disk Power Cycles
 		diskPowerCycles=$(cat /root/smartctl-data | grep -iP 'Power( |_)Cycle' | sed 's/[^0-9]//g')
-		printf "%s" "api_post|${tagNum}|disk_power_cycles|${diskPowerCycles}|${UUID}" | /opt/uit-toolbox/parse
+		uit-cli --serial ${systemSerial} --key "disk_power_cycles" --value "${diskPowerCycles}" --uuid "${UUID}"
 
 		if [[ $DISK =~ $NVME_REGEX ]]; then
 			# Disk reads
@@ -220,16 +220,16 @@ function collectDiskData {
 		fi
 
 		# Disk reads
-		printf "%s" "api_post|${tagNum}|disk_reads_kb|${diskReads}|${UUID}" | /opt/uit-toolbox/parse
+		uit-cli --serial ${systemSerial} --key "disk_reads_kb" --value "${diskReads}" --uuid "${UUID}"
 
 		# Disk writes
-		printf "%s" "api_post|${tagNum}|disk_writes_kb|${diskWrites}|${UUID}" | /opt/uit-toolbox/parse
+		uit-cli --serial ${systemSerial} --key "disk_writes_kb" --value "${diskWrites}" --uuid "${UUID}"
 
 		# Disk type
-		printf "%s" "api_post|${tagNum}|disk_type|${diskType}|${UUID}" | /opt/uit-toolbox/parse
+		uit-cli --serial ${systemSerial} --key "disk_type" --value "${diskType}" --uuid "${UUID}"
 
 		# Disk error count
-		printf "%s" "api_post|${tagNum}|disk_errors|${diskErrorCount}|${UUID}" | /opt/uit-toolbox/parse
+		uit-cli --serial ${systemSerial} --key "disk_errors" --value "${diskErrorCount}" --uuid "${UUID}"
 	done
 }
 
@@ -357,7 +357,7 @@ fi
 	biosFirmwareRev=$(dmidecode --string firmware-revision 2>/dev/null)
 	uit-cli --serial "${systemSerial}" --key "bios_firmware" --value "${biosFirmwareRev}" --uuid "${UUID}"
 	systemSerial=$(dmidecode --string system-serial-number 2>/dev/null)
-	
+
 	###Disk Data
 	collectDiskData
 
@@ -385,27 +385,27 @@ fi
 					fi
 				batterySerial=$(cat /sys/class/power_supply/BAT1/serial_number 2>/dev/null | awk '{ print $1 }')
 			fi
-			printf "%s" "api_post|${tagNum}|battery_current_max_capacity|${batteryMaxCurrentCapacity}|${UUID}" | /opt/uit-toolbox/parse
-			printf "%s" "api_post|${tagNum}|battery_design_capacity|${batteryFactoryCapacity}|${UUID}" | /opt/uit-toolbox/parse
-			printf "%s" "api_post|${tagNum}|battery_charge_cycles|${batteryChargeCycles}|${UUID}" | /opt/uit-toolbox/parse
-			printf "%s" "api_post|${tagNum}|battery_model|${batteryModel}|${UUID}" | /opt/uit-toolbox/parse
-			printf "%s" "api_post|${tagNum}|battery_serial|${batterySerial}|${UUID}" | /opt/uit-toolbox/parse
-			printf "%s" "api_post|${tagNum}|battery_manufacturer|${batteryManufacturer}|${UUID}" | /opt/uit-toolbox/parse
-			printf "%s" "api_post|${tagNum}|battery_manufacture_date|${batteryManufactureDate}|${UUID}" | /opt/uit-toolbox/parse
+			uit-cli --serial "${systemSerial}" --key "battery_current_max_capacity" --value "${batteryMaxCurrentCapacity}" --uuid "${UUID}"
+			uit-cli --serial "${systemSerial}" --key "battery_design_capacity" --value "${batteryFactoryCapacity}" --uuid "${UUID}"
+			uit-cli --serial "${systemSerial}" --key "battery_charge_cycles" --value "${batteryChargeCycles}" --uuid "${UUID}"
+			uit-cli --serial "${systemSerial}" --key "battery_model" --value "${batteryModel}" --uuid "${UUID}"
+			uit-cli --serial "${systemSerial}" --key "battery_serial" --value "${batterySerial}" --uuid "${UUID}"
+			uit-cli --serial "${systemSerial}" --key "battery_manufacturer" --value "${batteryManufacturer}" --uuid "${UUID}"
+			uit-cli --serial "${systemSerial}" --key "battery_manufacture_date" --value "${batteryManufactureDate}" --uuid "${UUID}"
 		fi
 
 
 	###Memory Data
 	memorySerial=$(dmidecode --type memory | grep -P '\tSerial Number' | awk '{ print $3 }' | tr '\n' '-' | sed 's/-$//g')
-		printf "%s" "api_post|${tagNum}|memory_serial|${memorySerial}|${UUID}" | /opt/uit-toolbox/parse
+		uit-cli --serial "${systemSerial}" --key "memory_serial" --value "${memorySerial}" --uuid "${UUID}"
 	memoryCapacity=$(grep '^MemTotal' /proc/meminfo | awk '{ print $2 }')
-		/sbin/uit-cli --serial "${systemSerial}" --key "memory_capacity_kb" --value "${memoryCapacity}"
+		uit-cli --serial "${systemSerial}" --key "memory_capacity_kb" --value "${memoryCapacity}" --uuid "${UUID}"
 	memSpeed=$(dmidecode --type 17 2>/dev/null | grep '^[[:space:]]*Speed\:' | head -n1 | sed 's/[^0-9]//g')
-		printf "%s" "api_post|${tagNum}|memory_speed_mhz|${memSpeed}|${UUID}" | /opt/uit-toolbox/parse
+		uit-cli --serial "${systemSerial}" --key "memory_speed_mhz" --value "${memSpeed}" --uuid "${UUID}"
 
 	###Boot Times
-	bootTime=$(systemd-analyze | grep -oP '[0-9]+[0-9.]*' | head -n 1)
-		printf "%s" "general|boot_time|${bootTime}|${UUID}" | /opt/uit-toolbox/parse
+	# bootTime=$(systemd-analyze | grep -oP '[0-9]+[0-9.]*' | head -n 1)
+	# 	uit-cli --serial "${systemSerial}" --key "boot_time" --value "${bootTime}" --uuid "${UUID}"
 
 	###CPU Info
 	for i in $(find /sys/class/hwmon/ -mindepth 1); do
@@ -417,7 +417,7 @@ fi
 	done
 
 	tpmVersion=$(cat /sys/class/tpm/tpm0/tpm_version_major 2>/dev/null)
-	printf "%s" "api_post|${tagNum}|health_tpm_version|${tpmVersion}|${UUID}" | /opt/uit-toolbox/parse
+	uit-cli --serial "${systemSerial}" --key "tpm_version" --value "${tpmVersion}" --uuid "${UUID}"
 
 	printf "%s" "system-stats|cpu|${UUID}" | /opt/uit-toolbox/parse
 	printf "%s" "system-stats|network|${UUID}" | /opt/uit-toolbox/parse
@@ -455,7 +455,7 @@ function findIdentityInDB {
 
 		UUID=$(cat /proc/sys/kernel/random/uuid)
 
-		printf "%s" "init|${UUID}|${tagNum}|${systemSerial}|${etherAddr}|${wifiMac}|$(cat /sys/class/tpm/tpm0/tpm_version_major)" | /opt/uit-toolbox/parse
+		uit-cli --tag "${tagNum}" --key "init" --value "${systemSerial}" 2>/dev/null
 		printf "%s" "location|custom|${tagNum}|${systemSerial}|new entry|0|" | /opt/uit-toolbox/parse
 		findIdentityInDB
 	fi

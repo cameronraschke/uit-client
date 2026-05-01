@@ -10,9 +10,10 @@ import (
 	"io"
 	"net"
 	"os"
-	"slices"
 	"strings"
 	"time"
+
+	"uit-clientd/keypolicy"
 )
 
 type HTTPRequestPayload struct {
@@ -26,64 +27,6 @@ type HTTPRequestPayload struct {
 }
 
 const unixSocketPath = "/run/uit-client/uit-clientd.sock"
-
-var (
-	allowedKeys = []string{
-		"battery_charge_pcnt",
-		"bios_firmware",
-		"bios_release_date",
-		"bios_version",
-		"chassis_type",
-		"client_app_uptime",
-		"client_lookup_by_serial",
-		"cpu_core_count",
-		"cpu_thread_count",
-		"cpu_current_usage",
-		"cpu_current_mhz",
-		"cpu_manufacturer",
-		"cpu_max_speed_mhz",
-		"cpu_model",
-		"cpu_millidegrees_c",
-		"ethernet_mac",
-		"init",
-		"memory_capacity_kb",
-		"memory_usage_kb",
-		"motherboard_manufacturer",
-		"motherboard_serial",
-		"system_manufacturer",
-		"system_model",
-		"system_sku",
-		"system_uptime",
-		"system_uuid",
-		"tpm_version",
-		"wifi_mac",
-	}
-)
-
-func isKeyAllowed(key string) bool {
-	if slices.Contains(allowedKeys, key) {
-		return true
-	}
-	return false
-}
-
-func expectedMethodForKey(key string) (string, bool) {
-	switch key {
-	case "client_lookup_by_serial":
-		return "GET", true
-	default:
-		return "", false
-	}
-}
-
-func isUUIDRequiredForKey(key string) bool {
-	switch key {
-	case "ethernet_mac":
-		return true
-	default:
-		return false
-	}
-}
 
 func main() {
 	tagnumber := flag.Int64("tag", 0, "Tag number of client (optional, sent in addition to serial)")
@@ -119,14 +62,15 @@ func main() {
 		fmt.Fprintf(os.Stderr, "key is required\n")
 		os.Exit(1)
 	}
-	if !isKeyAllowed(*key) {
+	rule, ok := keypolicy.Lookup(*key)
+	if !ok {
 		fmt.Fprintf(os.Stderr, "key is not allowed\n")
-		fmt.Fprintf(os.Stderr, "allowed keys are: %v\n", allowedKeys)
+		fmt.Fprintf(os.Stderr, "allowed keys are: %v\n", keypolicy.AllowedKeys())
 		os.Exit(1)
 	}
 
-	if expectedMethod, constrained := expectedMethodForKey(*key); constrained && httpPayload.RequestType != expectedMethod {
-		fmt.Fprintf(os.Stderr, "key '%s' requires %s method\n", *key, expectedMethod)
+	if rule.Method != "" && httpPayload.RequestType != rule.Method {
+		fmt.Fprintf(os.Stderr, "key '%s' requires %s method\n", *key, rule.Method)
 		os.Exit(1)
 	}
 
@@ -147,7 +91,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "value is required\n")
 		os.Exit(1)
 	}
-	if isUUIDRequiredForKey(*key) && (transactionUUID == nil || strings.TrimSpace(*transactionUUID) == "") {
+	if rule.RequiresUUID && (transactionUUID == nil || strings.TrimSpace(*transactionUUID) == "") {
 		fmt.Fprintf(os.Stderr, "uuid is required for key '%s'\n", *key)
 		os.Exit(1)
 	}

@@ -13,27 +13,11 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"uit-clientd/keypolicy"
 )
 
 var sharedHTTPClient = newHTTPClient()
-
-func expectedMethodForKey(key string) (string, bool) {
-	switch key {
-	case "client_lookup_by_serial":
-		return "GET", true
-	default:
-		return "", false
-	}
-}
-
-func isUUIDRequiredForKey(key string) bool {
-	switch key {
-	case "ethernet_mac":
-		return true
-	default:
-		return false
-	}
-}
 
 func newHTTPClient() *http.Client {
 	tlsConfig := &tls.Config{
@@ -165,9 +149,13 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 	if method != "POST" && method != "GET" {
 		return nil, fmt.Errorf("unsupported request_type: %s", inputPayload.RequestType)
 	}
+	rule, ok := keypolicy.Lookup(inputPayload.Key)
+	if !ok {
+		return nil, fmt.Errorf("unsupported key: '%s'", inputPayload.Key)
+	}
 
-	if expectedMethod, constrained := expectedMethodForKey(inputPayload.Key); constrained && method != expectedMethod {
-		return nil, fmt.Errorf("key '%s' requires %s method", inputPayload.Key, expectedMethod)
+	if rule.Method != "" && method != rule.Method {
+		return nil, fmt.Errorf("key '%s' requires %s method", inputPayload.Key, rule.Method)
 	}
 	if strings.TrimSpace(inputPayload.SystemSerial) == "" {
 		return nil, fmt.Errorf("system_serial is required")
@@ -193,7 +181,7 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 	if inputPayload.TransactionUUID != nil && strings.TrimSpace(*inputPayload.TransactionUUID) == "" {
 		return nil, fmt.Errorf("UUID is empty")
 	}
-	if isUUIDRequiredForKey(inputPayload.Key) && (inputPayload.TransactionUUID == nil || strings.TrimSpace(*inputPayload.TransactionUUID) == "") {
+	if rule.RequiresUUID && (inputPayload.TransactionUUID == nil || strings.TrimSpace(*inputPayload.TransactionUUID) == "") {
 		return nil, fmt.Errorf("UUID is required for key '%s'", inputPayload.Key)
 	}
 
@@ -216,6 +204,83 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 			Tagnumber:    tagnumber,
 			SystemSerial: systemSerial,
 			Percent:      &batteryPcnt,
+		}
+	case "battery_charge_cycles":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
+		batteryChargeCycles, err := strconv.ParseInt(inputPayload.StringValue, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing battery_charge_cycles value: %w", err)
+		}
+		if batteryChargeCycles < 0 {
+			return nil, fmt.Errorf("battery_charge_cycles value cannot be negative: %d", batteryChargeCycles)
+		}
+		inputPayload.Value = &ClientHardwareView{
+			Tagnumber:           tagnumber,
+			SystemSerial:        systemSerial,
+			TransactionUUID:     *inputPayload.TransactionUUID,
+			BatteryChargeCycles: &batteryChargeCycles,
+		}
+	case "battery_current_max_capacity":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
+		batteryMaxCapacity, err := strconv.ParseFloat(inputPayload.StringValue, 64)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing battery_current_max_capacity value: %w", err)
+		}
+		if batteryMaxCapacity < 0 {
+			return nil, fmt.Errorf("battery_current_max_capacity value cannot be negative: %f", batteryMaxCapacity)
+		}
+		inputPayload.Value = &ClientHardwareView{
+			Tagnumber:                 tagnumber,
+			SystemSerial:              systemSerial,
+			TransactionUUID:           *inputPayload.TransactionUUID,
+			BatteryCurrentMaxCapacity: &batteryMaxCapacity,
+		}
+	case "battery_design_capacity":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
+		batteryDesignCapacity, err := strconv.ParseFloat(inputPayload.StringValue, 64)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing battery_design_capacity value: %w", err)
+		}
+		if batteryDesignCapacity < 0 {
+			return nil, fmt.Errorf("battery_design_capacity value cannot be negative: %f", batteryDesignCapacity)
+		}
+		inputPayload.Value = &ClientHardwareView{
+			Tagnumber:             tagnumber,
+			SystemSerial:          systemSerial,
+			TransactionUUID:       *inputPayload.TransactionUUID,
+			BatteryDesignCapacity: &batteryDesignCapacity,
+		}
+	case "battery_manufacture_date":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
+		inputPayload.Value = &ClientHardwareView{
+			Tagnumber:              tagnumber,
+			SystemSerial:           systemSerial,
+			TransactionUUID:        *inputPayload.TransactionUUID,
+			BatteryManufactureDate: &inputPayload.StringValue,
+		}
+	case "battery_manufacturer":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
+		inputPayload.Value = &ClientHardwareView{
+			Tagnumber:           tagnumber,
+			SystemSerial:        systemSerial,
+			TransactionUUID:     *inputPayload.TransactionUUID,
+			BatteryManufacturer: &inputPayload.StringValue,
+		}
+	case "battery_model":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
+		inputPayload.Value = &ClientHardwareView{
+			Tagnumber:       tagnumber,
+			SystemSerial:    systemSerial,
+			TransactionUUID: *inputPayload.TransactionUUID,
+			BatteryModel:    &inputPayload.StringValue,
+		}
+	case "battery_serial":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
+		inputPayload.Value = &ClientHardwareView{
+			Tagnumber:       tagnumber,
+			SystemSerial:    systemSerial,
+			TransactionUUID: *inputPayload.TransactionUUID,
+			BatterySerial:   &inputPayload.StringValue,
 		}
 	case "bios_firmware":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
@@ -371,11 +436,130 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 			SystemSerial:  systemSerial,
 			MillidegreesC: &cpuTempMilliC,
 		}
+	case "disk_errors":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/disk/errors"}
+		diskErrors, err := strconv.ParseInt(inputPayload.StringValue, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse disk_errors value: %w", err)
+		}
+		if diskErrors < 0 {
+			return nil, fmt.Errorf("disk_errors value cannot be negative: %d", diskErrors)
+		}
+		inputPayload.Value = &ClientHardwareView{
+			Tagnumber:       tagnumber,
+			SystemSerial:    systemSerial,
+			TransactionUUID: *inputPayload.TransactionUUID,
+			DiskErrors:      &diskErrors,
+		}
+	case "disk_firmware":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
+		inputPayload.Value = &ClientHardwareView{
+			Tagnumber:       tagnumber,
+			SystemSerial:    systemSerial,
+			TransactionUUID: *inputPayload.TransactionUUID,
+			DiskFirmware:    &inputPayload.StringValue,
+		}
+	case "disk_model":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
+		inputPayload.Value = &ClientHardwareView{
+			Tagnumber:       tagnumber,
+			SystemSerial:    systemSerial,
+			TransactionUUID: *inputPayload.TransactionUUID,
+			DiskModel:       &inputPayload.StringValue,
+		}
+	case "disk_power_cycles":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/disk/power_cycles"}
+		diskPowerCycles, err := strconv.ParseInt(inputPayload.StringValue, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse disk_power_cycles value: %w", err)
+		}
+		if diskPowerCycles < 0 {
+			return nil, fmt.Errorf("disk_power_cycles value cannot be negative: %d", diskPowerCycles)
+		}
+		inputPayload.Value = &ClientHardwareView{
+			Tagnumber:       tagnumber,
+			SystemSerial:    systemSerial,
+			TransactionUUID: *inputPayload.TransactionUUID,
+			DiskPowerCycles: &diskPowerCycles,
+		}
+	case "disk_power_on_hours":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/disk/power_on_hours"}
+		diskPowerOnHours, err := strconv.ParseInt(inputPayload.StringValue, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse disk_power_on_hours value: %w", err)
+		}
+		if diskPowerOnHours < 0 {
+			return nil, fmt.Errorf("disk_power_on_hours value cannot be negative: %d", diskPowerOnHours)
+		}
+		inputPayload.Value = &ClientHardwareView{
+			Tagnumber:        tagnumber,
+			SystemSerial:     systemSerial,
+			TransactionUUID:  *inputPayload.TransactionUUID,
+			DiskPowerOnHours: &diskPowerOnHours,
+		}
+	case "disk_reads_kb":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/disk/reads"}
+		diskReadsKB, err := strconv.ParseInt(inputPayload.StringValue, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse disk_reads_kb value: %w", err)
+		}
+		if diskReadsKB < 0 {
+			return nil, fmt.Errorf("disk_reads_kb value cannot be negative: %d", diskReadsKB)
+		}
+		inputPayload.Value = &ClientHardwareView{
+			Tagnumber:       tagnumber,
+			SystemSerial:    systemSerial,
+			TransactionUUID: *inputPayload.TransactionUUID,
+			DiskReadsKB:     &diskReadsKB,
+		}
+	case "disk_serial":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
+		inputPayload.Value = &ClientHardwareView{
+			Tagnumber:       tagnumber,
+			SystemSerial:    systemSerial,
+			TransactionUUID: *inputPayload.TransactionUUID,
+			DiskSerial:      &inputPayload.StringValue,
+		}
+	case "disk_size_kb":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
+		diskSizeKB, err := strconv.ParseInt(inputPayload.StringValue, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse disk_size_kb value: %w", err)
+		}
+		if diskSizeKB <= 0 {
+			return nil, fmt.Errorf("disk_size_kb value must be greater than 0: %d", diskSizeKB)
+		}
+		inputPayload.Value = &ClientHardwareView{
+			Tagnumber:       tagnumber,
+			SystemSerial:    systemSerial,
+			TransactionUUID: *inputPayload.TransactionUUID,
+			DiskSize:        &diskSizeKB,
+		}
+	case "disk_type":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
+		inputPayload.Value = &ClientHardwareView{
+			Tagnumber:       tagnumber,
+			SystemSerial:    systemSerial,
+			TransactionUUID: *inputPayload.TransactionUUID,
+			DiskType:        &inputPayload.StringValue,
+		}
+	case "disk_writes_kb":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
+		diskWritesKB, err := strconv.ParseInt(inputPayload.StringValue, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse disk_writes_kb value: %w", err)
+		}
+		if diskWritesKB < 0 {
+			return nil, fmt.Errorf("disk_writes_kb value cannot be negative: %d", diskWritesKB)
+		}
+		inputPayload.Value = &ClientHardwareView{
+			Tagnumber:       tagnumber,
+			SystemSerial:    systemSerial,
+			TransactionUUID: *inputPayload.TransactionUUID,
+			DiskWritesKB:    &diskWritesKB,
+		}
 	case "ethernet_mac":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
-		query := httpRequestConfig.URL.Query()
-		query.Set("ethernet_mac", inputPayload.StringValue)
-		httpRequestConfig.URL.RawQuery = query.Encode()
 		inputPayload.Value = &ClientHardwareView{
 			Tagnumber:       tagnumber,
 			SystemSerial:    systemSerial,
@@ -384,9 +568,6 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 		}
 	case "init":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/init"}
-		query := httpRequestConfig.URL.Query()
-		query.Set("init", inputPayload.StringValue)
-		httpRequestConfig.URL.RawQuery = query.Encode()
 		inputPayload.Value = &ClientInitRequest{
 			Tagnumber:       tagnumber,
 			SystemSerial:    &inputPayload.SystemSerial,
@@ -422,9 +603,6 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 		}
 	case "motherboard_manufacturer":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
-		query := httpRequestConfig.URL.Query()
-		query.Set("motherboard_manufacturer", inputPayload.StringValue)
-		httpRequestConfig.URL.RawQuery = query.Encode()
 		inputPayload.Value = &ClientHardwareView{
 			Tagnumber:               tagnumber,
 			SystemSerial:            systemSerial,
@@ -433,9 +611,6 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 		}
 	case "motherboard_serial":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
-		query := httpRequestConfig.URL.Query()
-		query.Set("motherboard_serial", inputPayload.StringValue)
-		httpRequestConfig.URL.RawQuery = query.Encode()
 		inputPayload.Value = &ClientHardwareView{
 			Tagnumber:         tagnumber,
 			SystemSerial:      systemSerial,
@@ -491,9 +666,6 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 		}
 	case "tpm_version":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
-		query := httpRequestConfig.URL.Query()
-		query.Set("tpm_version", inputPayload.StringValue)
-		httpRequestConfig.URL.RawQuery = query.Encode()
 		inputPayload.Value = &ClientHardwareView{
 			Tagnumber:       tagnumber,
 			SystemSerial:    systemSerial,
@@ -502,9 +674,6 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 		}
 	case "wifi_mac":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
-		query := httpRequestConfig.URL.Query()
-		query.Set("wifi_mac", inputPayload.StringValue)
-		httpRequestConfig.URL.RawQuery = query.Encode()
 		inputPayload.Value = &ClientHardwareView{
 			Tagnumber:       tagnumber,
 			SystemSerial:    systemSerial,
