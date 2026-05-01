@@ -9,7 +9,7 @@ while true; do
 		sleep 5
 		continue
 	fi
-	tagNum=$(printf "%s" "api_get|client_lookup|system_serial|${systemSerial}" | /opt/uit-toolbox/parse)
+	tagNum=$(uit-client --key "client_lookup_by_serial" --value "${systemSerial}" --get)
 	if [[ -z $tagNum ]]; then
 		sleep 5
 		continue

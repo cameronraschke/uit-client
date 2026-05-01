@@ -85,7 +85,7 @@ func sendHTTPRequest(data *HTTPRequest) ([]byte, error) {
 		if data.Payload == nil {
 			return nil, fmt.Errorf("payload cannot be nil")
 		}
-		if data.Payload.Value == nil {
+		if data.Payload.RequestType == "POST" && data.Payload.Value == nil {
 			return nil, fmt.Errorf("payload value cannot be nil")
 		}
 		jsonData, err := json.Marshal(data.Payload.Value)
@@ -130,165 +130,148 @@ func MapInputToPOSTRequest(input string) (*HTTPRequest, error) {
 		return nil, fmt.Errorf("input cannot be empty or whitespace")
 	}
 
-	inputArr := strings.Split(input, "|")
-	if len(inputArr) < 3 {
-		return nil, fmt.Errorf("input must have at least 3 parts separated by '|', got %d", len(inputArr))
+	inputPayload := new(HTTPRequestPayload)
+	if err := json.Unmarshal([]byte(input), inputPayload); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal input into HTTPRequestPayload: %w", err)
 	}
 
 	// Tag number
-	tagNumStr := strings.TrimSpace(inputArr[0])
-	if tagNumStr == "" {
-		return nil, fmt.Errorf("tag number cannot be empty")
-	}
-	tagNum, err := strconv.ParseInt(tagNumStr, 10, 64)
-	if err != nil {
-		return nil, fmt.Errorf("invalid tag number: %w", err)
+	if inputPayload.Tagnumber <= 0 || inputPayload.Tagnumber > 999999 {
+		return nil, fmt.Errorf("invalid tag number: %d", inputPayload.Tagnumber)
 	}
 	// Key
-	key := strings.TrimSpace(inputArr[1])
-	if key == "" {
+	if strings.TrimSpace(inputPayload.Key) == "" {
 		return nil, fmt.Errorf("key is empty")
 	}
 	// Value
-	value := strings.TrimSpace(inputArr[2])
-	if value == "" {
+	if strings.TrimSpace(inputPayload.StringValue) == "" {
 		return nil, fmt.Errorf("value is empty")
 	}
 	// UUID is optional, but if provided it cannot be empty
-	transactionUUID := strings.TrimSpace(inputArr[3])
-	if len(inputArr) == 4 && transactionUUID == "" {
+	if inputPayload.UUID != nil && strings.TrimSpace(*inputPayload.UUID) == "" {
 		return nil, fmt.Errorf("UUID is empty")
 	}
 
 	httpRequestConfig := new(HTTPRequestConfig)
-	httpRequestPayload := new(HTTPRequestPayload)
 
-	httpRequestPayload.Tagnumber = tagNum
-	httpRequestPayload.Key = key
-	httpRequestPayload.Value = value
-	if len(inputArr) == 4 && strings.TrimSpace(inputArr[3]) != "" {
-		httpRequestPayload.UUID = &transactionUUID
-	}
+	httpRequestConfig.Method = inputPayload.RequestType
 
-	httpRequestConfig.Method = "POST"
-
-	httpRequestPayload.Key = strings.TrimSpace(httpRequestPayload.Key)
-
-	switch httpRequestPayload.Key {
+	switch inputPayload.Key {
 	case "battery_charge_pcnt":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware/battery"}
-		batteryPcnt, err := strconv.ParseFloat(value, 64)
+		batteryPcnt, err := strconv.ParseFloat(inputPayload.StringValue, 64)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing battery_charge_pcnt value: %w", err)
 		}
 		if batteryPcnt < 0 || batteryPcnt > 110 {
 			return nil, fmt.Errorf("battery_charge_pcnt value out of range: %f", batteryPcnt)
 		}
-		httpRequestPayload.Value = &BatteryData{
-			Tagnumber: httpRequestPayload.Tagnumber,
+		inputPayload.Value = &BatteryData{
+			Tagnumber: inputPayload.Tagnumber,
 			Percent:   &batteryPcnt,
 		}
 	case "system_uptime":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/uptime"}
-		uptimeSeconds, err := strconv.ParseInt(value, 10, 64)
+		uptimeSeconds, err := strconv.ParseInt(inputPayload.StringValue, 10, 64)
 		if err != nil {
 			return nil, fmt.Errorf("unable to parse system_uptime value: %w", err)
 		}
 		if uptimeSeconds < 0 {
 			return nil, fmt.Errorf("system_uptime value cannot be negative: %d", uptimeSeconds)
 		}
-		httpRequestPayload.Value = &ClientUptime{
-			Tagnumber:    httpRequestPayload.Tagnumber,
+		inputPayload.Value = &ClientUptime{
+			Tagnumber:    inputPayload.Tagnumber,
 			SystemUptime: &uptimeSeconds,
 		}
 	case "client_app_uptime":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/uptime"}
-		uptimeSeconds, err := strconv.ParseInt(value, 10, 64)
+		uptimeSeconds, err := strconv.ParseInt(inputPayload.StringValue, 10, 64)
 		if err != nil {
 			return nil, fmt.Errorf("unable to parse client_app_uptime value: %w", err)
 		}
 		if uptimeSeconds < 0 {
 			return nil, fmt.Errorf("client_app_uptime value cannot be negative: %d", uptimeSeconds)
 		}
-		httpRequestPayload.Value = &ClientUptime{
-			Tagnumber:       httpRequestPayload.Tagnumber,
+		inputPayload.Value = &ClientUptime{
+			Tagnumber:       inputPayload.Tagnumber,
 			ClientAppUptime: &uptimeSeconds,
 		}
 	case "cpu_current_usage":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/cpu/usage"}
-		cpuUsage, err := strconv.ParseFloat(value, 64)
+		cpuUsage, err := strconv.ParseFloat(inputPayload.StringValue, 64)
 		if err != nil {
 			return nil, fmt.Errorf("unable to parse cpu_current_usage value: %w", err)
 		}
 		if cpuUsage < 0 || cpuUsage > 110 {
 			return nil, fmt.Errorf("cpu_current_usage value out of range: %f", cpuUsage)
 		}
-		httpRequestPayload.Value = &CPUDataRequest{
-			Tagnumber:    &httpRequestPayload.Tagnumber,
+		inputPayload.Value = &CPUDataRequest{
+			Tagnumber:    &inputPayload.Tagnumber,
 			UsagePercent: &cpuUsage,
 		}
 	case "cpu_current_mhz":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/cpu/mhz"}
-		cpuCurrentMHz, err := strconv.ParseFloat(value, 64)
+		cpuCurrentMHz, err := strconv.ParseFloat(inputPayload.StringValue, 64)
 		if err != nil {
 			return nil, fmt.Errorf("unable to parse cpu_current_mhz value: %w", err)
 		}
 		if cpuCurrentMHz <= 0 {
 			return nil, fmt.Errorf("cpu_current_mhz value must be greater than 0: %f", cpuCurrentMHz)
 		}
-		httpRequestPayload.Value = &CPUDataRequest{
-			Tagnumber: &httpRequestPayload.Tagnumber,
+		inputPayload.Value = &CPUDataRequest{
+			Tagnumber: &inputPayload.Tagnumber,
 			MHz:       &cpuCurrentMHz,
 		}
 	case "cpu_millidegrees_c":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/cpu/temp"}
-		cpuTempMilliC, err := strconv.ParseFloat(value, 64)
+		cpuTempMilliC, err := strconv.ParseFloat(inputPayload.StringValue, 64)
 		if err != nil {
 			return nil, fmt.Errorf("unable to parse cpu_millidegrees_c value: %w", err)
 		}
 		if cpuTempMilliC < 0 {
 			return nil, fmt.Errorf("cpu_millidegrees_c value cannot be negative: %f", cpuTempMilliC)
 		}
-		httpRequestPayload.Value = &CPUDataRequest{
-			Tagnumber:     &httpRequestPayload.Tagnumber,
+		inputPayload.Value = &CPUDataRequest{
+			Tagnumber:     &inputPayload.Tagnumber,
 			MillidegreesC: &cpuTempMilliC,
 		}
 	case "memory_usage_kb":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/memory/usage"}
-		memoryUsageKB, err := strconv.ParseInt(value, 10, 64)
+		memoryUsageKB, err := strconv.ParseInt(inputPayload.StringValue, 10, 64)
 		if err != nil {
 			return nil, fmt.Errorf("unable to parse memory_usage_kb value: %w", err)
 		}
 		if memoryUsageKB <= 0 {
 			return nil, fmt.Errorf("memory_usage_kb has to be greater than 0: %d", memoryUsageKB)
 		}
-		httpRequestPayload.Value = &MemoryDataRequest{
-			Tagnumber:    &httpRequestPayload.Tagnumber,
+		inputPayload.Value = &MemoryDataRequest{
+			Tagnumber:    &inputPayload.Tagnumber,
 			TotalUsageKB: &memoryUsageKB,
 		}
 	case "memory_capacity_kb":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/memory/capacity"}
-		memoryCapacityKB, err := strconv.ParseInt(value, 10, 64)
+		memoryCapacityKB, err := strconv.ParseInt(inputPayload.StringValue, 10, 64)
 		if err != nil {
 			return nil, fmt.Errorf("unable to parse memory_capacity_kb value: %w", err)
 		}
 		if memoryCapacityKB <= 0 {
 			return nil, fmt.Errorf("memory_capacity_kb has to be greater than 0: %d", memoryCapacityKB)
 		}
-		httpRequestPayload.Value = &MemoryDataRequest{
-			Tagnumber:       &httpRequestPayload.Tagnumber,
+		inputPayload.Value = &MemoryDataRequest{
+			Tagnumber:       &inputPayload.Tagnumber,
 			TotalCapacityKB: &memoryCapacityKB,
 		}
 	case "client_lookup_by_serial":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/lookup"}
-		httpRequestConfig.URL.Query().Set("serial", value)
-		httpRequestConfig.Method = "GET"
+		query := httpRequestConfig.URL.Query()
+		query.Set("serial", inputPayload.StringValue)
+		httpRequestConfig.URL.RawQuery = query.Encode()
 	default:
-		return nil, fmt.Errorf("unsupported key: '%s'", httpRequestPayload.Key)
+		return nil, fmt.Errorf("unsupported key: '%s'", inputPayload.Key)
 	}
 
 	return &HTTPRequest{
 		Config:  httpRequestConfig,
-		Payload: httpRequestPayload,
+		Payload: inputPayload,
 	}, nil
 }

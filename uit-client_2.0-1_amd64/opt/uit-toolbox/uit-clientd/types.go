@@ -42,11 +42,13 @@ type HTTPRequestConfig struct {
 }
 
 type HTTPRequestPayload struct {
-	Tagnumber    int64
-	SystemSerial string
-	Key          string
-	Value        any
-	UUID         *string
+	RequestType  string  `json:"request_type"`
+	Tagnumber    int64   `json:"tagnumber"`
+	SystemSerial string  `json:"system_serial"`
+	Key          string  `json:"key"`
+	StringValue  string  `json:"string_value,omitempty"`
+	Value        any     `json:"value"`
+	UUID         *string `json:"uuid,omitempty"`
 }
 
 type CPUDataRequest struct {
