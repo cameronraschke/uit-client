@@ -337,7 +337,7 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 			ClientAppUptime: &uptimeSeconds,
 		}
 	case "client_lookup_by_serial":
-		httpRequestConfig.URL = url.URL{Path: "/api/client/lookup"}
+		httpRequestConfig.URL = url.URL{Path: "/api/client/lookup_ids"}
 		query := httpRequestConfig.URL.Query()
 		query.Set("system_serial", inputPayload.StringValue)
 		httpRequestConfig.URL.RawQuery = query.Encode()
