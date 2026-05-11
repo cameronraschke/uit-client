@@ -167,12 +167,11 @@ function collectDiskData {
 		if [[ $(cat /sys/block/${i}/removable) == 1 ]]; then
 			continue
 		fi
-			if [[ -f /root/smartctl-data ]]; then
-				rm /root/smartctl-data
-			fi
-			smartctl -t short -a /dev/${i} > /root/smartctl-data
-			printf "%s" "general|disk|${i}|${UUID}" | /opt/uit-toolbox/parse
+		if [[ -f /root/smartctl-data ]]; then
+			rm /root/smartctl-data
 		fi
+		smartctl -t short -a /dev/${i} > /root/smartctl-data
+		printf "%s" "general|disk|${i}|${UUID}" | /opt/uit-toolbox/parse
 
 		# Disk model
 		diskModel=$(cat /sys/class/block/${i}/device/model 2>/dev/null)
