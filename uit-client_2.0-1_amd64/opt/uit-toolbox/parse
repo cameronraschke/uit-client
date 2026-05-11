@@ -149,21 +149,21 @@ if ($arr[0] == "hardware_data") {
 if ($arr[0] == "system-stats") {
 	$uuid = $arr[2];
 	if ($arr[1] == "cpu") {
-		$cpuSum = null;
-		$cpuLineCount = null;
+		$cpuSum = 0.0;
+		$cpuLineCount = 0;
 		$lines = file('/tmp/cpu-usage.txt');
 		foreach ($lines as $lineNum => $line) {
-			$cpuSum = $cpuSum + $line;
+			$cpuSum = $cpuSum + floatval($line);
 			$cpuLineCount = $cpuLineCount + 1;
 		}
 		$cpuAvg = $cpuSum / $cpuLineCount;
 		$dbPSQL->updateJob("avg_cpu_usage", $cpuAvg, $uuid);
 	} elseif ($arr[1] == "network") {
-		$netSum = null;
-		$netLineCount = null;
+		$netSum = 0.0;
+		$netLineCount = 0;
 		$lines = file('/tmp/network-usage.txt');
 		foreach ($lines as $lineNum => $line) {
-			$netSum = $netSum + $line;
+			$netSum = $netSum + floatval($line);
 			$netLineCount = $netLineCount + 1;
 		}
 		$netSum = $netSum / 1048576 * 8;
