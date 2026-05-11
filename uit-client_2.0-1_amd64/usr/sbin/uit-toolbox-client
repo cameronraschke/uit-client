@@ -197,8 +197,8 @@ function collectDiskData {
 		diskPowerCycles=$(cat /root/smartctl-data | grep -iP 'Power( |_)Cycle' | sed 's/[^0-9]//g')
 		uit-cli --serial ${systemSerial} --key "disk_power_cycles" --value "${diskPowerCycles}" --uuid "${UUID}"
 
-		if [[ $DISK =~ $NVME_REGEX ]]; then
-			DISK="$i"
+		DISK="$i"
+		if [[ $i =~ $NVME_REGEX ]]; then
 			# Disk reads
 			diskReads=$(echo "$(cat /root/smartctl-data | grep -i 'Data Units Read' | awk '{ print $4 }' | tr -d ',') * 512" | bc)
 			# Disk writes
@@ -208,17 +208,18 @@ function collectDiskData {
 			diskGenericErr=$(cat /root/smartctl-data | grep 'Error Information Log Entries:' | awk '{print $5}' | sed 's/,//g')
 			diskDataErr=$(cat /root/smartctl-data | grep 'Media and Data Integrity Errors:' | awk '{print $6}' | sed 's/,//g')
 			diskErrorCount=$(( diskGenericErr + diskDataErr ))
-		elif [[ $DISK =~ $SSD_REGEX ]]; then
-			DISK="$i"
+		elif [[ $i =~ $SSD_REGEX ]]; then
 			diskReads=$(echo "$(cat /root/smartctl-data | grep '242 Total_LBAs_Read' | awk '{print $10}') * 512" | bc)
 			diskWrites=$(echo "$(cat /root/smartctl-data | grep '242 Total_LBAs_Written' | awk '{print $10}') * 512" | bc)
-			diskType=$(lsblk --nodeps --output NAME,ROTA | grep -i "${DISK}"  | awk '{ print $2 }' | tail -n 1)
+			diskType=$(lsblk --nodeps --output NAME,ROTA | grep -i "${i}"  | awk '{ print $2 }' | tail -n 1)
 				if [[ $diskType == "1" ]]; then
 					diskType="hdd"
 					else
 					diskType="ssd"
 				fi
 			diskErrorCount=$(cat /root/smartctl-data | grep 'ATA Error Count:' | awk '{print $4}' | sed 's/,//g')
+		else 
+			diskType="unknown"
 		fi
 
 		# Disk reads
