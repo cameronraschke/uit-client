@@ -88,7 +88,7 @@ func main() {
 	}
 
 	if *key != "init" && *key != "client_lookup_by_serial" && (value == nil || strings.TrimSpace(*value) == "") {
-		fmt.Fprintf(os.Stderr, "value is required\n")
+		fmt.Fprintf(os.Stderr, "value is required for key '%s'\n", *key)
 		os.Exit(1)
 	}
 	if rule.RequiresUUID && (transactionUUID == nil || strings.TrimSpace(*transactionUUID) == "") {
