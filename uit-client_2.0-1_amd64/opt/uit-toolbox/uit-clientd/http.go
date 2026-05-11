@@ -596,6 +596,29 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 			TransactionUUID:  *inputPayload.TransactionUUID,
 			MemoryCapacityKB: &memoryCapacityKB,
 		}
+	case "memory_serial":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
+		inputPayload.Value = &ClientHardwareView{
+			Tagnumber:       tagnumber,
+			SystemSerial:    systemSerial,
+			TransactionUUID: *inputPayload.TransactionUUID,
+			MemorySerial:    &inputPayload.StringValue,
+		}
+	case "memory_speed_mhz":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
+		memorySpeedMHz, err := strconv.ParseInt(inputPayload.StringValue, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse memory_speed_mhz value: %w", err)
+		}
+		if memorySpeedMHz <= 0 {
+			return nil, fmt.Errorf("memory_speed_mhz has to be greater than 0: %d", memorySpeedMHz)
+		}
+		inputPayload.Value = &ClientHardwareView{
+			Tagnumber:       tagnumber,
+			SystemSerial:    systemSerial,
+			TransactionUUID: *inputPayload.TransactionUUID,
+			MemorySpeedMHz:  &memorySpeedMHz,
+		}
 	case "memory_usage_kb":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/memory/usage"}
 		memoryUsageKB, err := strconv.ParseInt(inputPayload.StringValue, 10, 64)
