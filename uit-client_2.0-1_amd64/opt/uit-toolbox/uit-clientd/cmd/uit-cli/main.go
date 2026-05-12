@@ -35,8 +35,9 @@ func main() {
 	value := flag.String("value", "", "Value of request to send (required)")
 	transactionUUID := flag.String("uuid", "", "Optional UUID of request/transaction")
 	methodGET := flag.Bool("get", false, "Use GET method for the request (default is POST)")
+	methodPOST := flag.Bool("post", false, "Use POST method for the request (default is POST)")
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: %s -serial <serial> -key <key> [-value <value>] [-tag <tagnumber>] [-uuid <uuid>] [-get]\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s -serial <serial> -key <key> [-value <value>] [-tag <tagnumber>] [-uuid <uuid>] [-get] [-post]\n", os.Args[0])
 		flag.PrintDefaults()
 	}
 	flag.Parse()
@@ -48,6 +49,11 @@ func main() {
 	}
 
 	httpPayload := new(HTTPRequestPayload)
+
+	if *methodGET && *methodPOST {
+		fmt.Fprintf(os.Stderr, "cannot specify both -get and -post\n")
+		os.Exit(1)
+	}
 
 	// Default POST if no method specified
 	httpPayload.RequestType = "POST"
