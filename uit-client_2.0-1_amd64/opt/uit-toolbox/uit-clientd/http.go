@@ -582,7 +582,7 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 			TransactionUUID: inputPayload.TransactionUUID,
 		}
 	case "memory_capacity_kb":
-		httpRequestConfig.URL = url.URL{Path: "/api/client/memory/capacity"}
+		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
 		memoryCapacityKB, err := strconv.ParseInt(inputPayload.StringValue, 10, 64)
 		if err != nil {
 			return nil, fmt.Errorf("unable to parse memory_capacity_kb value: %w", err)
