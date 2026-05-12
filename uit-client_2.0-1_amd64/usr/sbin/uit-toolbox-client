@@ -354,11 +354,11 @@ fi
 	uit-cli --serial "${systemSerial}" --key "motherboard_serial" --value "${motherboardSerial}" --uuid "${UUID}"
 
 	biosVersion=$(dmidecode --string bios-version 2>/dev/null)
-	uit-cli --serial "${systemSerial}" --key "bios_version" --value "${biosVersion}" --uuid "${UUID}"
+	uit-cli --serial "${systemSerial}" --tag "${tagNum}"  --uuid "${UUID}" --key "bios_version" --value "${biosVersion}"
 	biosDate=$(dmidecode --string bios-release-date 2>/dev/null)
-	uit-cli --serial "${systemSerial}" --key "bios_release_date" --value "${biosDate}" --uuid "${UUID}"
+	uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "bios_release_date" --value "${biosDate}"
 	biosFirmwareRev=$(dmidecode --string firmware-revision 2>/dev/null)
-	uit-cli --serial "${systemSerial}" --key "bios_firmware" --value "${biosFirmwareRev}" --uuid "${UUID}"
+	uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "bios_firmware" --value "${biosFirmwareRev}"
 	systemSerial=$(dmidecode --string system-serial-number 2>/dev/null)
 
 	###Disk Data
