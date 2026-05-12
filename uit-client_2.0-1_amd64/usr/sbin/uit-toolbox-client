@@ -171,31 +171,31 @@ function collectDiskData {
 			rm /root/smartctl-data
 		fi
 		smartctl -t short -a /dev/${i} > /root/smartctl-data
-		printf "%s" "general|disk|${i}|${UUID}" | /opt/uit-toolbox/parse
+		/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "disk_name" --value "${CLIENTDISK}" --post
 
 		# Disk model
 		diskModel=$(cat /sys/class/block/${i}/device/model 2>/dev/null)
-		uit-cli --serial ${systemSerial} --key "disk_model" --value "${diskModel}" --uuid "${UUID}"
+		uit-cli --serial "${systemSerial}" --key "disk_model" --value "${diskModel}" --uuid "${UUID}"
 
 		# Disk Serial
 		diskSerial=$(cat /sys/class/block/${i}/device/serial 2>/dev/null)
-		uit-cli --serial ${systemSerial} --key "disk_serial" --value "${diskSerial}" --uuid "${UUID}"
+		uit-cli --serial "${systemSerial}" --key "disk_serial" --value "${diskSerial}" --uuid "${UUID}"
 
 		# Disk Size
 		diskSize=$(cat /sys/class/block/${i}/size 2>/dev/null)
-		uit-cli --serial ${systemSerial} --key "disk_size_kb" --value "${diskSize}" --uuid "${UUID}"
+		uit-cli --serial "${systemSerial}" --key "disk_size_kb" --value "${diskSize}" --uuid "${UUID}"
 
 		# Disk Power On Hours
 		diskPowerOnHours=$(cat /root/smartctl-data | grep -iP 'Power( |_)On( |_)Hours' | sed 's/[^0-9]//g')
-		uit-cli --serial ${systemSerial} --key "disk_power_on_hours" --value "${diskPowerOnHours}" --uuid "${UUID}"
+		uit-cli --serial "${systemSerial}" --key "disk_power_on_hours" --value "${diskPowerOnHours}" --uuid "${UUID}"
 
 		# Disk firmware
 		diskFirmware=$(cat /root/smartctl-data | grep '^Firmware Version: ' | sed 's/Firmware Version: *//g')
-		uit-cli --serial ${systemSerial} --key "disk_firmware" --value "${diskFirmware}" --uuid "${UUID}"
+		uit-cli --serial "${systemSerial}" --key "disk_firmware" --value "${diskFirmware}" --uuid "${UUID}"
 
 		# Disk Power Cycles
 		diskPowerCycles=$(cat /root/smartctl-data | grep -iP 'Power( |_)Cycle' | sed 's/[^0-9]//g')
-		uit-cli --serial ${systemSerial} --key "disk_power_cycles" --value "${diskPowerCycles}" --uuid "${UUID}"
+		uit-cli --serial "${systemSerial}" --key "disk_power_cycles" --value "${diskPowerCycles}" --uuid "${UUID}"
 
 		DISK="$i"
 		if [[ $i =~ $NVME_REGEX ]]; then
@@ -223,16 +223,16 @@ function collectDiskData {
 		fi
 
 		# Disk reads
-		uit-cli --serial ${systemSerial} --key "disk_reads_kb" --value "${diskReads}" --uuid "${UUID}"
+		uit-cli --serial "${systemSerial}" --key "disk_reads_kb" --value "${diskReads}" --uuid "${UUID}"
 
 		# Disk writes
-		uit-cli --serial ${systemSerial} --key "disk_writes_kb" --value "${diskWrites}" --uuid "${UUID}"
+		uit-cli --serial "${systemSerial}" --key "disk_writes_kb" --value "${diskWrites}" --uuid "${UUID}"
 
 		# Disk type
-		uit-cli --serial ${systemSerial} --key "disk_type" --value "${diskType}" --uuid "${UUID}"
+		uit-cli --serial "${systemSerial}" --key "disk_type" --value "${diskType}" --uuid "${UUID}"
 
 		# Disk error count
-		uit-cli --serial ${systemSerial} --key "disk_errors" --value "${diskErrorCount}" --uuid "${UUID}"
+		uit-cli --serial "${systemSerial}" --key "disk_errors" --value "${diskErrorCount}" --uuid "${UUID}"
 	done
 }
 
@@ -402,7 +402,7 @@ fi
 	memorySerial=$(dmidecode --type memory | grep -P '\tSerial Number' | awk '{ print $3 }' | tr '\n' '-' | sed 's/-$//g')
 		uit-cli --serial "${systemSerial}" --key "memory_serial" --value "${memorySerial}" --uuid "${UUID}"
 	memoryCapacity=$(grep '^MemTotal' /proc/meminfo | awk '{ print $2 }')
-		uit-cli --tag ${tagNum} --serial "${systemSerial}" --key "memory_capacity_kb" --value "${memoryCapacity}" --uuid "${UUID}"
+		uit-cli --tag "${tagNum}" --serial "${systemSerial}" --key "memory_capacity_kb" --value "${memoryCapacity}" --uuid "${UUID}"
 	memSpeed=$(dmidecode --type 17 2>/dev/null | grep '^[[:space:]]*Speed\:' | head -n1 | sed 's/[^0-9]//g')
 		uit-cli --serial "${systemSerial}" --key "memory_speed_mhz" --value "${memSpeed}" --uuid "${UUID}"
 
@@ -786,7 +786,7 @@ function diskSelect {
 	fi
 	
 	if [[ $CLIENTDISK =~ ${NVME_REGEX} || $CLIENTDISK =~ ${SSD_REGEX} ]]; then
-		printf "%s" "general|disk|${CLIENTDISK}|${UUID}" | /opt/uit-toolbox/parse
+		/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "disk_name" --value "${CLIENTDISK}" --post
 	else
 	    printf '\n'
 	    printf '%s\n' "${BOLD}${RED}Invalid disk regex check.${RESET}"
@@ -1462,7 +1462,7 @@ function clientselect_Clone {
 
 
 function execute_Clone {
-	printf "%s" "general|clone_image|${cloneImgName}|${UUID}" | /opt/uit-toolbox/parse
+	/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "clone_image_name" --value "${cloneImgName}" --post
 	printf "%s" "job_queue|${tagNum}|job_status|Cloning ${cloneImgName} -> ${CLIENTDISK} ($cloneMode)" | /opt/uit-toolbox/parse
 	resetUsageData
 	start_time=$SECONDS
@@ -1485,7 +1485,7 @@ function execute_Clone {
 			--skip-enc-ocs-img --skip-fsck-src-part --use-partclone -z8 ${cloneMode} ${cloneImgName} ${CLIENTDISK}
 	fi
 	cloneElapsed=$(( SECONDS - start_time))
-	printf "%s" "general|clone_time|${cloneElapsed}|${UUID}" | /opt/uit-toolbox/parse
+	/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key clone_job_duration --value ${cloneElapsed} --post
 	umount /home/partimag 2>/dev/null
 	return
 }
@@ -1527,7 +1527,7 @@ function execute_Shred {
 			unlockMode_Shred
 		fi
 		shredElapsed=$(( SECONDS - start_time ))
-		printf "%s" "general|erase_time|${shredElapsed}|${UUID}" | /opt/uit-toolbox/parse
+		/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key erase_job_duration --value ${shredElapsed} --post
 	fi
 	return
 }
@@ -1536,6 +1536,7 @@ function execute_Shred {
 
 function execute {
 	resetUsageData
+	/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key job_start_time --value $(date --iso-8601=seconds) --post
 	printf "%s" "job_queue|${tagNum}|job_queued|TRUE" | /opt/uit-toolbox/parse
 	printf "%s" "job_queue|${tagNum}|job_active|TRUE" | /opt/uit-toolbox/parse
 
@@ -1553,8 +1554,8 @@ function execute {
 			printf "%s" "job_queue|${tagNum}|job_name|generic-erase+clone" | /opt/uit-toolbox/parse
 		fi
 		basicEraseMode_Shred
-		printf "%s" "job_queue|${tagNum}|clone_mode|$cloneMode" | /opt/uit-toolbox/parse
-		printf "%s" "job_queue|${tagNum}|erase_mode|$shredMode" | /opt/uit-toolbox/parse
+		/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key clone_mode --value "${cloneMode}" --post
+		/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "erase_mode" --value "${shredMode}" --post
 
 		start_shred=$SECONDS
 		execute_Shred
@@ -1575,7 +1576,7 @@ function execute {
 		if [[ $jobName != "nvmeErase" ]]; then
 			printf "%s" "job_queue|${tagNum}|job_name|generic-erase" | /opt/uit-toolbox/parse
 		fi
-		printf "%s" "job_queue|${tagNum}|erase_mode|$shredMode" | /opt/uit-toolbox/parse
+		/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "erase_mode" --value "${shredMode}" --post
 		start_shred=$SECONDS
 		execute_Shred
 		shredJobDuration=$((SECONDS - start_shred))
@@ -1587,7 +1588,7 @@ function execute {
 		if [[ $jobName != "hpCloneOnly" ]]; then
 			printf "%s" "job_queue|${tagNum}|job_name|generic-clone" | /opt/uit-toolbox/parse
 		fi
-		printf "%s" "job_queue|${tagNum}|clone_mode|$cloneMode" | /opt/uit-toolbox/parse
+		/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "clone_mode" --value "${cloneMode}" --post
 		start_clone=$SECONDS
 		execute_Clone
 		cloneJobDuration=$((SECONDS - start_clone))
@@ -1655,7 +1656,7 @@ function terminate {
 			printf "%s" "api_post|${tagNum}|health_clone_completed|1|${UUID}" | /opt/uit-toolbox/parse
 
 			if [[ $APPSELECT == "EC" ]]; then
-				printf "%s" "general|erase_completed|1|${UUID}" | /opt/uit-toolbox/parse
+				/sbin/uit-cli --tag "${tagNum}" --serial "${systemSerial}" --uuid "${UUID}" --key "erase_completed" --value "TRUE" --post
 				printf "%s" "api_post|${tagNum}|health_erase_completed|1|${UUID}" | /opt/uit-toolbox/parse
 			fi
 
@@ -1669,8 +1670,8 @@ function terminate {
 			)
 		fi
 		if [[ $cloneMode == "savedisk" ]]; then
-			printf "%s" "general|clone_master|1|${UUID}" | /opt/uit-toolbox/parse
-			/sbin/uit-cli --tag "${tagNum}" --serial "${systemSerial}" --uuid "${UUID}" --key clone_completed --value "TRUE" --post
+			/sbin/uit-cli --tag "${tagNum}" --serial "${systemSerial}" --uuid "${UUID}" --key "clone_master" --value "TRUE" --post
+			/sbin/uit-cli --tag "${tagNum}" --serial "${systemSerial}" --uuid "${UUID}" --key "clone_completed" --value "TRUE" --post
 			printf "%s" "api_post|${tagNum}|health_clone_completed|1|${UUID}" | /opt/uit-toolbox/parse
 
 			terminateMessage=$(printf '%s\n' "Tag#: ${tagNum}"
@@ -1686,7 +1687,7 @@ function terminate {
 	
 
 	if [[ $APPSELECT == "E" ]]; then
-		printf "%s" "general|erase_completed|1|${UUID}" | /opt/uit-toolbox/parse
+				/sbin/uit-cli --tag "${tagNum}" --serial "${systemSerial}" --uuid "${UUID}" --key "erase_completed" --value "TRUE" --post
 		printf "%s" "api_post|${tagNum}|health_erase_completed|1|${UUID}" | /opt/uit-toolbox/parse
 
 		terminateAction="erased"
@@ -1838,11 +1839,11 @@ function autodetectClient {
 					printf "%s" "job_queue|${tagNum}|job_status|fail - Disk doesn't exist" | /opt/uit-toolbox/parse
 					autodetectClient
 				fi
-					printf "%s" "general|disk|${CLIENTDISK}|${UUID}" | /opt/uit-toolbox/parse
+				/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "disk_name" --value "${CLIENTDISK}" --post
 				cloneMode="restoredisk"
 				shredMode="autodetect"
 				RMODE="Autodetect"
-					printf "%s" "general|erase_mode|${RMODE}|${UUID}" | /opt/uit-toolbox/parse
+				/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "erase_mode" --value "${RMODE}" --post
 				linuxServer="UIT_CLIENT_DB_HOST"
 				linuxDNS="UIT_SERVER_HOSTNAME"
 				footer
@@ -1853,7 +1854,7 @@ function autodetectClient {
 				totaltime
 				/sbin/uit-cli --tag "${tagNum}" --serial "${systemSerial}" --uuid "${UUID}" --key clone_completed --value "TRUE" --post
 				printf "%s" "api_post|${tagNum}|health_clone_completed|1|${UUID}" | /opt/uit-toolbox/parse
-				printf "%s" "general|erase_completed|1|${UUID}" | /opt/uit-toolbox/parse
+				/sbin/uit-cli --tag "${tagNum}" --serial "${systemSerial}" --uuid "${UUID}" --key erase_completed --value "TRUE" --post
 				printf "%s" "api_post|${tagNum}|health_erase_completed|1|${UUID}" | /opt/uit-toolbox/parse
 				printf "%s" "system-stats|cpu|${UUID}" | /opt/uit-toolbox/parse
 				printf "%s" "system-stats|network|${UUID}" | /opt/uit-toolbox/parse
@@ -1870,7 +1871,7 @@ function autodetectClient {
 					printf "%s" "job_queue|${tagNum}|job_status|fail - disk doesn't exist" | /opt/uit-toolbox/parse
 					autodetectClient
 				fi
-					printf "%s" "general|disk|${CLIENTDISK}|${UUID}" | /opt/uit-toolbox/parse
+				/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "disk_name" --value "${CLIENTDISK}" --post
 				cloneMode="restoredisk"
 				linuxServer="UIT_CLIENT_DB_HOST"
 				linuxDNS="UIT_SERVER_HOSTNAME"
@@ -1894,7 +1895,7 @@ function autodetectClient {
 					printf "%s" "job_queue|${tagNum}|job_status|fail - disk doesn't exist" | /opt/uit-toolbox/parse
 					autodetectClient
 				fi
-					printf "%s" "general|disk|${CLIENTDISK}|${UUID}" | /opt/uit-toolbox/parse
+				/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "disk_name" --value "${CLIENTDISK}" --post
 				printf "%s" "job_queue|${tagNum}|job_status|Starting NVME Erase job (${CLIENTDISK})" | /opt/uit-toolbox/parse
 				vrfySections="1000"
 				writeSections="1000"
@@ -1904,14 +1905,14 @@ function autodetectClient {
 				ACTION="erase"
 				shredMode="autodetect"
 				RMODE="Autodetect"
-					printf "%s" "general|erase_mode|${RMODE}|${UUID}" | /opt/uit-toolbox/parse
+				/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "erase_mode" --value "${RMODE}" --post
 				footer
 				rtcwake --mode mem --seconds 3
 				checkNetwork
 				footer
 				execute
 				totaltime
-				printf "%s" "general|erase_completed|1|${UUID}" | /opt/uit-toolbox/parse
+				/sbin/uit-cli --tag "${tagNum}" --serial "${systemSerial}" --uuid "${UUID}" --key erase_completed --value "TRUE" --post
 				printf "%s" "api_post|${tagNum}|health_erase_completed|1|${UUID}" | /opt/uit-toolbox/parse
 				printf "%s" "system-stats|cpu|${UUID}" | /opt/uit-toolbox/parse
 				printf "%s" "system-stats|network|${UUID}" | /opt/uit-toolbox/parse
@@ -1932,17 +1933,17 @@ function autodetectClient {
 					printf "%s" "job_queue|${tagNum}|job_status|fail - disk doesn't exist" | /opt/uit-toolbox/parse
 					autodetectClient
 				fi
-					printf "%s" "general|disk|${CLIENTDISK}|${UUID}" | /opt/uit-toolbox/parse
+				/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "disk_name" --value "${CLIENTDISK}" --post
 				shredMode="verify"
 				RMODE="Verify Mode"
-					printf "%s" "general|erase_mode|${RMODE}|${UUID}" | /opt/uit-toolbox/parse
+				/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "erase_mode" --value "${RMODE}" --post
 				footer
 				rtcwake --mode mem --seconds 3
 				checkNetwork
 				footer
 				execute
 				totaltime
-				printf "%s" "general|erase_completed|1|${UUID}" | /opt/uit-toolbox/parse
+				/sbin/uit-cli --tag "${tagNum}" --serial "${systemSerial}" --uuid "${UUID}" --key "erase_completed" --value "TRUE" --post
 				printf "%s" "api_post|${tagNum}|health_erase_completed|1|${UUID}" | /opt/uit-toolbox/parse
 				printf "%s" "system-stats|cpu|${UUID}" | /opt/uit-toolbox/parse
 				printf "%s" "system-stats|network|${UUID}" | /opt/uit-toolbox/parse
@@ -2027,12 +2028,14 @@ function main {
 		else
 			diskSelect
 		fi
-			printf "%s" "general|disk|${CLIENTDISK}|${UUID}" | /opt/uit-toolbox/parse
+		
+		/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "disk_name" --value "${CLIENTDISK}" --post
+
 		cloneMode="restoredisk"
 		cloneImgName="TechCommons-HP-LaptopsLZ4"
 		shredMode="autodetect"
 		RMODE="autodetect"
-			printf "%s" "general|erase_mode|${RMODE}|${UUID}" | /opt/uit-toolbox/parse
+		/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "erase_mode" --value "${RMODE}" --post
 		linuxServer="UIT_CLIENT_DB_HOST"
 		linuxDNS="UIT_SERVER_HOSTNAME"
 		powerWarning
@@ -2045,12 +2048,13 @@ function main {
 		else
 			diskSelect
 		fi
-			printf "%s" "general|disk|${CLIENTDISK}|${UUID}" | /opt/uit-toolbox/parse
+			
+		/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "disk_name" --value "${CLIENTDISK}" --post
 		cloneMode="restoredisk"
 		cloneImgName="TechCommons-Dell-Laptops"
 		shredMode="autodetect"
 		RMODE="autodetect"
-			printf "%s" "general|erase_mode|${RMODE}|${UUID}" | /opt/uit-toolbox/parse
+		/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "erase_mode" --value "${RMODE}" --post
 		linuxServer="UIT_CLIENT_DB_HOST"
 		linuxDNS="UIT_SERVER_HOSTNAME"
 		powerWarning
@@ -2059,10 +2063,11 @@ function main {
 		APPSELECT="E"
 		ACTION="erase"
 		diskSelect
-			printf "%s" "general|disk|${CLIENTDISK}|${UUID}" | /opt/uit-toolbox/parse
+			
+		/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "disk_name" --value "${CLIENTDISK}" --post
 		shredMode="autodetect"
 		RMODE="autodetect"
-			printf "%s" "general|erase_mode|${RMODE}|${UUID}" | /opt/uit-toolbox/parse
+		/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "erase_mode" --value "${RMODE}" --post
 		powerWarning
 		execute
 	elif [[ $mainMenuOpt == "9" ]]; then

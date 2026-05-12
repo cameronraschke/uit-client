@@ -136,9 +136,9 @@ while true; do
 		echo "job_queue|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
 		echo "job_queue|${tagNum}|status|fail - Job cancelled :(" | /opt/uit-toolbox/parse
 		UUID=$(printf '%s' "SELECT uuid AS result FROM jobstats WHERE tagnumber = '${tagNum}' AND host_connected = TRUE ORDER BY time DESC LIMIT 1" | /opt/uit-toolbox/select)
-		echo "general|erase_completed||${UUID}" | /opt/uit-toolbox/parse
+		/sbin/uit-cli --tag "${tagNum}" --serial --uuid "${UUID}" "${systemSerial}" --key erase_completed --value "FALSE" --post
 		/sbin/uit-cli --tag "${tagNum}" --serial --uuid "${UUID}" "${systemSerial}" --key clone_completed --value "FALSE" --post
-		echo "general|job_cancelled|TRUE|${UUID}" | /opt/uit-toolbox/parse
+		/sbin/uit-cli --tag "${tagNum}" --serial --uuid "${UUID}" "${systemSerial}" --key job_cancelled --value "TRUE" --post
 		pkill --terminal tty1
 	fi
 
