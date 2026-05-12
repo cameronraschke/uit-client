@@ -1651,7 +1651,7 @@ function terminate {
 				terminateAction="Cloned"
 			fi
 
-			printf "%s" "general|clone_completed|1|${UUID}" | /opt/uit-toolbox/parse
+			/sbin/uit-cli --tag "${tagNum}" --serial "${systemSerial}" --uuid "${UUID}" --key clone_completed --value "TRUE" --post
 			printf "%s" "api_post|${tagNum}|health_clone_completed|1|${UUID}" | /opt/uit-toolbox/parse
 
 			if [[ $APPSELECT == "EC" ]]; then
@@ -1670,7 +1670,7 @@ function terminate {
 		fi
 		if [[ $cloneMode == "savedisk" ]]; then
 			printf "%s" "general|clone_master|1|${UUID}" | /opt/uit-toolbox/parse
-			printf "%s" "general|clone_completed|1|${UUID}" | /opt/uit-toolbox/parse
+			/sbin/uit-cli --tag "${tagNum}" --serial "${systemSerial}" --uuid "${UUID}" --key clone_completed --value "TRUE" --post
 			printf "%s" "api_post|${tagNum}|health_clone_completed|1|${UUID}" | /opt/uit-toolbox/parse
 
 			terminateMessage=$(printf '%s\n' "Tag#: ${tagNum}"
@@ -1851,8 +1851,8 @@ function autodetectClient {
 				footer
 				execute
 				totaltime
-				printf "%s" "general|clone_completed|1|${UUID}" | /opt/uit-toolbox/parse
-			printf "%s" "api_post|${tagNum}|health_clone_completed|1|${UUID}" | /opt/uit-toolbox/parse
+				/sbin/uit-cli --tag "${tagNum}" --serial "${systemSerial}" --uuid "${UUID}" --key clone_completed --value "TRUE" --post
+				printf "%s" "api_post|${tagNum}|health_clone_completed|1|${UUID}" | /opt/uit-toolbox/parse
 				printf "%s" "general|erase_completed|1|${UUID}" | /opt/uit-toolbox/parse
 				printf "%s" "api_post|${tagNum}|health_erase_completed|1|${UUID}" | /opt/uit-toolbox/parse
 				printf "%s" "system-stats|cpu|${UUID}" | /opt/uit-toolbox/parse
@@ -1880,7 +1880,7 @@ function autodetectClient {
 				footer
 				execute
 				totaltime
-				printf "%s" "general|clone_completed|1|${UUID}" | /opt/uit-toolbox/parse
+				/sbin/uit-cli --tag "${tagNum}" --serial "${systemSerial}" --uuid "${UUID}" --key clone_completed --value "TRUE" --post
 				printf "%s" "api_post|${tagNum}|health_clone_completed|1|${UUID}" | /opt/uit-toolbox/parse
 				printf "%s" "system-stats|cpu|${UUID}" | /opt/uit-toolbox/parse
 				printf "%s" "system-stats|network|${UUID}" | /opt/uit-toolbox/parse

@@ -4,6 +4,7 @@ package main
 
 import (
 	"net/url"
+	"time"
 )
 
 type ClientConfig struct {
@@ -124,4 +125,21 @@ type ClientHardwareView struct {
 	MemorySerial              *string  `json:"memory_serial,omitempty"`
 	MemoryCapacityKB          *int64   `json:"memory_capacity_kb,omitempty"`
 	MemorySpeedMHz            *int64   `json:"memory_speed_mhz,omitempty"`
+}
+
+type UpdateJobStatsRequest struct {
+	TransactionUUID string     `json:"transaction_uuid"`
+	Tagnumber       *int64     `json:"tagnumber"`
+	SystemSerial    *string    `json:"system_serial"`
+	JobStartTime    *time.Time `json:"job_start_time"`
+	DiskName        *string    `json:"disk_name"`
+	JobCancelled    *bool      `json:"job_cancelled"`
+	EraseCompleted  *bool      `json:"erase_completed"`
+	EraseMode       *string    `json:"erase_mode"`
+	EraseDiskPcnt   *int64     `json:"erase_disk_pcnt"`
+	EraseDuration   *int64     `json:"erase_job_duration"`
+	CloneCompleted  *bool      `json:"clone_completed"`
+	CloneMaster     *string    `json:"clone_master"`
+	CloneImageName  *string    `json:"clone_image_name"`
+	CloneDuration   *int64     `json:"clone_job_duration"`
 }

@@ -356,6 +356,49 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 			TransactionUUID: *inputPayload.TransactionUUID,
 			CPUCoreCount:    &cpuCoreCount,
 		}
+	case "clone_completed":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/job_stats"}
+		cloneCompleted, err := strconv.ParseBool(inputPayload.StringValue)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse clone_completed value: %w", err)
+		}
+		inputPayload.Value = &UpdateJobStatsRequest{
+			Tagnumber:       tagnumber,
+			SystemSerial:    systemSerial,
+			TransactionUUID: *inputPayload.TransactionUUID,
+			CloneCompleted:  &cloneCompleted,
+		}
+	case "clone_image_name":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/job_stats"}
+		inputPayload.Value = &UpdateJobStatsRequest{
+			Tagnumber:       tagnumber,
+			SystemSerial:    systemSerial,
+			TransactionUUID: *inputPayload.TransactionUUID,
+			CloneImageName:  &inputPayload.StringValue,
+		}
+	case "clone_job_duration":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/job_stats"}
+		cloneJobDurationSeconds, err := strconv.ParseInt(inputPayload.StringValue, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse clone_job_duration value: %w", err)
+		}
+		if cloneJobDurationSeconds < 0 {
+			return nil, fmt.Errorf("clone_job_duration value cannot be negative: %d", cloneJobDurationSeconds)
+		}
+		inputPayload.Value = &UpdateJobStatsRequest{
+			Tagnumber:       tagnumber,
+			SystemSerial:    systemSerial,
+			TransactionUUID: *inputPayload.TransactionUUID,
+			CloneDuration:   &cloneJobDurationSeconds,
+		}
+	case "clone_master":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/job_stats"}
+		inputPayload.Value = &UpdateJobStatsRequest{
+			Tagnumber:       tagnumber,
+			SystemSerial:    systemSerial,
+			TransactionUUID: *inputPayload.TransactionUUID,
+			CloneMaster:     &inputPayload.StringValue,
+		}
 	case "cpu_thread_count":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
 		cpuThreadCount, err := strconv.ParseInt(inputPayload.StringValue, 10, 64)
@@ -475,6 +518,14 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 			TransactionUUID: *inputPayload.TransactionUUID,
 			DiskModel:       &inputPayload.StringValue,
 		}
+	case "disk_name":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/job_stats"}
+		inputPayload.Value = &UpdateJobStatsRequest{
+			Tagnumber:       tagnumber,
+			SystemSerial:    systemSerial,
+			TransactionUUID: *inputPayload.TransactionUUID,
+			DiskName:        &inputPayload.StringValue,
+		}
 	case "disk_power_cycles":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
 		diskPowerCycles, err := strconv.ParseInt(inputPayload.StringValue, 10, 64)
@@ -566,6 +617,56 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 			TransactionUUID: *inputPayload.TransactionUUID,
 			DiskWritesKB:    &diskWritesKB,
 		}
+	case "erase_completed":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/job_stats"}
+		eraseCompleted, err := strconv.ParseBool(inputPayload.StringValue)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse erase_completed value: %w", err)
+		}
+		inputPayload.Value = &UpdateJobStatsRequest{
+			Tagnumber:       tagnumber,
+			SystemSerial:    systemSerial,
+			TransactionUUID: *inputPayload.TransactionUUID,
+			EraseCompleted:  &eraseCompleted,
+		}
+	case "erase_disk_pcnt":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/job_stats"}
+		eraseDiskPcnt, err := strconv.ParseInt(inputPayload.StringValue, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse erase_disk_pcnt value: %w", err)
+		}
+		if eraseDiskPcnt < 0 || eraseDiskPcnt > 100 {
+			return nil, fmt.Errorf("erase_disk_pcnt value out of range: %d", eraseDiskPcnt)
+		}
+		inputPayload.Value = &UpdateJobStatsRequest{
+			Tagnumber:       tagnumber,
+			SystemSerial:    systemSerial,
+			TransactionUUID: *inputPayload.TransactionUUID,
+			EraseDiskPcnt:   &eraseDiskPcnt,
+		}
+	case "erase_job_duration":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/job_stats"}
+		eraseJobDuration, err := strconv.ParseInt(inputPayload.StringValue, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse erase_job_duration value: %w", err)
+		}
+		if eraseJobDuration < 0 {
+			return nil, fmt.Errorf("erase_job_duration value cannot be negative: %d", eraseJobDuration)
+		}
+		inputPayload.Value = &UpdateJobStatsRequest{
+			Tagnumber:       tagnumber,
+			SystemSerial:    systemSerial,
+			TransactionUUID: *inputPayload.TransactionUUID,
+			EraseDuration:   &eraseJobDuration,
+		}
+	case "erase_mode":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/job_stats"}
+		inputPayload.Value = &UpdateJobStatsRequest{
+			Tagnumber:       tagnumber,
+			SystemSerial:    systemSerial,
+			TransactionUUID: *inputPayload.TransactionUUID,
+			EraseMode:       &inputPayload.StringValue,
+		}
 	case "ethernet_mac":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
 		inputPayload.Value = &ClientHardwareView{
@@ -580,6 +681,30 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 			Tagnumber:       tagnumber,
 			SystemSerial:    &inputPayload.SystemSerial,
 			TransactionUUID: inputPayload.TransactionUUID,
+		}
+	case "job_cancelled":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/job_stats"}
+		jobCancelled, err := strconv.ParseBool(inputPayload.StringValue)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse job_cancelled value: %w", err)
+		}
+		inputPayload.Value = &UpdateJobStatsRequest{
+			Tagnumber:       tagnumber,
+			SystemSerial:    systemSerial,
+			TransactionUUID: *inputPayload.TransactionUUID,
+			JobCancelled:    &jobCancelled,
+		}
+	case "job_start_time":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/job_stats"}
+		jobStartTime, err := time.Parse(time.RFC3339, inputPayload.StringValue)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse job_start_time value: %w", err)
+		}
+		inputPayload.Value = &UpdateJobStatsRequest{
+			Tagnumber:       tagnumber,
+			SystemSerial:    systemSerial,
+			TransactionUUID: *inputPayload.TransactionUUID,
+			JobStartTime:    &jobStartTime,
 		}
 	case "memory_capacity_kb":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}

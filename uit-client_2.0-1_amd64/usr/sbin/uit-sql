@@ -137,7 +137,7 @@ while true; do
 		echo "job_queue|${tagNum}|status|fail - Job cancelled :(" | /opt/uit-toolbox/parse
 		UUID=$(printf '%s' "SELECT uuid AS result FROM jobstats WHERE tagnumber = '${tagNum}' AND host_connected = TRUE ORDER BY time DESC LIMIT 1" | /opt/uit-toolbox/select)
 		echo "general|erase_completed||${UUID}" | /opt/uit-toolbox/parse
-		echo "general|clone_completed||${UUID}" | /opt/uit-toolbox/parse
+		/sbin/uit-cli --tag "${tagNum}" --serial --uuid "${UUID}" "${systemSerial}" --key clone_completed --value "FALSE" --post
 		echo "general|job_cancelled|TRUE|${UUID}" | /opt/uit-toolbox/parse
 		pkill --terminal tty1
 	fi
