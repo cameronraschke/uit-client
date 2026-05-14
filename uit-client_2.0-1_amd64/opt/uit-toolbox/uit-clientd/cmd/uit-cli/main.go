@@ -74,6 +74,9 @@ func main() {
 		httpPayload.RequestType = "GET"
 	} else if *methodPOST {
 		httpPayload.RequestType = "POST"
+	} else {
+		// default to POST if not specified
+		httpPayload.RequestType = "POST"
 	}
 	if rule.Method != "" && httpPayload.RequestType != rule.Method {
 		fmt.Fprintf(os.Stderr, "key '%s' requires %s method\n", *key, rule.Method)
