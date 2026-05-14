@@ -55,14 +55,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Default POST if no method specified
-	httpPayload.RequestType = "POST"
-	if methodGET != nil {
-		if *methodGET {
-			httpPayload.RequestType = "GET"
-		}
-	}
-
 	// Key is required
 	if key == nil || *key == "" {
 		fmt.Fprintf(os.Stderr, "key is required\n")
@@ -74,42 +66,38 @@ func main() {
 		fmt.Fprintf(os.Stderr, "allowed keys are: %v\n", keypolicy.AllowedKeys())
 		os.Exit(1)
 	}
+	httpPayload.Key = *key
 
+	// HTTP method check
 	if rule.Method != "" && httpPayload.RequestType != rule.Method {
 		fmt.Fprintf(os.Stderr, "key '%s' requires %s method\n", *key, rule.Method)
 		os.Exit(1)
 	}
+	httpPayload.RequestType = rule.Method
 
+	// Tagnumber checks
+	if rule.RequiresTag && *tagnumber == 0 {
+		fmt.Fprintf(os.Stderr, "tag number is required for key '%s'\n", *key)
+		os.Exit(1)
+	}
+	if *tagnumber != 0 && (*tagnumber < 100000 || *tagnumber > 999999) {
+		fmt.Fprintf(os.Stderr, "tag number must be between 100000 and 999999\n")
+		os.Exit(1)
+	}
 	httpPayload.Tagnumber = *tagnumber
+
+	// Serial checks
+	if rule.RequiresSerial && (serial == nil || strings.TrimSpace(*serial) == "") {
+		fmt.Fprintf(os.Stderr, "serial is required for key '%s'\n", *key)
+		os.Exit(1)
+	}
 	httpPayload.SystemSerial = *serial
 
-	if serial == nil || strings.TrimSpace(*serial) == "" {
-		fmt.Fprintf(os.Stderr, "serial is required\n")
-		os.Exit(1)
-	}
-
-	if tagnumber != nil && *tagnumber != 0 && (*tagnumber < 1 || *tagnumber > 999999) {
-		fmt.Fprintf(os.Stderr, "tag number must be between 1 and 999999 when provided\n")
-		os.Exit(1)
-	}
-
-	if *key != "init" && *key != "client_lookup_by_serial" && (value == nil || strings.TrimSpace(*value) == "") {
-		fmt.Fprintf(os.Stderr, "value is required for key '%s'\n", *key)
-		os.Exit(1)
-	}
+	// UUID checks
 	if rule.RequiresUUID && (transactionUUID == nil || strings.TrimSpace(*transactionUUID) == "") {
 		fmt.Fprintf(os.Stderr, "uuid is required for key '%s'\n", *key)
 		os.Exit(1)
 	}
-
-	httpPayload.Key = *key
-
-	// Value
-	httpPayload.StringValue = *value
-	if *key == "client_lookup_by_serial" && strings.TrimSpace(httpPayload.StringValue) == "" {
-		httpPayload.StringValue = httpPayload.SystemSerial
-	}
-
 	// Transaction UUID
 	if transactionUUID != nil && *transactionUUID != "" {
 		httpPayload.TransactionUUID = transactionUUID
@@ -117,6 +105,18 @@ func main() {
 		httpPayload.TransactionUUID = nil
 	}
 
+	// Value
+	// exceptions for certain keys
+	if rule.RequiresValue && (value == nil || strings.TrimSpace(*value) == "") {
+		fmt.Fprintf(os.Stderr, "value is required for key '%s'\n", *key)
+		os.Exit(1)
+	}
+	httpPayload.StringValue = *value
+	if *key == "client_lookup_by_serial" && strings.TrimSpace(httpPayload.StringValue) == "" {
+		httpPayload.StringValue = httpPayload.SystemSerial
+	}
+
+	// connect to unix socket
 	conn, err := net.DialTimeout("unix", unixSocketPath, 5*time.Second)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to connect to %s: %v\n", unixSocketPath, err)
@@ -124,6 +124,7 @@ func main() {
 	}
 	defer conn.Close()
 
+	// encode json & send line
 	line, err := json.Marshal(httpPayload)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to marshal payload: %v\n", err)

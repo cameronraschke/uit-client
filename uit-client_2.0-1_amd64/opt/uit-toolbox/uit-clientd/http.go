@@ -161,16 +161,24 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 		return nil, fmt.Errorf("unsupported key: '%s'", inputPayload.Key)
 	}
 
+	// HTTP method checks
 	if rule.Method != "" && method != rule.Method {
 		return nil, fmt.Errorf("key '%s' requires %s method", inputPayload.Key, rule.Method)
 	}
-	if strings.TrimSpace(inputPayload.SystemSerial) == "" {
+
+	// serial number checks
+	if rule.RequiresSerial && strings.TrimSpace(inputPayload.SystemSerial) == "" {
 		return nil, fmt.Errorf("system_serial is required")
 	}
 
-	if inputPayload.Tagnumber != 0 && (inputPayload.Tagnumber < 1 || inputPayload.Tagnumber > 999999) {
-		return nil, fmt.Errorf("invalid tag number: %d", inputPayload.Tagnumber)
+	// tag number checks
+	if rule.RequiresTag && inputPayload.Tagnumber == 0 {
+		return nil, fmt.Errorf("tag number is required for key '%s'", inputPayload.Key)
 	}
+	if inputPayload.Tagnumber != 0 && (inputPayload.Tagnumber < 100000 || inputPayload.Tagnumber > 999999) {
+		return nil, fmt.Errorf("tag number must be between 100000 and 999999: %d", inputPayload.Tagnumber)
+	}
+
 	var tagnumber *int64
 	if inputPayload.Tagnumber > 0 {
 		tagnumber = &inputPayload.Tagnumber
@@ -178,8 +186,8 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 	systemSerial := &inputPayload.SystemSerial
 
 	// Value
-	if inputPayload.Key != "init" && inputPayload.Key != "client_lookup_by_serial" && strings.TrimSpace(inputPayload.StringValue) == "" {
-		return nil, fmt.Errorf("value is empty")
+	if rule.RequiresValue && (inputPayload.StringValue == "" || strings.TrimSpace(inputPayload.StringValue) == "") {
+		return nil, fmt.Errorf("value is required for key '%s'", inputPayload.Key)
 	}
 	if inputPayload.Key == "client_lookup_by_serial" && strings.TrimSpace(inputPayload.StringValue) == "" {
 		inputPayload.StringValue = inputPayload.SystemSerial
