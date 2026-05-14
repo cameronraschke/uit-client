@@ -27,7 +27,7 @@ while true; do
 			battCharePcnt=$(cat ${i}/device/capacity)
 			battStatus=$(cat ${i}/device/status)
 			#battModel=$(cat ${i}/device/model_name)
-			/sbin/uit-cli --tag "${tagNum}" --serial "${systemSerial}" --key battery_charge_pcnt --value "${battCharePcnt}"
+			/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --key "battery_charge_pcnt" --value "${battCharePcnt}" --post
 		fi
 
 		if [[ $deviceName == "nvme" ]]; then
@@ -85,12 +85,12 @@ while true; do
 	memTotal=$(cat /proc/meminfo  | grep -i memTotal | awk '{ print $2 }')
 	memAvailable=$(cat /proc/meminfo  | grep -i memAvailable | awk '{ print $2 }')
 	memUsage=$(( memTotal - memAvailable ))
-	/sbin/uit-cli --tag "${tagNum}" --serial "${systemSerial}" --key memory_usage_kb --value "${memUsage}"
+	/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --key memory_usage_kb --value "${memUsage}" --post
 
 	# Get CPU temp and usage
 	cpuUsage=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | cut -d'%' -f1)
 	avgTemp=0
-	/sbin/uit-cli --tag "${tagNum}" --serial "${systemSerial}" --key cpu_current_usage --value "${cpuUsage}"
+	/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --key cpu_current_usage --value "${cpuUsage}" --post
 	for i in $(find /sys/class/hwmon/ -mindepth 1 -maxdepth 1); do
 		hwmonName=$(cat ${i}/name)
 		if [[ $hwmonName == "coretemp" || $hwmonName == "acpitz" ]]; then
@@ -103,7 +103,7 @@ while true; do
 			avgTemp=$(( avgTemp / ${#cpuTemps[@]} ))
 		fi
 	done
-	/sbin/uit-cli --tag "${tagNum}" --serial "${systemSerial}" --key cpu_millidegrees_c --value "${avgTemp}"
+	/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --key cpu_millidegrees_c --value "${avgTemp}" --post
 
 	# CPU frequency
 	cpuMHzArr=( $(cat /proc/cpuinfo | grep 'cpu MHz' | awk '{ print $4 }') )
@@ -112,7 +112,7 @@ while true; do
 		cpuMhzSum=$(echo "$cpuMhzSum + $i" | bc);
 	done
 	cpuMhzAvg=$(echo "scale=2; $cpuMhzSum / ${#cpuMHzArr[@]}" | bc)
-	/sbin/uit-cli --tag "${tagNum}" --serial "${systemSerial}" --key cpu_current_mhz --value "${cpuMhzAvg}"
+	/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --key cpu_current_mhz --value "${cpuMhzAvg}" --post
 
 	# Get network link speed
 	for i in $(ip addr | awk '/state UP/ {print $2}' | sed 's/://g'); do
@@ -136,9 +136,9 @@ while true; do
 		echo "job_queue|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
 		echo "job_queue|${tagNum}|status|fail - Job cancelled :(" | /opt/uit-toolbox/parse
 		UUID=$(printf '%s' "SELECT uuid AS result FROM jobstats WHERE tagnumber = '${tagNum}' AND host_connected = TRUE ORDER BY time DESC LIMIT 1" | /opt/uit-toolbox/select)
-		/sbin/uit-cli --tag "${tagNum}" --serial --uuid "${UUID}" "${systemSerial}" --key erase_completed --value "FALSE" --post
-		/sbin/uit-cli --tag "${tagNum}" --serial --uuid "${UUID}" "${systemSerial}" --key clone_completed --value "FALSE" --post
-		/sbin/uit-cli --tag "${tagNum}" --serial --uuid "${UUID}" "${systemSerial}" --key job_cancelled --value "TRUE" --post
+		/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "erase_completed" --value "FALSE" --post
+		/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "clone_completed" --value "FALSE" --post
+		/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "job_cancelled" --value "TRUE" --post
 		pkill --terminal tty1
 	fi
 
@@ -163,6 +163,6 @@ while true; do
 	clientAppUptime=$((clientAppUptime + timeToLoop))
 	echo "${clientAppUptime}" > /root/client_app_uptime
 
-	/sbin/uit-cli --tag "${tagNum}" --serial "${systemSerial}" --key client_app_uptime --value "${clientAppUptime}"
-	/sbin/uit-cli --tag "${tagNum}" --serial "${systemSerial}" --key system_uptime --value "${endingSystemUptime}"
+	/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --key "client_app_uptime" --value "${clientAppUptime}" --post
+	/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --key "system_uptime" --value "${endingSystemUptime}" --post
 done

@@ -175,27 +175,27 @@ function collectDiskData {
 
 		# Disk model
 		diskModel=$(cat /sys/class/block/${i}/device/model 2>/dev/null)
-		uit-cli --serial "${systemSerial}" --key "disk_model" --value "${diskModel}" --uuid "${UUID}"
+		uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "disk_model" --value "${diskModel}" --post
 
 		# Disk Serial
 		diskSerial=$(cat /sys/class/block/${i}/device/serial 2>/dev/null)
-		uit-cli --serial "${systemSerial}" --key "disk_serial" --value "${diskSerial}" --uuid "${UUID}"
+		uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "disk_serial" --value "${diskSerial}" --post
 
 		# Disk Size
 		diskSize=$(cat /sys/class/block/${i}/size 2>/dev/null)
-		uit-cli --serial "${systemSerial}" --key "disk_size_kb" --value "${diskSize}" --uuid "${UUID}"
+		uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "disk_size_kb" --value "${diskSize}" --post
 
 		# Disk Power On Hours
 		diskPowerOnHours=$(cat /root/smartctl-data | grep -iP 'Power( |_)On( |_)Hours' | sed 's/[^0-9]//g')
-		uit-cli --serial "${systemSerial}" --key "disk_power_on_hours" --value "${diskPowerOnHours}" --uuid "${UUID}"
+		uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "disk_power_on_hours" --value "${diskPowerOnHours}" --post
 
 		# Disk firmware
 		diskFirmware=$(cat /root/smartctl-data | grep '^Firmware Version: ' | sed 's/Firmware Version: *//g')
-		uit-cli --serial "${systemSerial}" --key "disk_firmware" --value "${diskFirmware}" --uuid "${UUID}"
+		uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "disk_firmware" --value "${diskFirmware}" --post
 
 		# Disk Power Cycles
 		diskPowerCycles=$(cat /root/smartctl-data | grep -iP 'Power( |_)Cycle' | sed 's/[^0-9]//g')
-		uit-cli --serial "${systemSerial}" --key "disk_power_cycles" --value "${diskPowerCycles}" --uuid "${UUID}"
+		uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "disk_power_cycles" --value "${diskPowerCycles}" --post
 
 		DISK="$i"
 		if [[ $i =~ $NVME_REGEX ]]; then
@@ -223,16 +223,16 @@ function collectDiskData {
 		fi
 
 		# Disk reads
-		uit-cli --serial "${systemSerial}" --key "disk_reads_kb" --value "${diskReads}" --uuid "${UUID}"
+		uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "disk_reads_kb" --value "${diskReads}" --post
 
 		# Disk writes
-		uit-cli --serial "${systemSerial}" --key "disk_writes_kb" --value "${diskWrites}" --uuid "${UUID}"
+		uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "disk_writes_kb" --value "${diskWrites}" --post
 
 		# Disk type
-		uit-cli --serial "${systemSerial}" --key "disk_type" --value "${diskType}" --uuid "${UUID}"
+		uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "disk_type" --value "${diskType}" --post
 
 		# Disk error count
-		uit-cli --serial "${systemSerial}" --key "disk_errors" --value "${diskErrorCount}" --uuid "${UUID}"
+		uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "disk_errors" --value "${diskErrorCount}" --post
 	done
 }
 
@@ -291,74 +291,74 @@ fi
 	#t32 = Boot Status
 
 	# Ethernet MAC Address
-	uit-cli --serial "${systemSerial}" --key "ethernet_mac" --value "${etherAddr}" --uuid "${UUID}"
+	uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "ethernet_mac" --value "${etherAddr}" --post
 
 	# WiFi MAC Address
-	uit-cli --serial "${systemSerial}" --key "wifi_mac" --value "${wifiMac}" --uuid "${UUID}"
+	uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "wifi_mac" --value "${wifiMac}" --post
 
 	# System Manufacturer
 	systemManufacturer=$(dmidecode --string system-manufacturer)
-	uit-cli --serial "${systemSerial}" --key "system_manufacturer" --value "${systemManufacturer}" --uuid "${UUID}"
+	uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "system_manufacturer" --value "${systemManufacturer}" --post
 
 	# System Model Name
 	systemModel=$(dmidecode --string system-product-name)
 	if [[ -z $systemModel ]]; then
 		systemModel=$(cat /sys/class/dmi/id/product_name)
 	fi
-	uit-cli --serial "${systemSerial}" --key "system_model" --value "${systemModel}" --uuid "${UUID}"
+	uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "system_model" --value "${systemModel}" --post
 
 	# System UUID
 	systemUUID=$(dmidecode --string system-uuid)
 	if [[ -z $systemUUID ]]; then
 		systemUUID=$(cat /sys/class/dmi/id/product_uuid)
 	fi
-	uit-cli --serial "${systemSerial}" --key "system_uuid" --value "${systemUUID}" --uuid "${UUID}"
+	uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "system_uuid" --value "${systemUUID}" --post
 
 	# System SKU
 	systemSKU=$(dmidecode --string system-sku-number)
 	if [[ -z $systemSKU ]]; then
 		systemSKU=$(cat /sys/class/dmi/id/product_sku)
 	fi
-	uit-cli --serial "${systemSerial}" --key "system_sku" --value "${systemSKU}" --uuid "${UUID}"
+	uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "system_sku" --value "${systemSKU}" --post
 
 	# Chassis Type
 	chassisType=$(dmidecode --string chassis-type | head -n1)
-	uit-cli --serial "${systemSerial}" --key "chassis_type" --value "${chassisType}" --uuid "${UUID}"
+	uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "chassis_type" --value "${chassisType}" --post
 
 	# CPU Manufacturer
 	cpuManufacturer=$(dmidecode --string processor-manufacturer)
-	uit-cli --serial "${systemSerial}" --key "cpu_manufacturer" --value "${cpuManufacturer}" --uuid "${UUID}"
+	uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "cpu_manufacturer" --value "${cpuManufacturer}" --post
 
 	# CPU Model
 	cpuModel=$(dmidecode --string processor-version)
-	uit-cli --serial "${systemSerial}" --key "cpu_model" --value "${cpuModel}" --uuid "${UUID}"
+	uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "cpu_model" --value "${cpuModel}" --post
 
 	# CPU Max Speed
 	cpuMaxSpeed=$(dmidecode -t4 | grep 'Max Speed' | sed 's/[^0-9]//g')
-	uit-cli --serial "${systemSerial}" --key "cpu_max_speed_mhz" --value "${cpuMaxSpeed}" --uuid "${UUID}"
+	uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "cpu_max_speed_mhz" --value "${cpuMaxSpeed}" --post
 
 	# CPU Core Count
 	cpuCoreCount=$(dmidecode -t4 | grep 'Core Count' | sed 's/Core Count: //g' | sed 's/^[[:space:]]*//g')
-	uit-cli --serial "${systemSerial}" --key "cpu_core_count" --value "${cpuCoreCount}" --uuid "${UUID}"
+	uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "cpu_core_count" --value "${cpuCoreCount}" --post
 
 	# CPU Thread Count
 	cpuThreadCount=$(dmidecode -t4 | grep 'Thread Count' | sed 's/Thread Count: //g' | sed 's/^[[:space:]]*//g')
-	uit-cli --serial "${systemSerial}" --key "cpu_thread_count" --value "${cpuThreadCount}" --uuid "${UUID}"
+	uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "cpu_thread_count" --value "${cpuThreadCount}" --post
 
 	# Motherboard Manufacturer
 	motherboardManufacturer=$(dmidecode --string baseboard-manufacturer)
-	uit-cli --serial "${systemSerial}" --key "motherboard_manufacturer" --value "${motherboardManufacturer}" --uuid "${UUID}"
+	uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "motherboard_manufacturer" --value "${motherboardManufacturer}" --post
 
 	# Motherboard Serial
 	motherboardSerial=$(dmidecode --string baseboard-serial-number)
-	uit-cli --serial "${systemSerial}" --key "motherboard_serial" --value "${motherboardSerial}" --uuid "${UUID}"
+	uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "motherboard_serial" --value "${motherboardSerial}" --post
 
 	biosVersion=$(dmidecode --string bios-version 2>/dev/null)
-	uit-cli --serial "${systemSerial}" --tag "${tagNum}"  --uuid "${UUID}" --key "bios_version" --value "${biosVersion}"
+	uit-cli --serial "${systemSerial}" --tag "${tagNum}"  --uuid "${UUID}" --key "bios_version" --value "${biosVersion}" --post
 	biosDate=$(dmidecode --string bios-release-date 2>/dev/null)
-	uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "bios_release_date" --value "${biosDate}"
+	uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "bios_release_date" --value "${biosDate}" --post
 	biosFirmwareRev=$(dmidecode --string firmware-revision 2>/dev/null)
-	uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "bios_firmware" --value "${biosFirmwareRev}"
+	uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "bios_firmware" --value "${biosFirmwareRev}" --post
 	systemSerial=$(dmidecode --string system-serial-number 2>/dev/null)
 
 	###Disk Data
@@ -388,23 +388,23 @@ fi
 					fi
 				batterySerial=$(cat /sys/class/power_supply/BAT1/serial_number 2>/dev/null | awk '{ print $1 }')
 			fi
-			uit-cli --serial "${systemSerial}" --key "battery_current_max_capacity" --value "${batteryMaxCurrentCapacity}" --uuid "${UUID}"
-			uit-cli --serial "${systemSerial}" --key "battery_design_capacity" --value "${batteryFactoryCapacity}" --uuid "${UUID}"
-			uit-cli --serial "${systemSerial}" --key "battery_charge_cycles" --value "${batteryChargeCycles}" --uuid "${UUID}"
-			uit-cli --serial "${systemSerial}" --key "battery_model" --value "${batteryModel}" --uuid "${UUID}"
-			uit-cli --serial "${systemSerial}" --key "battery_serial" --value "${batterySerial}" --uuid "${UUID}"
-			uit-cli --serial "${systemSerial}" --key "battery_manufacturer" --value "${batteryManufacturer}" --uuid "${UUID}"
-			uit-cli --serial "${systemSerial}" --key "battery_manufacture_date" --value "${batteryManufactureDate}" --uuid "${UUID}"
+			uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "battery_current_max_capacity" --value "${batteryMaxCurrentCapacity}" --post
+			uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "battery_design_capacity" --value "${batteryFactoryCapacity}" --post
+			uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "battery_charge_cycles" --value "${batteryChargeCycles}" --post
+			uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "battery_model" --value "${batteryModel}" --post
+			uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "battery_serial" --value "${batterySerial}" --post
+			uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "battery_manufacturer" --value "${batteryManufacturer}" --post
+			uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "battery_manufacture_date" --value "${batteryManufactureDate}" --post
 		fi
 
 
 	###Memory Data
 	memorySerial=$(dmidecode --type memory | grep -P '\tSerial Number' | awk '{ print $3 }' | tr '\n' '-' | sed 's/-$//g')
-		uit-cli --serial "${systemSerial}" --key "memory_serial" --value "${memorySerial}" --uuid "${UUID}"
+		uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "memory_serial" --value "${memorySerial}" --post
 	memoryCapacity=$(grep '^MemTotal' /proc/meminfo | awk '{ print $2 }')
-		uit-cli --tag "${tagNum}" --serial "${systemSerial}" --key "memory_capacity_kb" --value "${memoryCapacity}" --uuid "${UUID}"
+		uit-cli --tag "${tagNum}" --serial "${systemSerial}" --key "memory_capacity_kb" --value "${memoryCapacity}" --uuid "${UUID}" --post
 	memSpeed=$(dmidecode --type 17 2>/dev/null | grep '^[[:space:]]*Speed\:' | head -n1 | sed 's/[^0-9]//g')
-		uit-cli --serial "${systemSerial}" --key "memory_speed_mhz" --value "${memSpeed}" --uuid "${UUID}"
+		uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "memory_speed_mhz" --value "${memSpeed}" --post
 
 	###Boot Times
 	# bootTime=$(systemd-analyze | grep -oP '[0-9]+[0-9.]*' | head -n 1)
@@ -420,7 +420,7 @@ fi
 	done
 
 	tpmVersion=$(cat /sys/class/tpm/tpm0/tpm_version_major 2>/dev/null)
-	uit-cli --serial "${systemSerial}" --key "tpm_version" --value "${tpmVersion}" --uuid "${UUID}"
+	uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "tpm_version" --value "${tpmVersion}" --post
 
 	printf "%s" "system-stats|cpu|${UUID}" | /opt/uit-toolbox/parse
 	printf "%s" "system-stats|network|${UUID}" | /opt/uit-toolbox/parse
@@ -1652,11 +1652,11 @@ function terminate {
 				terminateAction="Cloned"
 			fi
 
-			/sbin/uit-cli --tag "${tagNum}" --serial "${systemSerial}" --uuid "${UUID}" --key clone_completed --value "TRUE" --post
+			/sbin/uit-cli --tag "${tagNum}" --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key clone_completed --value "TRUE" --post
 			printf "%s" "api_post|${tagNum}|health_clone_completed|1|${UUID}" | /opt/uit-toolbox/parse
 
 			if [[ $APPSELECT == "EC" ]]; then
-				/sbin/uit-cli --tag "${tagNum}" --serial "${systemSerial}" --uuid "${UUID}" --key "erase_completed" --value "TRUE" --post
+				/sbin/uit-cli --tag "${tagNum}" --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "erase_completed" --value "TRUE" --post
 				printf "%s" "api_post|${tagNum}|health_erase_completed|1|${UUID}" | /opt/uit-toolbox/parse
 			fi
 
@@ -1670,8 +1670,8 @@ function terminate {
 			)
 		fi
 		if [[ $cloneMode == "savedisk" ]]; then
-			/sbin/uit-cli --tag "${tagNum}" --serial "${systemSerial}" --uuid "${UUID}" --key "clone_master" --value "TRUE" --post
-			/sbin/uit-cli --tag "${tagNum}" --serial "${systemSerial}" --uuid "${UUID}" --key "clone_completed" --value "TRUE" --post
+			/sbin/uit-cli --tag "${tagNum}" --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "clone_master" --value "TRUE" --post
+			/sbin/uit-cli --tag "${tagNum}" --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "clone_completed" --value "TRUE" --post
 			printf "%s" "api_post|${tagNum}|health_clone_completed|1|${UUID}" | /opt/uit-toolbox/parse
 
 			terminateMessage=$(printf '%s\n' "Tag#: ${tagNum}"
@@ -1687,7 +1687,7 @@ function terminate {
 	
 
 	if [[ $APPSELECT == "E" ]]; then
-				/sbin/uit-cli --tag "${tagNum}" --serial "${systemSerial}" --uuid "${UUID}" --key "erase_completed" --value "TRUE" --post
+				/sbin/uit-cli --tag "${tagNum}" --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "erase_completed" --value "TRUE" --post
 		printf "%s" "api_post|${tagNum}|health_erase_completed|1|${UUID}" | /opt/uit-toolbox/parse
 
 		terminateAction="erased"
