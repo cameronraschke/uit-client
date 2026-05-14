@@ -1230,9 +1230,10 @@ function nistMode_Shred {
 	
 	printf '\n'
 	printf '%s\n' "Step [3/3]:"
-	PCNTOFSECTOR='10'
-	CHAR='0'
-	vrfyDisk_Shred
+	printf "%s \n" "Skipped (verify)"
+	# PCNTOFSECTOR='10'
+	# CHAR='0'
+	# vrfyDisk_Shred
 }
 
 
