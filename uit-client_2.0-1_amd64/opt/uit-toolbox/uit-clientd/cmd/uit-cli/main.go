@@ -50,6 +50,7 @@ func main() {
 
 	httpPayload := new(HTTPRequestPayload)
 
+	// common logical errors
 	if *methodGET && *methodPOST {
 		fmt.Fprintf(os.Stderr, "cannot specify both -get and -post\n")
 		os.Exit(1)
@@ -69,6 +70,11 @@ func main() {
 	httpPayload.Key = *key
 
 	// HTTP method check
+	if *methodGET {
+		httpPayload.RequestType = "GET"
+	} else if *methodPOST {
+		httpPayload.RequestType = "POST"
+	}
 	if rule.Method != "" && httpPayload.RequestType != rule.Method {
 		fmt.Fprintf(os.Stderr, "key '%s' requires %s method\n", *key, rule.Method)
 		os.Exit(1)
