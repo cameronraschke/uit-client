@@ -774,7 +774,11 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 			TransactionUUID:   *inputPayload.TransactionUUID,
 			MotherboardSerial: &inputPayload.StringValue,
 		}
-
+	case "new_transaction_uuid":
+		httpRequestConfig.URL = url.URL{Path: "/api/new_transaction_uuid"}
+		inputPayload.RequestType = "GET"
+		inputPayload.Value = nil
+		inputPayload.TransactionUUID = nil
 	case "system_manufacturer":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
 		inputPayload.Value = &ClientHardwareView{

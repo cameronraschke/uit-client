@@ -61,6 +61,7 @@ var policies = map[string]Policy{
 	"memory_usage_kb":              {Method: "POST", RequiresUUID: false},
 	"motherboard_manufacturer":     {Method: "POST", RequiresUUID: true},
 	"motherboard_serial":           {Method: "POST", RequiresUUID: true},
+	"new_transaction_uuid":         {Method: "GET", RequiresUUID: false},
 	"system_manufacturer":          {Method: "POST", RequiresUUID: true},
 	"system_model":                 {Method: "POST", RequiresUUID: true},
 	"system_sku":                   {Method: "POST", RequiresUUID: true},
