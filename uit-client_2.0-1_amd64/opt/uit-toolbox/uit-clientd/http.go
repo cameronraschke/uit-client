@@ -298,7 +298,7 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 			BiosFirmware:    &inputPayload.StringValue,
 		}
 	case "bios_release_date":
-		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
+		httpRequestConfig.URL = url.URL{Path: "/api/client/health"}
 		inputPayload.Value = &ClientHardwareView{
 			Tagnumber:       tagnumber,
 			SystemSerial:    systemSerial,
