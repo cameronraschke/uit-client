@@ -10,6 +10,7 @@ DIM=$(tput dim)
 RESET=$(tput sgr0)
 cloneElapsed="0"
 shredElapsed="0"
+UIT_CLIENT_DRY_RUN="${UIT_CLIENT_DRY_RUN:-false}"
 
 for i in $(ps | grep 'uit-cpu' | awk '{ print $1 }'); do kill "${i}" 2>/dev/null; done
 for i in $(ps | grep 'uit-network' | awk '{ print $1 }'); do kill "${i}" 2>/dev/null; done
@@ -20,6 +21,98 @@ function resetUsageData {
 	printf "%s" '0' > /root/client_app_uptime
 	printf "%s" '0' > /tmp/cpu-usage.txt
 	printf "%s" '0' > /tmp/network-usage.txt
+}
+
+function dryRunEnabled {
+	case "${UIT_CLIENT_DRY_RUN}" in
+		1|[Tt][Rr][Uu][Ee]|[Yy][Ee][Ss]|[Oo][Nn])
+			return 0
+			;;
+		*)
+			return 1
+			;;
+	esac
+}
+
+function dryRunLog {
+	printf '%s\n' "[dry-run] $*"
+}
+
+function dryRunSectionLog {
+	local action="$1"
+	local index="$2"
+	local total="$3"
+	local sectorMin="$4"
+	local sectorMax="$5"
+	local sectorDiff="$6"
+	local count="$7"
+	local startSector="$8"
+	local bs="$9"
+	local sectionLast sampleLast
+
+	sectionLast=$((sectorMax - 1))
+	sampleLast=$((startSector + count - 1))
+	dryRunLog "${action} section ${index}/${total}: range=${sectorMin}-${sectionLast} sectors=${sectorDiff} bytes=$((sectorDiff * bs)) sample=${startSector}-${sampleLast} sample_sectors=${count} sample_bytes=$((count * bs)) percent=${PCNTOFSECTOR}"
+}
+
+function patternToHex_Shred {
+	local pattern="$1"
+
+	if [[ $pattern =~ ^[01]{8}$ ]]; then
+		printf '%02x' "$((2#${pattern}))"
+		return 0
+	fi
+
+	if [[ $pattern =~ ^[[:xdigit:]]$ ]]; then
+		printf '%s%s' "${pattern}" "${pattern}"
+		return 0
+	fi
+
+	if [[ $pattern =~ ^([[:xdigit:]]{2})+$ ]]; then
+		printf '%s' "${pattern}"
+		return 0
+	fi
+
+	printf '%s' "${pattern}" | xxd -p -c 256 | tr -d '\n'
+}
+
+function emitHexPattern_Shred {
+	local hexPattern="$1"
+
+	perl -e 'my $hex = shift; my $pattern = pack("H*", $hex); die "empty pattern\n" unless length $pattern; $| = 1; my $repeat = int(65536 / length($pattern)); $repeat = 1 if $repeat < 1; my $chunk = $pattern x $repeat; while (1) { print $chunk; }' -- "${hexPattern}"
+}
+
+function verifyHexPatternStream_Shred {
+	local hexPattern="$1"
+
+	perl -e 'use bytes; my $hex = shift; my $pattern = pack("H*", $hex); exit 1 unless length $pattern; my $len = length $pattern; my @allowed; while (read(STDIN, my $buffer, 65536)) { for my $byte (split //, $buffer) { if (!@allowed) { @allowed = grep { substr($pattern, $_, 1) eq $byte } 0 .. ($len - 1); exit 1 unless @allowed; next; } @allowed = grep { substr($pattern, (($_ + 1) % $len), 1) eq $byte } @allowed; exit 1 unless @allowed; } } exit(@allowed ? 0 : 1);' -- "${hexPattern}"
+}
+
+function expectedPatternHex_Shred {
+	printf '%s' "$(patternToHex_Shred "${CHAR}")"
+}
+
+function emitSource_Shred {
+	case "${WMODE}" in
+		zero)
+			cat /dev/zero
+			;;
+		random)
+			cat /dev/urandom
+			;;
+		randBit_Shred)
+			emitHexPattern_Shred "$(patternToHex_Shred "${RANDBIT}")"
+			;;
+		randPattern_Shred)
+			emitHexPattern_Shred "$(patternToHex_Shred "${RANDPATTERN}")"
+			;;
+		char)
+			emitHexPattern_Shred "$(patternToHex_Shred "${CHAR}")"
+			;;
+		*)
+			return 1
+			;;
+	esac
 }
 
 umount /home/partimag 2>/dev/null
@@ -804,13 +897,13 @@ function diskSelect {
 
 
 function randBit_Shred {
-	RANDBIT=$(cat /dev/urandom | xxd -plain | head -1 | cut -c 1)
+	RANDBIT=$(( 0x$(head -c 1 /dev/urandom | xxd -p -c 256) % 2 ))
 }
 
 
 
 function randPattern_Shred {
-	RANDPATTERN=$(cat /dev/urandom | xxd -plain | head -1 | cut -c 8)
+	RANDPATTERN=$(head -c 4 /dev/urandom | xxd -p -c 256)
 }
 
 
@@ -834,68 +927,101 @@ function writeDisk_Shred {
 	fi
 	
 	if [[ $WMODE == "zero" ]]; then
-		SOURCE='cat /dev/zero'
+		SOURCE_DESC='/dev/zero'
 		BITS='null bits'
 	fi
 
 	if [[ $WMODE == "random" ]]; then
-		SOURCE='cat /dev/urandom'
+		SOURCE_DESC='/dev/urandom'
 		BITS='random bits'
 	fi
 
 	if [[ $WMODE == "randBit_Shred" ]]; then
 		randBit_Shred
-		SOURCE="yes \"${RANDBIT}\""
+		SOURCE_DESC="byte pattern 0x$(patternToHex_Shred "${RANDBIT}")"
 		BITS="a random bit (${RANDBIT})"
 	fi
 
 	if [[ "$WMODE" == 'randPattern_Shred' ]]; then
 		randPattern_Shred
-		SOURCE="yes \"${RANDPATTERN}\""
+		SOURCE_DESC="byte pattern 0x$(patternToHex_Shred "${RANDPATTERN}")"
 		BITS="a random pattern (${RANDPATTERN})"
 	fi
 
 	if [[ "$WMODE" == 'char' ]]; then
-		SOURCE="yes \"${CHAR}\""
+		SOURCE_DESC="byte pattern 0x$(patternToHex_Shred "${CHAR}")"
 		BITS="\"${CHAR}\""
 	fi
 
 	BS='512'
 	diskBytes=$(blockdev --getsize64 /dev/${CLIENTDISK})
-	sectorSize=$((diskBytes / BS / writeSections))
+	sectorCount=$((diskBytes / BS))
+	if dryRunEnabled; then
+		dryRunLog "writeDisk_Shred: disk=/dev/${CLIENTDISK} mode=${WMODE} bits=${BITS} sections=${writeSections} sector_count=${sectorCount} sector_size=${BS} disk_bytes=${diskBytes} percent=${PCNTOFSECTOR} source=${SOURCE_DESC}"
+	fi
 
 	printf '%s\n' "Filling ${PCNTOFSECTOR}% of ${CLIENTDISK} with a stream of ${BITS}...."
 	printf "%s" "general|erase_diskpercent|${PCNTOFSECTOR}|${UUID}" | /opt/uit-toolbox/parse
 
 	if [[ $PCNTOFSECTOR == '100' ]]; then
-		${SOURCE} | (pv > /dev/${CLIENTDISK})
+		if dryRunEnabled; then
+			dryRunLog "would overwrite entire disk: target=/dev/${CLIENTDISK} sectors=${sectorCount} bytes=${diskBytes} source=${SOURCE_DESC}"
+		else
+			emitSource_Shred | (pv > /dev/${CLIENTDISK})
+		fi
 		return 0
 	fi
 	
 	i=0
 	while [[ $i -lt $writeSections ]]; do
 		i=$((i + 1))
-		tput cuu1
-		tput el
+		if ! dryRunEnabled; then
+			tput cuu1
+			tput el
+		fi
 		printf '%s\n' "Writing to section ${i}/${writeSections}"
 		if (( $i % 25 == 0 )); then
 			printf "%s" "job_queue|${tagNum}|job_status|Writing to section ${i}/${writeSections} ($shredMode)" | /opt/uit-toolbox/parse
 		fi
-		sectorMin=$((i * sectorSize))
-		sectorMax=$((sectorMin + sectorSize))
+		sectorMin=$(( (i - 1) * sectorCount / writeSections ))
+		sectorMax=$(( i * sectorCount / writeSections ))
 		sectorDiff=$((sectorMax - sectorMin))
-		COUNT=$((sectorDiff / 100 * PCNTOFSECTOR))
+		if [[ $sectorDiff -le 0 ]]; then
+			if dryRunEnabled; then
+				dryRunLog "write section ${i}/${writeSections}: empty section, skipping"
+			fi
+			continue
+		fi
+		COUNT=$((sectorDiff * PCNTOFSECTOR / 100))
+		if [[ $COUNT -le 0 && $PCNTOFSECTOR -gt 0 ]]; then
+			COUNT='1'
+		fi
+		if [[ $COUNT -gt $sectorDiff ]]; then
+			COUNT=$sectorDiff
+		fi
 		randSector=$(shuf -i ${sectorMin}-$((sectorMax - COUNT)) -n 1)
 
-		SKIP=$(shuf -i ${randSector}-${sectorMax} -n 1)
-    	${SOURCE} | dd bs=${BS} count=${COUNT} seek=${SKIP} of=/dev/${CLIENTDISK} iflag=fullblock status=none 2>/dev/null
+		SKIP=$(shuf -i ${randSector}-$((sectorMax - COUNT)) -n 1)
+		if dryRunEnabled; then
+			dryRunSectionLog "write" "${i}" "${writeSections}" "${sectorMin}" "${sectorMax}" "${sectorDiff}" "${COUNT}" "${SKIP}" "${BS}"
+		else
+	    		emitSource_Shred | dd bs=${BS} count=${COUNT} seek=${SKIP} of=/dev/${CLIENTDISK} iflag=fullblock status=none 2>/dev/null
+		fi
 	done
 
 	printf '\n'
 	printf '%s\n' "Completely filling the first sector...."
-    ${SOURCE} | dd bs=${BS} count=${COUNT} seek=0 of=/dev/${CLIENTDISK} iflag=fullblock status=none 2>/dev/null
+	if dryRunEnabled; then
+		dryRunLog "write boundary: first_sector=0 count=1 bytes=${BS}"
+	else
+		emitSource_Shred | dd bs=${BS} count=1 seek=0 of=/dev/${CLIENTDISK} iflag=fullblock status=none 2>/dev/null
+	fi
 	printf '%s\n' "Completely filling the last sector...."
-	${SOURCE} | dd bs=${BS} count=${COUNT} seek=$(( ${sectorCount} - 1 )) of=/dev/${CLIENTDISK} iflag=fullblock status=none 2>/dev/null
+	if dryRunEnabled; then
+		dryRunLog "write boundary: last_sector=$((sectorCount - 1)) count=1 bytes=${BS}"
+	else
+		emitSource_Shred | dd bs=${BS} count=1 seek=$(( sectorCount - 1 )) of=/dev/${CLIENTDISK} iflag=fullblock status=none 2>/dev/null
+	fi
 }
 
 
@@ -912,48 +1038,74 @@ function vrfyDisk_Shred {
 
 	BS='512'
 	diskBytes=$(blockdev --getsize64 /dev/${CLIENTDISK})
-	sectorSize=$((diskBytes / BS / vrfySections))
+	sectorCount=$((diskBytes / BS))
 	PROCFAIL='0'
 	i='0'
-
 	if [[ -z $CHAR ]]; then
 		CHAR='0'
+	fi
+	EXPECTED_HEX=$(expectedPatternHex_Shred)
+	if dryRunEnabled; then
+		dryRunLog "vrfyDisk_Shred: disk=/dev/${CLIENTDISK} char=${CHAR} expected_hex=${EXPECTED_HEX} sections=${vrfySections} sector_count=${sectorCount} sector_size=${BS} disk_bytes=${diskBytes} percent=${PCNTOFSECTOR}"
 	fi
 
 	printf '%s\n' "Looking for non-${CHAR}'s on ${CLIENTDISK}...."
 
 	if [[ $PCNTOFSECTOR == '100' ]]; then
 		printf "%s" "job_queue|${tagNum}|job_status|Verifying the entire disk" | /opt/uit-toolbox/parse
-		if [[ $(pv /dev/${CLIENTDISK} | xxd -p | grep --quiet -m 1 "[^${CHAR}]"; printf "%s" ${PIPESTATUS[2]}) == '0' ]]; then
+		if dryRunEnabled; then
+			dryRunLog "would verify entire disk: target=/dev/${CLIENTDISK} sectors=${sectorCount} bytes=${diskBytes} expected_hex=${EXPECTED_HEX}"
+			return 0
+		fi
+		if ! pv /dev/${CLIENTDISK} | verifyHexPatternStream_Shred "${EXPECTED_HEX}"; then
 		    PROCFAIL='1'
 			printf "%s" "job_queue|${tagNum}|job_status|fail - verifying erase" | /opt/uit-toolbox/parse
             read -t 10 -p "${BOLD}${RED}Verification test failed${RESET}${BOLD}. Press ${GREEN}Enter${RESET}${BOLD}..."
 			pkill --terminal tty1
 		else
-        	printf '%s\n' "${BOLD}The drive ${CLIENTDISK} is completely and securely wiped.${RESET}"
+			printf '%s\n' "${BOLD}The drive ${CLIENTDISK} is completely and securely wiped.${RESET}"
 			PROCFAIL='0'
+			return 0
 		fi
 	fi
 	
 	i=0
 	while [[ $i -lt $vrfySections && $PROCFAIL == '0' ]]; do
 		i=$((i + 1))
-		tput cuu1
-		tput el
+		if ! dryRunEnabled; then
+			tput cuu1
+			tput el
+		fi
 		printf '%s\n' "Verifying section ${i}/${vrfySections}"
 		if (( $i % 25 == 0 )); then
 			printf "%s" "job_queue|${tagNum}|job_status|Verifying section ${i}/${vrfySections}" | /opt/uit-toolbox/parse
 		fi
-		sectorMin=$((i * sectorSize))
-		sectorMax=$((sectorMin + sectorSize))
+		sectorMin=$(( (i - 1) * sectorCount / vrfySections ))
+		sectorMax=$(( i * sectorCount / vrfySections ))
 		sectorDiff=$((sectorMax - sectorMin))
-		COUNT=$((sectorDiff / 100 * PCNTOFSECTOR))
+		if [[ $sectorDiff -le 0 ]]; then
+			if dryRunEnabled; then
+				dryRunLog "verify section ${i}/${vrfySections}: empty section, skipping"
+			fi
+			continue
+		fi
+		COUNT=$((sectorDiff * PCNTOFSECTOR / 100))
+		if [[ $COUNT -le 0 && $PCNTOFSECTOR -gt 0 ]]; then
+			COUNT='1'
+		fi
+		if [[ $COUNT -gt $sectorDiff ]]; then
+			COUNT=$sectorDiff
+		fi
 		randSector=$(shuf -i ${sectorMin}-$((sectorMax - COUNT)) -n 1)
 
 
-		SKIP=$(shuf -i ${randSector}-${sectorMax} -n 1)
-    	if [[ $(dd if=/dev/${CLIENTDISK} bs=${BS} count=${COUNT} skip=${SKIP} iflag=fullblock status=none 2>/dev/null \
-        	| xxd -p | grep --quiet -m 1 "[^${CHAR}]"; printf "%s" ${PIPESTATUS[2]}) == '0' ]]; then
+		SKIP=$(shuf -i ${randSector}-$((sectorMax - COUNT)) -n 1)
+		if dryRunEnabled; then
+			dryRunSectionLog "verify" "${i}" "${vrfySections}" "${sectorMin}" "${sectorMax}" "${sectorDiff}" "${COUNT}" "${SKIP}" "${BS}"
+			continue
+		fi
+	    	if ! dd if=/dev/${CLIENTDISK} bs=${BS} count=${COUNT} skip=${SKIP} iflag=fullblock status=none 2>/dev/null \
+	        	| verifyHexPatternStream_Shred "${EXPECTED_HEX}"; then
             	PROCFAIL='1'
 				printf "%s" "job_queue|${tagNum}|job_status|fail - verifying erase" | /opt/uit-toolbox/parse
             	read -t 10 -p "${BOLD}${RED}Verification test failed${RESET}${BOLD}. Press ${GREEN}Enter${RESET}${BOLD}..."
@@ -965,8 +1117,10 @@ function vrfyDisk_Shred {
 	printf '\n'
 	printf '%s\n' "Verifing the first sector of the disk...."
 		printf "%s" "job_queue|${tagNum}|job_status|Verifing the first sector of the disk..." | /opt/uit-toolbox/parse
-	if [[ $(dd if=/dev/${CLIENTDISK} count=${sectorCount} skip=0 iflag=fullblock status=none 2>/dev/null \
-        | xxd -p | grep --quiet -m 1 "[^${CHAR}]"; printf "%s" ${PIPESTATUS[2]}) == '0'  ]]; then
+	if dryRunEnabled; then
+		dryRunLog "verify boundary: first_sector=0 count=1 bytes=${BS} expected_hex=${EXPECTED_HEX}"
+	elif ! dd if=/dev/${CLIENTDISK} bs=${BS} count=1 skip=0 iflag=fullblock status=none 2>/dev/null \
+	        | verifyHexPatternStream_Shred "${EXPECTED_HEX}"; then
             	PROCFAIL='1'
 				printf "%s" "job_queue|${tagNum}|job_status|fail - verifying erase" | /opt/uit-toolbox/parse
             	read -t 10 -p "${BOLD}${RED}Verification test failed${RESET}${BOLD}. Press ${GREEN}Enter${RESET}${BOLD}..."
@@ -974,9 +1128,11 @@ function vrfyDisk_Shred {
     fi
 	printf '%s\n' "Verifing the last sector of the disk...."
 		printf "%s" "job_queue|${tagNum}|job_status|Verifing the last sector of the disk..." | /opt/uit-toolbox/parse
-    if [[ $(dd if=/dev/${CLIENTDISK} count=${sectorCount} skip=$(( ${sectorCount} - 1 )) \
+	if dryRunEnabled; then
+		dryRunLog "verify boundary: last_sector=$((sectorCount - 1)) count=1 bytes=${BS} expected_hex=${EXPECTED_HEX}"
+	elif ! dd if=/dev/${CLIENTDISK} bs=${BS} count=1 skip=$(( sectorCount - 1 )) \
 		iflag=fullblock status=none 2>/dev/null \
-        | xxd -p | grep --quiet -m 1 "[^${CHAR}]"; printf "%s" ${PIPESTATUS[2]}) == '0' ]]; then
+	        | verifyHexPatternStream_Shred "${EXPECTED_HEX}"; then
             	PROCFAIL='1'
 				printf "%s" "job_queue|${tagNum}|job_status|fail - verifying erase" | /opt/uit-toolbox/parse
 				read -t 10 -p "${BOLD}${RED}Verification test failed${RESET}${BOLD}. Press ${GREEN}Enter${RESET}${BOLD}..."
@@ -1003,14 +1159,24 @@ function secErase_Shred {
 	if [[ $CLIENTDISK =~ $SSD_REGEX ]]; then 
 		printf '%s\n' "Using Secure Erase on ${CLIENTDISK}. This can take a while, please keep the device powered on...."
 		if [[ /dev/${CLIENTDISK} ]]; then
-			hdparm --user-master u --security-set-pass UHouston /dev/${CLIENTDISK} &>/dev/null
-			hdparm --user-master u --security-erase UHouston /dev/${CLIENTDISK} &>/dev/null
+			if dryRunEnabled; then
+				dryRunLog "would run: hdparm --user-master u --security-set-pass UHouston /dev/${CLIENTDISK}"
+				dryRunLog "would run: hdparm --user-master u --security-erase UHouston /dev/${CLIENTDISK}"
+			else
+				hdparm --user-master u --security-set-pass UHouston /dev/${CLIENTDISK} &>/dev/null
+				hdparm --user-master u --security-erase UHouston /dev/${CLIENTDISK} &>/dev/null
+			fi
 		fi
 	elif [[ $CLIENTDISK =~ $NVME_REGEX ]]; then
 		printf '%s\n' "Using Secure Erase on ${CLIENTDISK:0:-2}. This can take a while, please keep the device powered on...."
 		if [[ /dev/${CLIENTDISK:0:-2} ]]; then
-			nvme format /dev/${CLIENTDISK:0:-2} --ses=1 --namespace-id=1 &>/dev/null
-			nvme format /dev/${CLIENTDISK:0:-2} --ses=2 --namespace-id=1 &>/dev/null
+			if dryRunEnabled; then
+				dryRunLog "would run: nvme format /dev/${CLIENTDISK:0:-2} --ses=1 --namespace-id=1"
+				dryRunLog "would run: nvme format /dev/${CLIENTDISK:0:-2} --ses=2 --namespace-id=1"
+			else
+				nvme format /dev/${CLIENTDISK:0:-2} --ses=1 --namespace-id=1 &>/dev/null
+				nvme format /dev/${CLIENTDISK:0:-2} --ses=2 --namespace-id=1 &>/dev/null
+			fi
 		fi
 	else
 		printf "%s" "job_queue|${tagNum}|job_status|fail - secure erase" | /opt/uit-toolbox/parse
@@ -1027,8 +1193,13 @@ function secUnlock_Shred {
 	if [[ $CLIENTDISK =~ $SSD_REGEX ]]; then 
 		printf '%s\n' "Unlocking ${CLIENTDISK}, please keep the device powered on...."
 		if [[ /dev/${CLIENTDISK} ]]; then
-			hdparm --user-master u --security-unlock UHouston /dev/${CLIENTDISK} &>/dev/null
-			hdparm --user-master u --security-disable UHouston /dev/${CLIENTDISK} &>/dev/null
+			if dryRunEnabled; then
+				dryRunLog "would run: hdparm --user-master u --security-unlock UHouston /dev/${CLIENTDISK}"
+				dryRunLog "would run: hdparm --user-master u --security-disable UHouston /dev/${CLIENTDISK}"
+			else
+				hdparm --user-master u --security-unlock UHouston /dev/${CLIENTDISK} &>/dev/null
+				hdparm --user-master u --security-disable UHouston /dev/${CLIENTDISK} &>/dev/null
+			fi
 		fi
 	elif [[ $CLIENTDISK =~ $NVME_REGEX ]]; then
 		printf '%s\n' "NVME drives do not need to be unlocked. Continuing...."
@@ -1221,31 +1392,31 @@ function schneierMode_Shred {
 
 	printf '\n'
 	printf '%s\n' "Step [3/7]: "
-	WMODE='rand'
+	WMODE='random'
 	PCNTOFSECTOR='100'
 	writeDisk_Shred
 
 	printf '\n'
 	printf '%s\n' "Step [4/7]: "
-	WMODE='rand'
+	WMODE='random'
 	PCNTOFSECTOR='100'
 	writeDisk_Shred
 
 	printf '\n'
 	printf '%s\n' "Step [5/7]: "
-	WMODE='rand'
+	WMODE='random'
 	PCNTOFSECTOR='100'
 	writeDisk_Shred
 
 	printf '\n'
 	printf '%s\n' "Step [6/7]: "
-	WMODE='rand'
+	WMODE='random'
 	PCNTOFSECTOR='100'
 	writeDisk_Shred
 
 	printf '\n'
 	printf '%s\n' "Step [7/7]: "
-	WMODE='rand'
+	WMODE='random'
 	PCNTOFSECTOR='100'
 	writeDisk_Shred
 }
@@ -1253,7 +1424,7 @@ function schneierMode_Shred {
 
 
 function gutmann {
-	n='0'
+	n='1'
 	GUTMANNARRAY=(01010101 10101010 10010010 01001001 00100100 00000000 00010001 00100010)
 	GUTMANNARRAY+=(00110011 01000100 01010101 01100110 01110111 10001000 10011001 10101010)
 	GUTMANNARRAY+=(10111011 11001100 11011101 11101110 11111111 10010010 01001001 00100100)
@@ -1271,25 +1442,20 @@ function gutmann {
 			WMODE='randPattern_Shred'
 			PCNTOFSECTOR='100'
 			writeDisk_Shred
-		fi
-
-		if [[ $n -le 31 && $n -gt 4 ]]; then
+		elif [[ $n -le 31 ]]; then
 			WMODE='char'
 			PCNTOFSECTOR='100'
-			for i in ${GUTMANNARRAY[@]}; do
-				RANDNUM=$(shuf -i 1-26 -n 1)
-				CHAR=${GUTMANARRAY[$RANDNUM]}
-			done
+			CHAR=${GUTMANNARRAY[$((n - 5))]}
 			printf '%s\n' "[${n}/35] Writing pattern ${CHAR} to ${CLIENTDISK}"
 			writeDisk_Shred
-		fi
-
-		if [[ $n -gt 31 ]]; then
+		else
 			printf '%s\n' "[${n}/35] Writing \"${RANDPATTERN}\" to ${CLIENTDISK}"
 			WMODE='randPattern_Shred'
 			PCNTOFSECTOR='100'
 			writeDisk_Shred
 		fi
+
+		n=$((n + 1))
 
 	done
 }
