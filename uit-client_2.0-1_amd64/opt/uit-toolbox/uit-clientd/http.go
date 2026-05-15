@@ -520,11 +520,12 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 		}
 	case "disk_model":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
+		diskModel := strings.TrimSpace(inputPayload.StringValue)
 		inputPayload.Value = &ClientHardwareView{
 			Tagnumber:       tagnumber,
 			SystemSerial:    systemSerial,
 			TransactionUUID: *inputPayload.TransactionUUID,
-			DiskModel:       &inputPayload.StringValue,
+			DiskModel:       &diskModel,
 		}
 	case "disk_name":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/job_stats"}
