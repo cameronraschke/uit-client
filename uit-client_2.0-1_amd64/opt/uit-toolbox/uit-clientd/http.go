@@ -144,6 +144,15 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 		return nil, fmt.Errorf("failed to unmarshal input into HTTPRequestPayload: %w", err)
 	}
 
+	inputPayload.Key = strings.TrimSpace(inputPayload.Key)
+	inputPayload.RequestType = strings.TrimSpace(inputPayload.RequestType)
+	inputPayload.SystemSerial = strings.TrimSpace(inputPayload.SystemSerial)
+	inputPayload.StringValue = strings.TrimSpace(inputPayload.StringValue)
+	if inputPayload.TransactionUUID != nil {
+		trimmedUUID := strings.TrimSpace(*inputPayload.TransactionUUID)
+		inputPayload.TransactionUUID = &trimmedUUID
+	}
+
 	// Key
 	if strings.TrimSpace(inputPayload.Key) == "" {
 		return nil, fmt.Errorf("key is empty")
@@ -520,12 +529,11 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 		}
 	case "disk_model":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
-		diskModel := strings.TrimSpace(inputPayload.StringValue)
 		inputPayload.Value = &ClientHardwareView{
 			Tagnumber:       tagnumber,
 			SystemSerial:    systemSerial,
 			TransactionUUID: *inputPayload.TransactionUUID,
-			DiskModel:       &diskModel,
+			DiskModel:       &inputPayload.StringValue,
 		}
 	case "disk_name":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/job_stats"}
@@ -852,10 +860,6 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 		}
 	default:
 		return nil, fmt.Errorf("unsupported key: '%s'", inputPayload.Key)
-	}
-
-	if strValue, ok := inputPayload.Value.(*string); ok && strValue != nil {
-		*strValue = strings.TrimSpace(*strValue)
 	}
 
 	return &HTTPRequest{
