@@ -853,6 +853,10 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 		return nil, fmt.Errorf("unsupported key: '%s'", inputPayload.Key)
 	}
 
+	if strValue, ok := inputPayload.Value.(*string); ok && strValue != nil {
+		*strValue = strings.TrimSpace(*strValue)
+	}
+
 	return &HTTPRequest{
 		Config:  httpRequestConfig,
 		Payload: inputPayload,
