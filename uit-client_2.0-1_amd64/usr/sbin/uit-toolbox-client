@@ -1010,17 +1010,17 @@ function writeDisk_Shred {
 	done
 
 	printf '\n'
-	printf '%s\n' "Completely filling the first sector...."
+	printf '%s\n' "Completely filling the first 10 sectors...."
 	if dryRunEnabled; then
-		dryRunLog "write boundary: first_sector=0 count=1 bytes=${BS}"
+		dryRunLog "write boundary: first_sector=0 count=10 bytes=$((BS * 10))"
 	else
-		emitSource_Shred | dd bs=${BS} count=1 seek=0 of=/dev/${CLIENTDISK} iflag=fullblock status=none 2>/dev/null
+		emitSource_Shred | dd bs=${BS} count=10 seek=0 of=/dev/${CLIENTDISK} iflag=fullblock status=none 2>/dev/null
 	fi
-	printf '%s\n' "Completely filling the last sector...."
+	printf '%s\n' "Completely filling the last 10 sectors...."
 	if dryRunEnabled; then
-		dryRunLog "write boundary: last_sector=$((sectorCount - 1)) count=1 bytes=${BS}"
+		dryRunLog "write boundary: last_sector=$((sectorCount - 10)) count=10 bytes=$((BS * 10))"
 	else
-		emitSource_Shred | dd bs=${BS} count=1 seek=$(( sectorCount - 1 )) of=/dev/${CLIENTDISK} iflag=fullblock status=none 2>/dev/null
+		emitSource_Shred | dd bs=${BS} count=10 seek=$(( sectorCount - 10 )) of=/dev/${CLIENTDISK} iflag=fullblock status=none 2>/dev/null
 	fi
 }
 
@@ -1115,22 +1115,22 @@ function vrfyDisk_Shred {
 	done
 
 	printf '\n'
-	printf '%s\n' "Verifing the first sector of the disk...."
-		printf "%s" "job_queue|${tagNum}|job_status|Verifing the first sector of the disk..." | /opt/uit-toolbox/parse
+	printf '%s\n' "Verifing the first 10 sectors of the disk...."
+		printf "%s" "job_queue|${tagNum}|job_status|Verifing the first 10 sectors of the disk..." | /opt/uit-toolbox/parse
 	if dryRunEnabled; then
-		dryRunLog "verify boundary: first_sector=0 count=1 bytes=${BS} expected_hex=${EXPECTED_HEX}"
-	elif ! dd if=/dev/${CLIENTDISK} bs=${BS} count=1 skip=0 iflag=fullblock status=none 2>/dev/null \
+		dryRunLog "verify boundary: first_sector=0 count=10 bytes=$((BS * 10)) expected_hex=${EXPECTED_HEX}"
+	elif ! dd if=/dev/${CLIENTDISK} bs=${BS} count=10 skip=0 iflag=fullblock status=none 2>/dev/null \
 	        | verifyHexPatternStream_Shred "${EXPECTED_HEX}"; then
             	PROCFAIL='1'
 				printf "%s" "job_queue|${tagNum}|job_status|fail - verifying erase" | /opt/uit-toolbox/parse
             	read -t 10 -p "${BOLD}${RED}Verification test failed${RESET}${BOLD}. Press ${GREEN}Enter${RESET}${BOLD}..."
 				pkill --terminal tty1
     fi
-	printf '%s\n' "Verifing the last sector of the disk...."
-		printf "%s" "job_queue|${tagNum}|job_status|Verifing the last sector of the disk..." | /opt/uit-toolbox/parse
+	printf '%s\n' "Verifing the last 10 sectors of the disk...."
+		printf "%s" "job_queue|${tagNum}|job_status|Verifing the last 10 sectors of the disk..." | /opt/uit-toolbox/parse
 	if dryRunEnabled; then
-		dryRunLog "verify boundary: last_sector=$((sectorCount - 1)) count=1 bytes=${BS} expected_hex=${EXPECTED_HEX}"
-	elif ! dd if=/dev/${CLIENTDISK} bs=${BS} count=1 skip=$(( sectorCount - 1 )) \
+		dryRunLog "verify boundary: last_sector=$((sectorCount - 10)) count=10 bytes=$((BS * 10)) expected_hex=${EXPECTED_HEX}"
+	elif ! dd if=/dev/${CLIENTDISK} bs=${BS} count=10 skip=$(( sectorCount - 10 )) \
 		iflag=fullblock status=none 2>/dev/null \
 	        | verifyHexPatternStream_Shred "${EXPECTED_HEX}"; then
             	PROCFAIL='1'
