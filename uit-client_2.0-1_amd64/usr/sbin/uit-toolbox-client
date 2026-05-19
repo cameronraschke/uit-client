@@ -1709,7 +1709,7 @@ function execute_Shred {
 
 function execute {
 	resetUsageData
-	/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key job_start_time --value $(date --iso-8601=seconds) --post
+	/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "job_start_time" --value "$(date --iso-8601=seconds)" --post
 	printf "%s" "job_queue|${tagNum}|job_queued|TRUE" | /opt/uit-toolbox/parse
 	printf "%s" "job_queue|${tagNum}|job_active|TRUE" | /opt/uit-toolbox/parse
 
@@ -1727,7 +1727,7 @@ function execute {
 			printf "%s" "job_queue|${tagNum}|job_name|generic-erase+clone" | /opt/uit-toolbox/parse
 		fi
 		basicEraseMode_Shred
-		/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key clone_mode --value "${cloneMode}" --post
+		# /sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "clone_mode" --value "${cloneMode}" --post
 		/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "erase_mode" --value "${shredMode}" --post
 
 		start_shred=$SECONDS
@@ -1825,7 +1825,7 @@ function terminate {
 				terminateAction="Cloned"
 			fi
 
-			/sbin/uit-cli --tag "${tagNum}" --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key clone_completed --value "TRUE" --post
+			/sbin/uit-cli --tag "${tagNum}" --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "clone_completed" --value "TRUE" --post
 			printf "%s" "api_post|${tagNum}|health_clone_completed|1|${UUID}" | /opt/uit-toolbox/parse
 
 			if [[ $APPSELECT == "EC" ]]; then
