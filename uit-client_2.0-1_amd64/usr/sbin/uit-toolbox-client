@@ -264,7 +264,7 @@ function collectDiskData {
 			rm /root/smartctl-data
 		fi
 		smartctl -t short -a /dev/${i} > /root/smartctl-data
-		/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "disk_name" --value "${i}" --post
+		# /sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "disk_name" --value "${i}" --post
 
 		# Disk model
 		diskModel=$(cat /sys/class/block/${i}/device/model 2>/dev/null)
@@ -502,15 +502,6 @@ fi
 	###Boot Times
 	# bootTime=$(systemd-analyze | grep -oP '[0-9]+[0-9.]*' | head -n 1)
 	# 	uit-cli --serial "${systemSerial}" --key "boot_time" --value "${bootTime}" --uuid "${UUID}"
-
-	###CPU Info
-	for i in $(find /sys/class/hwmon/ -mindepth 1); do
-    type=$(cat ${i}/name)
-    if [[ $type == "coretemp" ]]; then
-        cpuTemp=$(cat ${i}/temp1_input)
-		printf "%s" "general|avg_cpu_temp|${cpuTemp}|${UUID}" | /opt/uit-toolbox/parse
-        fi
-	done
 
 	tpmVersion=$(cat /sys/class/tpm/tpm0/tpm_version_major 2>/dev/null)
 	uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "tpm_version" --value "${tpmVersion}" --post
@@ -1712,6 +1703,15 @@ function execute {
 	/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "job_start_time" --value "$(date --iso-8601=seconds)" --post
 	printf "%s" "job_queue|${tagNum}|job_queued|TRUE" | /opt/uit-toolbox/parse
 	printf "%s" "job_queue|${tagNum}|job_active|TRUE" | /opt/uit-toolbox/parse
+
+	###CPU Info
+	for i in $(find /sys/class/hwmon/ -mindepth 1); do
+    type=$(cat ${i}/name)
+    if [[ $type == "coretemp" ]]; then
+			cpuTemp=$(cat ${i}/temp1_input)
+			printf "%s" "general|avg_cpu_temp|${cpuTemp}|${UUID}" | /opt/uit-toolbox/parse
+		fi
+	done
 
 	if [[ $cloneMode == "savedisk" && ($APPSELECT == "E" || $APPSELECT == "EC") ]]; then
 		printf "%s" "job_queue|${tagNum}|job_status|fail - Can't erase master image" | /opt/uit-toolbox/parse
