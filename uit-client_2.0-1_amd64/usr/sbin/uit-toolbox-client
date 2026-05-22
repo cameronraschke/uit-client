@@ -1761,7 +1761,6 @@ function execute {
 		if [[ $jobName != "hpCloneOnly" ]]; then
 			printf "%s" "job_queue|${tagNum}|job_name|generic-clone" | /opt/uit-toolbox/parse
 		fi
-		/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "clone_mode" --value "${cloneMode}" --post
 		start_clone=$SECONDS
 		execute_Clone
 		cloneJobDuration=$((SECONDS - start_clone))
