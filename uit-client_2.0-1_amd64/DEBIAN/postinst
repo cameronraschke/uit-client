@@ -10,10 +10,17 @@ systemctl daemon-reload &>/dev/null
 /usr/bin/chronyc add server 10.0.0.1 iburst
 /usr/bin/chronyc makestep
 
-curl --silent --show-error 'http://10.0.0.1:8080/client/certs/uit-web.crt' --output /usr/local/share/ca-certificates/uit-web.crt
-while [ ! -f /usr/local/share/ca-certificates/uit-web.crt ]; do
+curl --silent --show-error 'http://10.0.0.1:8080/client/certs/client/certs/uit-ca.crt' --output /usr/local/share/ca-certificates/client/certs/uit-ca.crt
+while [ ! -f /usr/local/share/ca-certificates/client/certs/uit-ca.crt ]; do
   echo "Failed to download web cert, trying again..."
-  curl --silent --show-error 'http://10.0.0.1:8080/client/certs/uit-web.crt' --output /usr/local/share/ca-certificates/uit-web.crt
+  curl --silent --show-error 'http://10.0.0.1:8080/client/certs/client/certs/uit-ca.crt' --output /usr/local/share/ca-certificates/client/certs/uit-ca.crt
+  sleep 1
+done
+
+curl --silent --show-error 'http://10.0.0.1:8080/client/certs/client/certs/uit-ca-intermediate.crt' --output /usr/local/share/ca-certificates/client/certs/uit-ca-intermediate.crt
+while [ ! -f /usr/local/share/ca-certificates/client/certs/uit-ca-intermediate.crt ]; do
+  echo "Failed to download web cert, trying again..."
+  curl --silent --show-error 'http://10.0.0.1:8080/client/certs/client/certs/uit-ca-intermediate.crt' --output /usr/local/share/ca-certificates/client/certs/uit-ca-intermediate.crt
   sleep 1
 done
 update-ca-certificates
