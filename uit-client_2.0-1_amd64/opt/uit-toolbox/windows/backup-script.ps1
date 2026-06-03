@@ -21,6 +21,6 @@ Set-Variable -name "localImageZipFile" -Value "$($dialogObj.SelectedPath)\image-
 
 scp -r ${remoteUser}@${remoteHost}:/opt/uit-toolbox/sql-backups/ $localSqlDir
 scp -r ${remoteUser}@${remoteHost}:/opt/uit-toolbox/uit-web/inventory-images/ $localImageDir
-scp -r ${remoteUser}@${remoteHost}:/opt/inventory-images/ $localMigratedImageDir
+scp -r ${remoteUser}@${remoteHost}:/opt/inventory_images/ $localMigratedImageDir
 
 #Compress-Archive -Path "${localImageDir}\*" -DestinationPath "${localImageZipFile}" -Force
