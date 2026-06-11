@@ -112,6 +112,15 @@ try {
 	Write-Host "Error retrieving TPM version: $_"
 }
 
+# Secure boot state
+$arr['secure_boot_enabled'] = $null
+try {
+	$secureBootEnabled = Confirm-SecureBootUEFI -ErrorAction Stop
+	$arr['secure_boot_enabled'] = $secureBootEnabled
+} catch {
+	Write-Host "Error retrieving secure boot state: $_"
+}
+
 # OS Install date
 $arr['os_installed_at'] = $null
 if (-not [System.String]::IsNullOrWhiteSpace($computerInfoObj.OsInstallDate)) {
