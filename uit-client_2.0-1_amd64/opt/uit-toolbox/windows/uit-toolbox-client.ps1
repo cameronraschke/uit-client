@@ -531,19 +531,23 @@ foreach ($key in $arr.Keys) {
 	}
 }
 
-Add-Type -AssemblyName System.Windows.Forms
-$dialogObj = New-Object System.Windows.Forms.FolderBrowserDialog
-$dialogObj.Description = "Select a folder to save the backups"
-$fileDialog = $dialogObj.ShowDialog()
+# Add-Type -AssemblyName System.Windows.Forms
+# $dialogObj = New-Object System.Windows.Forms.FolderBrowserDialog
+# $dialogObj.Description = "Select a folder to save the backups"
+# $fileDialog = $dialogObj.ShowDialog()
 
-if ($fileDialog -eq [System.Windows.Forms.DialogResult]::OK -and 
-	-not [System.String]::IsNullOrWhiteSpace($dialogObj.SelectedPath)) {
-	Write-Host "Selected folder: $($dialogObj.SelectedPath)"
-} else {
-	Write-Host "No folder selected. Exiting."
-	exit
-}
+# if ($fileDialog -eq [System.Windows.Forms.DialogResult]::OK -and 
+# 	-not [System.String]::IsNullOrWhiteSpace($dialogObj.SelectedPath)) {
+# 	Write-Host "Selected folder: $($dialogObj.SelectedPath)"
+# } else {
+# 	Write-Host "No folder selected. Exiting."
+# 	exit
+# }
+
+$desktop = [Environment]::GetFolderPath("Desktop")
+Set-Variable -Name "outDir" -Value (Join-Path $desktop "00-uit-client-system-info.json")
+
 
 $jsonStr = $httpBodyArr | ConvertTo-Json -Depth 4
-Out-File -FilePath "$($dialogObj.SelectedPath)\uit-system-info.json" -InputObject $jsonStr -Encoding UTF8
+Out-File -FilePath "$outDir" -InputObject $jsonStr -Encoding UTF8
 Write-Host $jsonStr
