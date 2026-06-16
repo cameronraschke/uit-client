@@ -30,6 +30,14 @@ $arr = @{}
 # Current timestamp
 $arr['last_hardware_check'] = [System.DateTime]::Now.ToString("yyyy-MM-dd'T'HH:mm:sszzz")
 
+# System UUID/SMBIOS GUID
+$arr['system_uuid'] = $null
+if (-not [System.String]::IsNullOrWhiteSpace($win32ComputerSystemProductObj.UUID)) {
+	$arr['system_uuid'] = [System.String]$win32ComputerSystemProductObj.UUID.Trim()
+} else {
+	Write-Host "System SMBIOS GUID not found in WMI."
+}
+
 # Tag number
 $arr['tagnumber'] = $null
 $arr["tagnumber"] = [System.Int64]$tagNum
