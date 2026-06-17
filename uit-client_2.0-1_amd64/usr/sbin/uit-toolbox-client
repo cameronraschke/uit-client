@@ -492,7 +492,7 @@ fi
 
 
 	###Memory Data
-	memorySerial=$(dmidecode --type memory | grep -P '\tSerial Number' | awk '{ print $3 }' | tr '\n' '-' | sed 's/-$//g')
+	memorySerial=$(dmidecode --type memory | grep -P '\tSerial Number' | awk '{ print $3 }' | tr '\n' ';' | sed 's/;$//g')
 		uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "memory_serial" --value "${memorySerial}" --post
 	memoryCapacity=$(grep '^MemTotal' /proc/meminfo | awk '{ print $2 }')
 		uit-cli --tag "${tagNum}" --serial "${systemSerial}" --key "memory_capacity_kb" --value "${memoryCapacity}" --uuid "${UUID}" --post

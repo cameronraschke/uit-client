@@ -295,6 +295,19 @@ try {
 	Write-Host "Error retrieving memory capacity: $_"
 }
 
+# Memory serial numbers (per DIMM)
+$arr['memory_serial'] = $null
+try {
+	$memorySerialNumbers = $win32MemoryObj | Select-Object -ExpandProperty SerialNumber | Where-Object { -not [System.String]::IsNullOrWhiteSpace($_) } | ForEach-Object { $_.Trim() }
+	if ($memorySerialNumbers.Count -gt 0) {
+		$arr['memory_serial'] = $memorySerialNumbers -join ";"
+	} else {
+		Write-Host "Memory serial numbers not found."
+	}
+} catch {
+	Write-Host "Error retrieving memory serial numbers: $_"
+}
+
 # memory speed in MHz
 $arr['memory_speed_mhz'] = $null
 try {
