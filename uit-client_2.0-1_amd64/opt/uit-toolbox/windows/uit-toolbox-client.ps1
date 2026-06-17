@@ -441,7 +441,9 @@ if ($null -ne $wifiInterface) {
 }
 
 # Battery manufacturer
+$arr['battery_manufacture_date'] = $null
 $arr['battery_manufacturer'] = $null
+$arr['battery_model'] = $null
 $arr['battery_serial'] = $null
 $arr['battery_current_max_capacity'] = $null
 $arr['battery_design_capacity'] = $null
@@ -452,11 +454,29 @@ if ($null -ne $win32BatteryObj) {
 
 	# Battery static data class
 	if ($null -ne $batteryStaticDataObj) {
+		# Battery manufacture date
+		if (-not [System.String]::IsNullOrWhiteSpace($batteryStaticDataObj.ManufactureDate)) {
+			$parsedBatteryManufactureDate = [System.DateTime]::MinValue
+			if ([System.DateTime]::TryParse($batteryStaticDataObj.ManufactureDate, [ref]$parsedBatteryManufactureDate)) {
+				$arr['battery_manufacture_date'] = [System.String]$parsedBatteryManufactureDate.ToString("yyyy-MM-dd'T'HH:mm:sszzzz")
+			} else {
+				Write-Host "Failed to parse battery manufacture date."
+				$arr['battery_manufacture_date'] = $null
+			}
+		} else {
+			Write-Host "Battery manufacture date not found."
+		}
 		# Battery manufacturer
 		if (-not [System.String]::IsNullOrWhiteSpace($batteryStaticDataObj.ManufactureName)) {
 			$arr['battery_manufacturer'] = [System.String]$batteryStaticDataObj.ManufactureName.Trim()
 		} else {
 			Write-Host "Battery manufacturer not found."
+		}
+		# Battery model
+		if (-not [System.String]::IsNullOrWhiteSpace($batteryStaticDataObj.DeviceName)) {
+			$arr['battery_model'] = [System.String]$batteryStaticDataObj.DeviceName.Trim()
+		} else {
+			Write-Host "Battery model not found."
 		}
 		# Battery fully charged design capacity
 		if ($null -ne $batteryStaticDataObj.DesignedCapacity -and [System.Int64]$batteryStaticDataObj.DesignedCapacity -gt 0) {
