@@ -122,7 +122,7 @@ type ClientHardwareView struct {
 	BiosVersion               *string  `json:"bios_version,omitempty"`
 	BiosReleaseDate           *string  `json:"bios_release_date,omitempty"`
 	BiosFirmware              *string  `json:"bios_firmware,omitempty"`
-	MemorySerial              *string  `json:"memory_serial,omitempty"`
+	MemorySerial              []string `json:"memory_serial,omitempty"`
 	MemoryCapacityKB          *int64   `json:"memory_capacity_kb,omitempty"`
 	MemorySpeedMHz            *int64   `json:"memory_speed_mhz,omitempty"`
 }

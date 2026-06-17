@@ -740,11 +740,13 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 		}
 	case "memory_serial":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
+		trimmedSerial := strings.TrimSpace(inputPayload.StringValue)
+		serialNumArr := strings.Split(trimmedSerial, ";")
 		inputPayload.Value = &ClientHardwareView{
 			Tagnumber:       tagnumber,
 			SystemSerial:    systemSerial,
 			TransactionUUID: *inputPayload.TransactionUUID,
-			MemorySerial:    &inputPayload.StringValue,
+			MemorySerial:    serialNumArr,
 		}
 	case "memory_speed_mhz":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
