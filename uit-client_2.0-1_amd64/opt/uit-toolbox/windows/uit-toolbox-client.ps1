@@ -33,10 +33,7 @@ $jsonObject = [PSCustomObject]@{
 		tagnumber = [System.Int64]$tagNum
 		system_serial = $null
 	}
-	last_hardware_check = $null
 	system_uuid = $null
-	tagnumber = $null
-	system_serial = $null
 	system_manufacturer = $null
 	system_model = $null
 	system_sku = $null
@@ -81,7 +78,6 @@ $jsonObject = [PSCustomObject]@{
 	battery_design_capacity = $null
 	battery_charge_cycles = $null
 	battery_health = $null
-	updated_from_windows = $null
 }
 
 # System UUID/SMBIOS GUID
@@ -92,17 +88,13 @@ if (-not [System.String]::IsNullOrWhiteSpace($win32ComputerSystemProductObj.UUID
 	Write-Host "System SMBIOS GUID not found in WMI."
 }
 
-# Tag number
-$jsonObject.tagnumber = $null
-$jsonObject.tagnumber = [System.Int64]$tagNum
-
 # System serial
-$jsonObject.system_serial = $null
+$jsonObject.request_metadata.system_serial = $null
 if (-not [System.String]::IsNullOrWhiteSpace($win32ComputerSystemProductObj.IdentifyingNumber)) {
-	$jsonObject.system_serial = [System.String]$win32ComputerSystemProductObj.IdentifyingNumber.Trim()
+	$jsonObject.request_metadata.system_serial = [System.String]$win32ComputerSystemProductObj.IdentifyingNumber.Trim()
 } elseif (-not [System.String]::IsNullOrWhiteSpace($computerInfoObj.BiosSeralNumber)) {
 	# This is misspelled in PowerShell
-	$jsonObject.system_serial = [System.String]$computerInfoObj.BiosSeralNumber.Trim()
+	$jsonObject.request_metadata.system_serial = [System.String]$computerInfoObj.BiosSeralNumber.Trim()
 } else {
 	Write-Host "System serial number not found in WMI."
 }
@@ -596,9 +588,6 @@ if ($null -ne $win32BatteryObj) {
 } else {
 	Write-Host "Battery not found."
 }
-
-# Updated from Windows boolean
-$jsonObject.updated_from_windows = [System.Boolean]$true
 
 foreach ($key in $jsonObject.PSObject.Properties.Name) {
 	# Trim string values
