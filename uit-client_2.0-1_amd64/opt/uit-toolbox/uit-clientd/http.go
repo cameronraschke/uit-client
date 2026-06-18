@@ -316,11 +316,15 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 		}
 	case "bios_release_date":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/health"}
+		biosReleaseDate, err := time.Parse(time.RFC3339, inputPayload.StringValue)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing bios_release_date value: %w", err)
+		}
 		inputPayload.Value = &ClientHardwareView{
 			Tagnumber:       tagnumber,
 			SystemSerial:    systemSerial,
 			TransactionUUID: *inputPayload.TransactionUUID,
-			BiosReleaseDate: &inputPayload.StringValue,
+			BiosReleaseDate: &biosReleaseDate,
 		}
 	case "bios_version":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/health"}

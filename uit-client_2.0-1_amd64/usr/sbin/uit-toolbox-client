@@ -448,7 +448,7 @@ fi
 
 	biosVersion=$(dmidecode --string bios-version 2>/dev/null)
 	uit-cli --serial "${systemSerial}" --tag "${tagNum}"  --uuid "${UUID}" --key "bios_version" --value "${biosVersion}" --post
-	biosDate=$(dmidecode --string bios-release-date 2>/dev/null)
+	biosDate=$(dmidecode --string bios-release-date 2>/dev/null | date --rfc-3339=seconds)
 	uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "bios_release_date" --value "${biosDate}" --post
 	biosFirmwareRev=$(dmidecode --string firmware-revision 2>/dev/null)
 	uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "bios_firmware" --value "${biosFirmwareRev}" --post
