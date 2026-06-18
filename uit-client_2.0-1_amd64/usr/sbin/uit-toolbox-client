@@ -448,8 +448,12 @@ fi
 
 	biosVersion=$(dmidecode --string bios-version 2>/dev/null)
 	uit-cli --serial "${systemSerial}" --tag "${tagNum}"  --uuid "${UUID}" --key "bios_version" --value "${biosVersion}" --post
-	biosDate=$(date --iso-8601=seconds --date "$(sudo dmidecode --string bios-release-date 2>/dev/null)" 2>/dev/null)
-	uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "bios_release_date" --value "${biosDate}" --post
+	biosDate=$(dmidecode --string bios-release-date 2>/dev/null)
+	biosDateParsed=$(date --iso-8601=seconds --date "$biosDate" 2>/dev/null)
+	if [[ -z $biosDateParsed ]]; then
+		biosDateParsed=$biosDate # Make Go try to figure it out. Parsing in http.go
+	fi
+	uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "bios_release_date" --value "${biosDateParsed}" --post
 	biosFirmwareRev=$(dmidecode --string firmware-revision 2>/dev/null)
 	uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "bios_firmware" --value "${biosFirmwareRev}" --post
 	systemSerial=$(dmidecode --string system-serial-number 2>/dev/null)

@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -18,6 +19,13 @@ import (
 )
 
 var sharedHTTPClient = newHTTPClient()
+
+const (
+	iso8601Regex                     = `^20[0-2]{1}[0-9]-[0-1]{1}[0-9]{1}-[0-3]{1}[0-9]{1}T[0-2]{1}[0-9]:[0-5]{1}[0-9]:[0-5]{1}[0-9](Z|[\+\-][0-2]{1}[0-9]:[0-5]{1}[0-9])$`
+	linuxDateCommandWithISOFlagRegex = `^20[0-2]{1}[0-9]\-[0-1]{1}[0-9]{1}-[0-3]{1}[0-9]{1} [0-2]{1}[0-9]:[0-5]{1}[0-9]:[0-5]{1}[0-9]{1}.*$`
+	usaDateFormatRegex               = `^[0-1]{1}[0-9]{1}\/[0-3]{1}[0-9]{1}\/20[0-2]{1}[0-9]{1}.*$`
+	weirdUSAPeriodDateFormatRegex    = `^[0-1]{1}[0-9]{1}\.[0-3]{1}[0-9]{1}\.20[0-2]{1}[0-9]{1}.*$`
+)
 
 func newHTTPClient() *http.Client {
 	tlsConfig := &tls.Config{
@@ -316,6 +324,33 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 		}
 	case "bios_release_date":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/health"}
+		if strings.TrimSpace(inputPayload.StringValue) == "" {
+			return nil, fmt.Errorf("bios_release_date value cannot be empty on request to update it")
+		}
+		iso8601Matched, err := regexp.MatchString(iso8601Regex, inputPayload.StringValue)
+		if err != nil {
+			return nil, fmt.Errorf("error validating bios_release_date value: %w", err)
+		}
+		linuxDateCommandWithISOFlagMatched, err := regexp.MatchString(linuxDateCommandWithISOFlagRegex, inputPayload.StringValue)
+		if err != nil {
+			return nil, fmt.Errorf("error validating bios_release_date value: %w", err)
+		}
+		usaDateFormatMatched, err := regexp.MatchString(usaDateFormatRegex, inputPayload.StringValue)
+		if err != nil {
+			return nil, fmt.Errorf("error validating bios_release_date value: %w", err)
+		}
+		weirdUSAPeriodDateFormatMatched, err := regexp.MatchString(weirdUSAPeriodDateFormatRegex, inputPayload.StringValue)
+		if err != nil {
+			return nil, fmt.Errorf("error validating bios_release_date value: %w", err)
+		}
+		if weirdUSAPeriodDateFormatMatched {
+			// Convert the weird US format to an ISO date format YYYY-MM-DD
+			parts := strings.Split(inputPayload.StringValue, ".")
+			inputPayload.StringValue = fmt.Sprintf("%s-%s-%s", parts[2], parts[0], parts[1])
+		}
+		if !iso8601Matched && !linuxDateCommandWithISOFlagMatched && !usaDateFormatMatched && !weirdUSAPeriodDateFormatMatched {
+			return nil, fmt.Errorf("bios_release_date value is not in any valid date/time format: %s", inputPayload.StringValue)
+		}
 		biosReleaseDate, err := time.Parse(time.RFC3339, inputPayload.StringValue)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing bios_release_date value: %w", err)
