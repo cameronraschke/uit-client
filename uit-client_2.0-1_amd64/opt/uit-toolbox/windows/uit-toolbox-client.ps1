@@ -24,6 +24,7 @@ $batteryStaticDataObj = (Get-WmiObject -Namespace "root\wmi" -Class "BatteryStat
 $batteryCycleCountObj = (Get-WmiObject -Namespace "root\wmi" -ClassName BatteryCycleCount -ErrorAction SilentlyContinue)
 $batteryFullChargedCapacityObj = (Get-CimInstance -Namespace "root\wmi" -ClassName "BatteryFullChargedCapacity" -ErrorAction SilentlyContinue)
 $dsregObj = (dsregcmd /status)
+$installedPackages = Get-Package -ErrorAction SilentlyContinue
 
 $jsonObject = [PSCustomObject]@{
 	request_metadata = @{
@@ -78,6 +79,7 @@ $jsonObject = [PSCustomObject]@{
 	battery_design_capacity = $null
 	battery_charge_cycles = $null
 	battery_health = $null
+	installed_apps = $null
 }
 
 # System UUID/SMBIOS GUID
@@ -587,6 +589,12 @@ if ($null -ne $win32BatteryObj) {
 	}
 } else {
 	Write-Host "Battery not found."
+}
+
+if ($null -eq $installedPackages) {
+	Write-Host "Installed applications not found."
+} else {
+	$jsonObject.installed_apps = ($installedPackages | Select-Object -Property Name, Version | Sort-Object -Property Name | ForEach-Object { "$($_.Name) ($($_.Version))" }) -join ";"
 }
 
 foreach ($key in $jsonObject.PSObject.Properties.Name) {
