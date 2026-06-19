@@ -19,9 +19,9 @@ Set-Variable -name "remoteUser" -Value ""
 $desktop = [Environment]::GetFolderPath("Desktop")
 Set-Variable -Name "outDir" -Value (Join-Path $desktop "00-uit-web-backups\$dateString")
 Set-Variable -name "localDir" -Value $dialogObj.SelectedPath
-Set-Variable -name "backupPgDumpDir" -Value "$outDir\sql-backups\$dateString"
-Set-Variable -name "backupClientMediaDir" -Value "$outDir\image-backups\$dateString"
-Set-Variable -name "backupMigratedClientMediaDir" -Value "$outDir\migrated-image-backups\$dateString"
+Set-Variable -name "backupPgDumpDir" -Value "$outDir\sql-backups\"
+Set-Variable -name "backupClientMediaDir" -Value "$outDir\image-backups\"
+Set-Variable -name "backupMigratedClientMediaDir" -Value "$outDir\migrated-image-backups\"
 # Set-Variable -name "localImageZipFile" -Value "$($dialogObj.SelectedPath)\image-backups.zip"
 
 mkdir -Path $outDir -Force
