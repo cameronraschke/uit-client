@@ -493,7 +493,7 @@ try {
 # Wi-Fi MAC address
 $jsonObject.wifi_mac_addr = $null
 # Interface type 71 is for wireless interfaces
-$wifiInterface = Get-NetAdapter -Physical | Where-Object { $_.Status -eq "Up" -and $_.InterfaceType -eq 71 } | Select-Object -First 1
+$wifiInterface = Get-NetAdapter -Physical | Where-Object { $_.InterfaceType -eq 71 } | Select-Object -First 1
 if ($null -ne $wifiInterface) {
 	$wifiMac = ($wifiInterface | Select-Object -ExpandProperty MacAddress)
 	if (-not [System.String]::IsNullOrWhiteSpace($wifiMac)) {
