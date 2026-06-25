@@ -1,28 +1,112 @@
 <?xml version="1.0" encoding="utf-8"?>
 <unattend xmlns="urn:schemas-microsoft-com:unattend">
-	<!-- Specialize pass - runs during initial setup -->
-	<settings pass="specialize">
-		<component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-			<!-- Copies your Audit Mode desktop tweaks to all future users -->
-			<CopyProfile>false</CopyProfile>
-		</component>
-	</settings>
-	<!-- OOBE system pass - Windows setup screens -->
-	<settings pass="oobeSystem">
-		<component name="Microsoft-Windows-International-Core" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-			<InputLocale>en-US</InputLocale>
-			<SystemLocale>en-US</SystemLocale>
-			<UILanguage>en-US</UILanguage>
-			<UserLocale>en-US</UserLocale>
-		</component>
-		<component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-			<OOBE>
-				<HideEULAPage>true</HideEULAPage>
-				<HideOnlineAccountScreens>true</HideOnlineAccountScreens>
-				<HideUserAccountPage>true</HideUserAccountPage>
-				<ProtectYourPC>3</ProtectYourPC>
-			</OOBE>
-			<TimeZone>Central Standard Time</TimeZone>
-		</component>
-	</settings>
+    <servicing>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-Client-LanguagePack-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="en-US" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-Licenses-Professional-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="en-US" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Edge-WebView-FOD-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-Ethernet-Client-Intel-E1i68x64-FOD-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-Ethernet-Client-Intel-E2f68-FOD-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-Ethernet-Client-Realtek-Rtcx21x64-FOD-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-Hello-Face-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-Licenses-Professional-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-FodMetadataServicing-Desktop-Metadata-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-ProfessionalEdition" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Package_for_RollupFix" version="26100.6584.1.20" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Package_for_DotNetRollup_481" version="10.0.9319.1" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Package_for_KB5054156" version="26100.5503.1.1" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Package_for_ServicingStack_5074" version="26100.5074.1.7" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+    </servicing>
+    <settings pass="specialize">
+        <component name="Microsoft-Windows-MicrosoftEdgeBrowser" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <StartPages>
+                <StartPage wcm:action="add">
+                    <StartPageKey>AccessUH</StartPageKey>
+                    <StartPageUrl>https://accessuh.uh.edu</StartPageUrl>
+                </StartPage>
+            </StartPages>
+        </component>
+    </settings>
+    <settings pass="windowsPE">
+        <component name="Microsoft-Windows-International-Core-WinPE" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <SetupUILanguage>
+                <UILanguage>en-US</UILanguage>
+            </SetupUILanguage>
+            <InputLocale>en-US</InputLocale>
+            <SystemLocale>en-US</SystemLocale>
+            <UILanguage>en-US</UILanguage>
+            <UserLocale>en-US</UserLocale>
+        </component>
+    </settings>
+    <settings pass="offlineServicing">
+        <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <ComputerName>uit-hp</ComputerName>
+        </component>
+    </settings>
+    <settings pass="auditSystem">
+        <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <UserAccounts>
+                <LocalAccounts>
+                    <LocalAccount wcm:action="add">
+                        <Password>
+                            <Value>VQBIAGkAdAAjADcANwAyADAANAAjAFAAYQBzAHMAdwBvAHIAZAA=</Value>
+                            <PlainText>false</PlainText>
+                        </Password>
+                        <DisplayName>admin</DisplayName>
+                        <Group>Administrators</Group>
+                        <Name>admin</Name>
+                    </LocalAccount>
+                    <LocalAccount wcm:action="add">
+                        <Password>
+                            <Value>VQBIAG8AdQBzAHQAbwBuACEAUABhAHMAcwB3AG8AcgBkAA==</Value>
+                            <PlainText>false</PlainText>
+                        </Password>
+                        <DisplayName>student</DisplayName>
+                        <Name>student</Name>
+                    </LocalAccount>
+                </LocalAccounts>
+            </UserAccounts>
+            <TimeZone>Central Standard Time</TimeZone>
+        </component>
+    </settings>
+    <settings pass="oobeSystem">
+        <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <OOBE>
+                <HideEULAPage>true</HideEULAPage>
+                <HideLocalAccountScreen>true</HideLocalAccountScreen>
+                <HideOEMRegistrationScreen>true</HideOEMRegistrationScreen>
+                <HideOnlineAccountScreens>true</HideOnlineAccountScreens>
+                <HideWirelessSetupInOOBE>true</HideWirelessSetupInOOBE>
+                <ProtectYourPC>3</ProtectYourPC>
+            </OOBE>
+        </component>
+    </settings>
+    <cpi:offlineImage cpi:source="wim:c:/users/caraschk/downloads/00-win-11-enterprise-iso-extracted/sources/install.wim#Windows 11 Enterprise" xmlns:cpi="urn:schemas-microsoft-com:cpi" />
 </unattend>
