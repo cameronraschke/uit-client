@@ -164,16 +164,6 @@
             <assemblyIdentity name="Microsoft-Windows-Notepad-System-FoD-Package" version="10.0.26100.6584" processorArchitecture="wow64" publicKeyToken="31bf3856ad364e35" language="" />
         </package>
     </servicing>
-    <settings pass="specialize">
-        <component name="Microsoft-Windows-MicrosoftEdgeBrowser" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-            <StartPages>
-                <StartPage wcm:action="add">
-                    <StartPageKey>AccessUH</StartPageKey>
-                    <StartPageUrl>https://accessuh.uh.edu</StartPageUrl>
-                </StartPage>
-            </StartPages>
-        </component>
-    </settings>
     <settings pass="oobeSystem">
         <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
             <OOBE>
@@ -210,8 +200,8 @@
             </DesktopOptimization>
             <DisableAutoDaylightTimeSet>false</DisableAutoDaylightTimeSet>
             <TaskbarLinks>
-                <Link0>&quot;C:\Windows\explorer.exe&quot;</Link0>
-                <Link1>&quot;C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Google Chrome.lnk&quot;</Link1>
+                <Link0>C:\Windows\explorer.exe</Link0>
+                <Link1>C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Google Chrome.lnk</Link1>
                 <Link3>MSTeams_8wekyb3d8bbwe!MSTeams</Link3>
                 <Link2>Microsoft.MicrosoftOfficeHub_8wekyb3d8bbwe!Microsoft.MicrosoftOfficeHub</Link2>
                 <Link4>Microsoft.OutlookForWindows_8wekyb3d8bbwe!Microsoft.OutlookforWindows</Link4>
