@@ -228,5 +228,5 @@
             </OOBE>
         </component>
     </settings>
-    <cpi:offlineImage cpi:source="wim:c:/users/caraschk/downloads/00-win-11-enterprise-iso-extracted/sources/install.wim#Windows 11 Enterprise" xmlns:cpi="urn:schemas-microsoft-com:cpi" />
+    <cpi:offlineImage cpi:source="wim:c:/00-win-11-enterprise-iso-extracted/sources/install.wim#Windows 11 Enterprise" xmlns:cpi="urn:schemas-microsoft-com:cpi" />
 </unattend>
