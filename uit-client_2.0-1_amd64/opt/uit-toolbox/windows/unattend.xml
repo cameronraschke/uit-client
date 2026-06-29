@@ -29,9 +29,6 @@
             <assemblyIdentity name="Microsoft-Windows-FodMetadataServicing-Desktop-Metadata-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
         </package>
         <package action="configure">
-            <assemblyIdentity name="Microsoft-Windows-ProfessionalEdition" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
-        </package>
-        <package action="configure">
             <assemblyIdentity name="Package_for_RollupFix" version="26100.6584.1.20" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
         </package>
         <package action="configure">
@@ -42,6 +39,129 @@
         </package>
         <package action="configure">
             <assemblyIdentity name="Package_for_ServicingStack_5074" version="26100.5074.1.7" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="OpenSSH-Client-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-WMIC-FoD-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-WinOcr-FOD-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-Wifi-Client-Realtek-Rtwlane-FOD-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-Wifi-Client-Realtek-Rtwlane13-FOD-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-Wifi-Client-Realtek-Rtwlane01-FOD-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-Wifi-Client-Realtek-Rtl8192se-FOD-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-Wifi-Client-Ralink-Netr28x-FOD-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-Wifi-Client-Qualcomm-Qcamain10x64-FOD-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-Wifi-Client-Qualcomm-Athwnx-FOD-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-Wifi-Client-Qualcomm-Athw8x-FOD-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-Wifi-Client-Marvel-Mrvlpcie8897-FOD-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-Wifi-Client-Intel-Netwtw10-FOD-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-Wifi-Client-Intel-Netwtw08-FOD-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-Wifi-Client-Intel-Netwtw06-FOD-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-Wifi-Client-Intel-Netwtw04-FOD-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-Wifi-Client-Intel-Netwtw02-FOD-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-Wifi-Client-Intel-Netwsw00-FOD-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-Wifi-Client-Intel-Netwns64-FOD-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-Wifi-Client-Intel-Netwlv64-FOD-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-Wifi-Client-Intel-Netwew01-FOD-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-Wifi-Client-Intel-Netwew00-FOD-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-Wifi-Client-Intel-Netwbw02-FOD-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-Wifi-Client-Broadcom-Bcmwl63al-FOD-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-Wifi-Client-Broadcom-Bcmwl63a-FOD-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-Wifi-Client-Broadcom-Bcmpciedhd63-FOD-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-Wallpaper-Content-Extended-FoD-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-TerminalServices-AppServer-Client-FOD-Package" version="10.0.26100.1" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-SenseClient-FoD-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-Notepad-System-FoD-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-MediaPlayer-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-LanguageFeatures-TextToSpeech-en-us-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-LanguageFeatures-OCR-en-us-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-LanguageFeatures-Speech-en-us-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-LanguageFeatures-Handwriting-en-us-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-LanguageFeatures-Basic-en-us-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-EnterpriseClientSync-Host-FOD-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-DirectoryServices-ADAM-Client-FOD-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-OneCore-DirectX-Database-FOD-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-OneCore-ApplicationModel-Sync-Desktop-FOD-Package" version="10.0.26100.6584" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="" />
+        </package>
+        <package action="configure">
+            <assemblyIdentity name="Microsoft-Windows-Notepad-System-FoD-Package" version="10.0.26100.6584" processorArchitecture="wow64" publicKeyToken="31bf3856ad364e35" language="" />
         </package>
     </servicing>
     <settings pass="specialize">
