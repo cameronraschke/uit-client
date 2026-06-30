@@ -535,11 +535,11 @@ function findIdentityInDB {
 		UUID=$(cat /proc/sys/kernel/random/uuid)
 	fi
 
+	systemSerial=$(dmidecode --string system-serial-number 2>/dev/null)
 	tagNum=$(uit-cli --serial "${systemSerial}" --key "client_lookup_by_serial" --value "${systemSerial}" --get | jq -r '.tagnumber' 2>/dev/null)
 
 	if [[ -n $tagNum && $tagNum != "null" ]]; then
-
-		uit-cli --tag "${tagNum}" --key "init" --value "${systemSerial}" 2>/dev/null
+		uit-cli --tag "${tagNum}" --key "init" --value "${systemSerial}"
 		coproc uit_cpu { uit-cpu 2>/dev/null; }
 		coproc uit_network { uit-network 2>/dev/null; }
 		coproc uit_sql { uit-sql 2>/dev/null; }
@@ -554,7 +554,7 @@ function findIdentityInDB {
 			printf '%s\n' "${RED}Error: Tag number cannot be empty. Please try again.${RESET}"
 			findIdentityInDB
 		fi
-		uit-cli --tag "${tagNum}" --key "init" --value "${systemSerial}" 2>/dev/null
+		uit-cli --tag "${tagNum}" --key "init" --value "${systemSerial}"
 		# printf "%s" "location|custom|${tagNum}|${systemSerial}|new entry|0|" | /opt/uit-toolbox/parse
 		findIdentityInDB
 	fi
