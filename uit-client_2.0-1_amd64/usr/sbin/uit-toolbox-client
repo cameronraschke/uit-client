@@ -461,40 +461,6 @@ fi
 	###Disk Data
 	collectDiskData
 
-	###Battery Data
-		batteryDMIData=$(dmidecode -t22 2>/dev/null)
-		if [[ $(cat /sys/class/power_supply/BAT0/present 2>/dev/null) == 1 || $(cat /sys/class/power_supply/BAT1/present 2>/dev/null) == 1 ]]; then
-			batteryManufacturer=$(echo "$batteryDMIData" | grep -P '\tManufacturer' | head -n1 | sed 's/Manufacturer:[[:space:]]*//g')
-			batteryManufactureDate=$(echo "$batteryDMIData" | grep -P '\t(SBDS )?Manufacture Date' | head -n1 | sed 's/[^0-9\/-]//g')
-			if [[ $(cat /sys/class/power_supply/BAT0/present 2>/dev/null) == 1 ]]; then
-				batteryMaxCurrentCapacity=$(cat /sys/class/power_supply/BAT0/charge_full 2>/dev/null)
-				batteryFactoryCapacity=$(cat /sys/class/power_supply/BAT0/charge_full_design 2>/dev/null)
-				batteryChargeCycles=$(cat /sys/class/power_supply/BAT0/cycle_count 2>/dev/null)
-				batteryModel=$(echo "$batteryDMIData" | grep -P '\t\Name:' | head -n1 | sed 's/Name:[[:space:]]*//g')
-					if [[ -z $batteryModel ]]; then
-						batteryModel=$(cat /sys/class/power_supply/BAT0/model_name 2>/dev/null)
-					fi 
-				batterySerial=$(cat /sys/class/power_supply/BAT0/serial_number 2>/dev/null | awk '{ print $1 }')
-			elif [[ $(cat /sys/class/power_supply/BAT1/present 2>/dev/null) == 1 ]]; then
-				batteryMaxCurrentCapacity=$(cat /sys/class/power_supply/BAT1/energy_full 2>/dev/null)
-				batteryFactoryCapacity=$(cat /sys/class/power_supply/BAT1/energy_full_design 2>/dev/null)
-				batteryChargeCycles=$(cat /sys/class/power_supply/BAT1/cycle_count 2>/dev/null)
-				batteryModel=$(echo "$batteryDMIData" | grep -P '\t\Name:' | head -n1 | sed 's/Name:[[:space:]]*//g')
-					if [[ -z $batteryModel ]]; then
-						batteryModel=$(cat /sys/class/power_supply/BAT1/model_name 2>/dev/null)
-					fi
-				batterySerial=$(cat /sys/class/power_supply/BAT1/serial_number 2>/dev/null | awk '{ print $1 }')
-			fi
-			uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "battery_current_max_capacity" --value "${batteryMaxCurrentCapacity}" --post
-			uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "battery_design_capacity" --value "${batteryFactoryCapacity}" --post
-			uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "battery_charge_cycles" --value "${batteryChargeCycles}" --post
-			uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "battery_model" --value "${batteryModel}" --post
-			uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "battery_serial" --value "${batterySerial}" --post
-			uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "battery_manufacturer" --value "${batteryManufacturer}" --post
-			uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "battery_manufacture_date" --value "${batteryManufactureDate}" --post
-		fi
-
-
 	###Memory Data
 	memorySerial=$(dmidecode --type memory | grep -P '\tSerial Number' | awk '{ print $3 }' | tr '\n' ';' | sed 's/;$//g')
 		uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "memory_serial" --value "${memorySerial}" --post
@@ -509,6 +475,39 @@ fi
 
 	tpmVersion=$(cat /sys/class/tpm/tpm0/tpm_version_major 2>/dev/null)
 	uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "tpm_version" --value "${tpmVersion}" --post
+
+	###Battery Data
+		batteryDMIData=$(dmidecode -t22 2>/dev/null)
+		if [[ $(cat /sys/class/power_supply/BAT0/present 2>/dev/null) == 1 || $(cat /sys/class/power_supply/BAT1/present 2>/dev/null) == 1 ]]; then
+			batteryManufacturer=$(echo "$batteryDMIData" | grep -P '\tManufacturer' | head -n1 | sed 's/Manufacturer:[[:space:]]*//g')
+			batteryManufactureDate=$(echo "$batteryDMIData" | grep -P '\t(SBDS )?Manufacture Date' | head -n1 | sed 's/[^0-9\/-]//g')
+			if [[ $(cat /sys/class/power_supply/BAT0/present 2>/dev/null) == 1 ]]; then
+				batteryMaxCurrentCapacity=$(cat /sys/class/power_supply/BAT0/charge_full 2>/dev/null)
+				batteryFactoryCapacity=$(cat /sys/class/power_supply/BAT0/charge_full_design 2>/dev/null)
+				batteryChargeCycles=$(cat /sys/class/power_supply/BAT0/cycle_count 2>/dev/null)
+				batteryModel=$(echo "$batteryDMIData" | grep -P '\tName:' | head -n1 | sed 's/Name:[[:space:]]*//g')
+					if [[ -z $batteryModel ]]; then
+						batteryModel=$(cat /sys/class/power_supply/BAT0/model_name 2>/dev/null)
+					fi 
+				batterySerial=$(cat /sys/class/power_supply/BAT0/serial_number 2>/dev/null | awk '{ print $1 }')
+			elif [[ $(cat /sys/class/power_supply/BAT1/present 2>/dev/null) == 1 ]]; then
+				batteryMaxCurrentCapacity=$(cat /sys/class/power_supply/BAT1/energy_full 2>/dev/null)
+				batteryFactoryCapacity=$(cat /sys/class/power_supply/BAT1/energy_full_design 2>/dev/null)
+				batteryChargeCycles=$(cat /sys/class/power_supply/BAT1/cycle_count 2>/dev/null)
+				batteryModel=$(echo "$batteryDMIData" | grep -P '\tName:' | head -n1 | sed 's/Name:[[:space:]]*//g')
+					if [[ -z $batteryModel ]]; then
+						batteryModel=$(cat /sys/class/power_supply/BAT1/model_name 2>/dev/null)
+					fi
+				batterySerial=$(cat /sys/class/power_supply/BAT1/serial_number 2>/dev/null | awk '{ print $1 }')
+			fi
+			uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "battery_current_max_capacity" --value "${batteryMaxCurrentCapacity}" --post
+			uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "battery_design_capacity" --value "${batteryFactoryCapacity}" --post
+			uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "battery_charge_cycles" --value "${batteryChargeCycles}" --post
+			uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "battery_model" --value "${batteryModel}" --post
+			uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "battery_serial" --value "${batterySerial}" --post
+			uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "battery_manufacturer" --value "${batteryManufacturer}" --post
+			uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "battery_manufacture_date" --value "${batteryManufactureDate}" --post
+		fi
 
 	printf "%s" "system-stats|cpu|${UUID}" | /opt/uit-toolbox/parse
 	printf "%s" "system-stats|network|${UUID}" | /opt/uit-toolbox/parse
