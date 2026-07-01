@@ -41,6 +41,7 @@ var policies = map[string]Policy{
 	"cpu_millidegrees_c":           {Method: "POST", RequiresSerial: true, RequiresTag: true, RequiresUUID: false, RequiresValue: true},
 	"disk_errors":                  {Method: "POST", RequiresSerial: true, RequiresTag: true, RequiresUUID: true, RequiresValue: true},
 	"disk_firmware":                {Method: "POST", RequiresSerial: true, RequiresTag: true, RequiresUUID: true, RequiresValue: true},
+	"disk_image_name":              {Method: "GET", RequiresSerial: false, RequiresTag: false, RequiresUUID: false, RequiresValue: true},
 	"disk_model":                   {Method: "POST", RequiresSerial: true, RequiresTag: true, RequiresUUID: true, RequiresValue: true},
 	"disk_name":                    {Method: "POST", RequiresSerial: true, RequiresTag: true, RequiresUUID: true, RequiresValue: true},
 	"disk_power_cycles":            {Method: "POST", RequiresSerial: true, RequiresTag: true, RequiresUUID: true, RequiresValue: true},

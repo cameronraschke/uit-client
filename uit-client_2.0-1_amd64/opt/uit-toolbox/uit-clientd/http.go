@@ -558,6 +558,14 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 			TransactionUUID: *inputPayload.TransactionUUID,
 			DiskErrors:      &diskErrors,
 		}
+	case "disk_image_name":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/job/disk_image/name"}
+		inputPayload.RequestType = "GET"
+		q := httpRequestConfig.URL.Query()
+		q.Set("system_model", inputPayload.StringValue)
+		httpRequestConfig.URL.RawQuery = q.Encode()
+		inputPayload.Value = nil
+		inputPayload.TransactionUUID = nil
 	case "disk_firmware":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
 		inputPayload.Value = &ClientHardwareView{

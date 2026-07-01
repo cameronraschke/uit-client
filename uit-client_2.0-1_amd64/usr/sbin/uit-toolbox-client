@@ -1909,18 +1909,28 @@ function resetForClientRestart {
 
 function autodetectClient {
 	footer
-	if [[ $(printf "%s" "${systemManufacturer}" | grep -i "dell") ]]; then
-		systemManufacturerFormatted="dell"
-		cloneImgName='TechCommons-Dell-Laptops'
-		elif [[ $(printf "%s" "${systemManufacturer}" | grep -i "hp") ]]; then
-			systemManufacturerFormatted="hp"
-			cloneImgName='TechCommons-HP-LaptopsLZ4'
-		elif [[ $(printf "%s" "${systemManufacturer}" | grep -i "hewlett") ]]; then
-			systemManufacturerFormatted="hp"
-			cloneImgName='TechCommons-HP-LaptopsLZ4'
-		else
-			systemManufacturerFormatted="unknown"
-			cloneImgName='TechCommons-HP-LaptopsLZ4'
+	# if [[ $(printf "%s" "${systemManufacturer}" | grep -i "dell") ]]; then
+	# 	systemManufacturerFormatted="dell"
+	# 	cloneImgName='TechCommons-Dell-Laptops'
+	# 	elif [[ $(printf "%s" "${systemManufacturer}" | grep -i "hp") ]]; then
+	# 		systemManufacturerFormatted="hp"
+	# 		cloneImgName='TechCommons-HP-LaptopsLZ4'
+	# 	elif [[ $(printf "%s" "${systemManufacturer}" | grep -i "hewlett") ]]; then
+	# 		systemManufacturerFormatted="hp"
+	# 		cloneImgName='TechCommons-HP-LaptopsLZ4'
+	# 	else
+	# 		systemManufacturerFormatted="unknown"
+	# 		cloneImgName='TechCommons-HP-LaptopsLZ4'
+	# fi
+
+	systemModel=$(dmidecode --string system-product-name)
+	if [[ -z $systemModel ]]; then
+		systemModel=$(cat /sys/class/dmi/id/product_name)
+	fi
+
+	cloneImgName=$(uit-cli --key "disk_image_name" --value --get)
+	if [[ -z $cloneImgName || $cloneImgName == "null" ]]; then
+		cloneImgName="TechCommons-HP-LaptopsLZ4"
 	fi
 
 	if [[ $(printf "%s" "${chassisType}" | grep -i "notebook") ]]; then
