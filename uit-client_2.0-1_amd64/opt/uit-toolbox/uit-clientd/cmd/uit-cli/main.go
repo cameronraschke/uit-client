@@ -79,7 +79,7 @@ func main() {
 		httpPayload.RequestType = "POST"
 	}
 	if rule.Method != "" && httpPayload.RequestType != rule.Method {
-		fmt.Fprintf(os.Stderr, "key '%s' requires %s method\n", *key, rule.Method)
+		fmt.Fprintf(os.Stderr, "cli: key '%s' requires %s method\n", *key, rule.Method)
 		os.Exit(1)
 	}
 	httpPayload.RequestType = rule.Method

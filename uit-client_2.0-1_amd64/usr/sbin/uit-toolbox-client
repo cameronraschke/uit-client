@@ -1928,7 +1928,7 @@ function autodetectClient {
 		systemModel=$(cat /sys/class/dmi/id/product_name)
 	fi
 
-	cloneImgName=$(uit-cli --key "disk_image_name" --value --get | jq -r '.disk_image_name')
+	cloneImgName=$(uit-cli --key "disk_image_name" --value "$systemModel" --get | jq -r '.disk_image_name')
 	if [[ -z $cloneImgName || $cloneImgName == "null" ]]; then
 		cloneImgName="TechCommons-HP-LaptopsLZ4"
 	fi

@@ -180,7 +180,7 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 
 	// HTTP method checks
 	if rule.Method != "" && method != rule.Method {
-		return nil, fmt.Errorf("key '%s' requires %s method", inputPayload.Key, rule.Method)
+		return nil, fmt.Errorf("daemon: key '%s' requires %s method", inputPayload.Key, rule.Method)
 	}
 
 	// serial number checks
