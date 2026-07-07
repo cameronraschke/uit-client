@@ -31,7 +31,6 @@ const unixSocketPath = "/run/uit-client/uit-clientd.sock"
 func getUnixSocketConnection() (net.Conn, error) {
 	conn, err := net.DialTimeout("unix", unixSocketPath, 5*time.Second)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v", err)
 		return nil, err
 	}
 	return conn, nil
@@ -63,7 +62,7 @@ func readResponseFromSocket(conn net.Conn) (string, error) {
 		return "", nil
 	}
 	if strings.HasPrefix(response, "ERROR: ") {
-		return "", fmt.Errorf("%s", strings.TrimPrefix(response, "ERROR: "))
+		return "", fmt.Errorf("%s", response)
 	}
 	return response, nil
 }
@@ -187,10 +186,18 @@ func main() {
 		os.Exit(1)
 	}
 
-	if response == "" {
-		fmt.Fprintf(os.Stdout, "cli: no response received from uit-clientd\n")
-		os.Exit(0)
+	if httpPayload.RequestType == "GET" {
+		if response == "" {
+			// no response received from uit-clientd, return empty string to stdout
+			fmt.Fprintf(os.Stderr, "cli: no response received from uit-clientd\n")
+			fmt.Fprintf(os.Stdout, "")
+			os.Exit(0)
+		}
+
+		fmt.Fprintf(os.Stdout, "%s\n", response)
 	}
 
-	fmt.Fprintf(os.Stdout, "%s\n", response)
+	if httpPayload.RequestType == "POST" {
+		os.Exit(0)
+	}
 }
