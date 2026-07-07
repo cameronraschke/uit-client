@@ -1,36 +1,28 @@
 # Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-# Add-Type -AssemblyName System.Windows.Forms
-# $dialogObj = New-Object System.Windows.Forms.FolderBrowserDialog
-# $dialogObj.Description = "Select a folder to save the backups"
-# $fileDialog = $dialogObj.ShowDialog()
-
-# if ($fileDialog -eq [System.Windows.Forms.DialogResult]::OK -and -not [string]::IsNullOrWhiteSpace($dialogObj.SelectedPath)) {
-# 	Write-Host "Selected folder: $($dialogObj.SelectedPath)"
-# } else {
-# 	Write-Host "No folder selected. Exiting."
-# 	exit
-# }
 
 $currentDate = [DateTime]::Now
 $dateString = $currentDate.ToString("yyyy-MM-dd-HHmmss")
 
-Set-Variable -name "remoteHost" -Value ""
-Set-Variable -name "remoteUser" -Value ""
-$desktop = [Environment]::GetFolderPath("Desktop")
-Set-Variable -Name "outDir" -Value (Join-Path $desktop "00-uit-web-backups\$dateString")
-Set-Variable -name "localDir" -Value $dialogObj.SelectedPath
-Set-Variable -name "backupPgDumpDir" -Value "$outDir\sql-backups"
-Set-Variable -name "backupClientMediaDir" -Value "$outDir\image-backups"
-Set-Variable -name "backupMigratedClientMediaDir" -Value "$outDir\migrated-image-backups"
-# Set-Variable -name "localImageZipFile" -Value "$($dialogObj.SelectedPath)\image-backups.zip"
+$remoteHost = ""
+$remoteUser = ""
+$desktopDir = [Environment]::GetFolderPath("Desktop")
+$tmpDir = Join-Path "C:\Windows\Temp" "${dateString}-uit-backup"
+$pgDumpDir = Join-Path $tmpDir "sql-backups"
+$oldImagesDir = Join-Path $tmpDir "image-backups"
+$migratedImagesDir = Join-Path $tmpDir "migrated-image-backups"
+$outDir = Join-Path $desktopDir "00-uit-web-backups\${dateString}"
+$localImageZipFile = Join-Path $outDir "${dateString}-uit-backup.zip"
 
+mkdir -Path $tmpDir -Force
 mkdir -Path $outDir -Force
-mkdir -Path $backupPgDumpDir -Force
-mkdir -Path $backupClientMediaDir -Force
-mkdir -Path $backupMigratedClientMediaDir -Force
+mkdir -Path $pgDumpDir -Force
+mkdir -Path $oldImagesDir -Force
+mkdir -Path $migratedImagesDir -Force
 
-scp -r ${remoteUser}@${remoteHost}:/opt/uit-toolbox/sql-backups/ $backupPgDumpDir
-scp -r ${remoteUser}@${remoteHost}:/opt/uit-toolbox/uit-web/inventory-images/ $backupClientMediaDir
-scp -r ${remoteUser}@${remoteHost}:/opt/inventory_images/ $backupMigratedClientMediaDir
+scp -r ${remoteUser}@${remoteHost}:/opt/uit-toolbox/sql-backups/ $pgDumpDir
+scp -r ${remoteUser}@${remoteHost}:/opt/uit-toolbox/uit-web/inventory-images/ $oldImagesDir
+scp -r ${remoteUser}@${remoteHost}:/opt/inventory_images/ $migratedImagesDir
 
-#Compress-Archive -Path "${backupClientMediaDir}\*" -DestinationPath "${localImageZipFile}" -Force
+Compress-Archive -Path "${outDir}\*" -DestinationPath "${localImageZipFile}" -Force
+
+Remove-Item -Path $tmpDir -Recurse -Force
