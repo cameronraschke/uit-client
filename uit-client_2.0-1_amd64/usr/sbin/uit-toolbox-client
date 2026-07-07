@@ -1595,7 +1595,7 @@ function clientselect_Clone {
 	printf '   %s\n' "${BOLD}${GREEN}[3]${RESET} ${BOLD}Tech Commons Dell desktops${RESET}"
 	printf '   %s\n' "${BOLD}${GREEN}[4]${RESET} ${BOLD}Tech Commons Dell print kiosk laptops${RESET}"
 	printf '   %s\n' "${BOLD}${GREEN}[5]${RESET} ${BOLD}Class Tech Dell desktops${RESET}"
-	printf '   %s\n' "${BOLD}${GREEN}[6]${RESET} ${BOLD}ITSC Team Leads desktops${RESET}"
+	printf '   %s\n' "${BOLD}${GREEN}[6]${RESET} ${BOLD}SHRL Dell desktops${RESET}"
 	printf '   %s\n' "${BOLD}${GREEN}[7]${RESET} ${BOLD}Ubuntu Desktop${RESET}"
 	read -n1 -p "${BOLD}Enter [1-7]:${RESET} " CLIENTTYPE
 	printf '\n'
@@ -1616,7 +1616,7 @@ function clientselect_Clone {
 	cloneImgName='ClassTech-Dell-Desktops'
 	;;
 	6)
-	cloneImgName='TechCommons-Dell-Desktop-Team-Leads'
+	cloneImgName='SHRL-Dell-Desktops'
 	;;
 	7)
 	cloneImgName='Ubuntu-Desktop'
