@@ -177,20 +177,20 @@
                 <LocalAccounts>
                     <LocalAccount wcm:action="add">
                         <Password>
-                            <Value>VQBIAGkAdAAjADcANwAyADAANAAjAFAAYQBzAHMAdwBvAHIAZAA=</Value>
+                            <Value>dABlAHMAdAAyADEAMgAzACEAUABhAHMAcwB3AG8AcgBkAA==</Value>
                             <PlainText>false</PlainText>
                         </Password>
-                        <DisplayName>admin</DisplayName>
+                        <DisplayName>test1</DisplayName>
                         <Group>Administrators</Group>
-                        <Name>admin</Name>
+                        <Name>test1</Name>
                     </LocalAccount>
                     <LocalAccount wcm:action="add">
                         <Password>
-                            <Value>VQBIAG8AdQBzAHQAbwBuACEAUABhAHMAcwB3AG8AcgBkAA==</Value>
+                            <Value>dABlAHMAdAAxADEAMgAzACEAUABhAHMAcwB3AG8AcgBkAA==</Value>
                             <PlainText>false</PlainText>
                         </Password>
-                        <DisplayName>student</DisplayName>
-                        <Name>student</Name>
+                        <DisplayName>test2</DisplayName>
+                        <Name>test2</Name>
                     </LocalAccount>
                 </LocalAccounts>
             </UserAccounts>
@@ -207,15 +207,6 @@
                 <Link4>Microsoft.OutlookForWindows_8wekyb3d8bbwe</Link4>
                 <Link5></Link5>
             </TaskbarLinks>
-            <AutoLogon>
-                <Password>
-                    <Value>VQBIAGkAdAAjADcANwAyADAANAAjAFAAYQBzAHMAdwBvAHIAZAA=</Value>
-                    <PlainText>false</PlainText>
-                </Password>
-                <LogonCount>1</LogonCount>
-                <Username>admin</Username>
-                <Enabled>true</Enabled>
-            </AutoLogon>
         </component>
         <component name="Microsoft-Windows-International-Core" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
             <InputLocale>0409:00000409</InputLocale>
