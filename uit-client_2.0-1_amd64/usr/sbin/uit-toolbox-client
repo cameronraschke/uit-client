@@ -673,7 +673,7 @@ function powerWarning {
 	if [[ $restartBool == "1" ]]; then
 		jobInfo
 		footer
-		rtcwake --mode mem --seconds 3
+		# rtcwake --mode mem --seconds 3
 		checkNetwork
 		jobInfo
 		footer
@@ -2041,7 +2041,7 @@ function autodetectClient {
 				linuxServer="UIT_CLIENT_DB_HOST"
 				linuxDNS="UIT_SERVER_HOSTNAME"
 				footer
-				rtcwake --mode mem --seconds 3
+				# rtcwake --mode mem --seconds 3
 				checkNetwork
 				footer
 				execute
@@ -2070,7 +2070,7 @@ function autodetectClient {
 				linuxServer="UIT_CLIENT_DB_HOST"
 				linuxDNS="UIT_SERVER_HOSTNAME"
 				footer
-				rtcwake --mode mem --seconds 3
+				# rtcwake --mode mem --seconds 3
 				checkNetwork
 				footer
 				execute
@@ -2101,7 +2101,7 @@ function autodetectClient {
 				RMODE="Autodetect"
 				/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "erase_mode" --value "${RMODE}" --post
 				footer
-				rtcwake --mode mem --seconds 3
+				# rtcwake --mode mem --seconds 3
 				checkNetwork
 				footer
 				execute
@@ -2132,7 +2132,7 @@ function autodetectClient {
 				RMODE="Verify Mode"
 				/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "erase_mode" --value "${RMODE}" --post
 				footer
-				rtcwake --mode mem --seconds 3
+				# rtcwake --mode mem --seconds 3
 				checkNetwork
 				footer
 				execute
