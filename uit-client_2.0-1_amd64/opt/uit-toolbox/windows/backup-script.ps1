@@ -31,7 +31,7 @@ scp -r ${remoteUser}@${remoteHost}:/opt/inventory_images/* $migratedImagesDir
 
 Compress-Archive -Path "${tmpDir}\*" -DestinationPath "${outFile}" -Force
 
-if (Test-File $outFile) {
+if (Test-Path $outFile) {
 	Write-Host "Backup completed successfully. Backup archive path: '${outFile}'"
 	if (Test-Path $tmpDir) {
 		Remove-Item -Path $tmpDir -Recurse -Force
