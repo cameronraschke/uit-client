@@ -279,10 +279,10 @@ function collectDiskData {
 		if [[ -n $diskSectorCount && $diskSectorCount -gt 0 ]]; then
 			diskSizeBytes=$(( $diskSectorCount * 512))
 			if [[ -n $diskSizeBytes && $diskSizeBytes -gt 1024 ]]; then
-				diskSizeKB=$(( $diskSizeBytes / 1024 ))
+				diskSizeKiB=$(( $diskSizeBytes / 1024 ))
 			fi
-			if [[ -n $diskSizeKB && $diskSizeKB -gt 0 ]]; then
-				uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "disk_size_kb" --value "${diskSizeKB}" --post
+			if [[ -n $diskSizeKiB && $diskSizeKiB -gt 0 ]]; then
+				uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "disk_size_kb" --value "${diskSizeKiB}" --post
 			fi
 		fi
 
