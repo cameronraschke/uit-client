@@ -1,5 +1,7 @@
 # Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 
+$useZIP = $false
+
 $currentDate = [DateTime]::Now
 $dateString = $currentDate.ToString("yyyy-MM-dd-HHmmss")
 
@@ -18,7 +20,11 @@ $tmpDir = Join-Path $env:TEMP "${dateString}-uit-backup"
 $pgDumpDir = Join-Path $tmpDir "sql-backups"
 $oldImagesDir = Join-Path $tmpDir "image-backups"
 $migratedImagesDir = Join-Path $tmpDir "migrated-image-backups"
-$outFile = Join-Path $desktopDir "00-uit-web-backups\${dateString}-uit-backup.zip"
+if ($useZIP) {
+	$outFile = Join-Path $desktopDir "00-uit-web-backups\${dateString}-uit-backup.zip"
+} else {
+	$outFile = Join-Path $desktopDir "00-uit-web-backups\${dateString}-uit-backup.tar.gz"
+}
 
 mkdir -Path $tmpDir -Force
 mkdir -Path $pgDumpDir -Force
@@ -29,7 +35,11 @@ scp -r ${remoteUser}@${remoteHost}:/opt/uit-toolbox/sql-backups/* $pgDumpDir
 scp -r ${remoteUser}@${remoteHost}:/opt/uit-toolbox/uit-web/inventory-images/* $oldImagesDir
 scp -r ${remoteUser}@${remoteHost}:/opt/inventory_images/* $migratedImagesDir
 
-Compress-Archive -Path "${tmpDir}\*" -DestinationPath "${outFile}" -Force
+if ($useZIP) {
+	Compress-Archive -Path "${tmpDir}\*" -DestinationPath "${outFile}" -Force
+} else {
+	tar -czvf "${outFile}" -C "${tmpDir}" .
+}
 
 if (Test-Path $outFile) {
 	Write-Host "Backup completed successfully. Backup archive path: '${outFile}'"
