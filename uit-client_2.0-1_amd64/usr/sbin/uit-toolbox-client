@@ -232,7 +232,8 @@ printf '%s\n' "${BOLD}Configuring audio...${RESET}"
 printf '%s\n' "${GREEN}Done.${RESET}"
 
 
-systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
+# systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
+systemctl mask hibernate.target hybrid-sleep.target
 
 
 etherAddr=$(for i in $(ip addr | awk '/state UP/ {print $2}' | sed 's/://g'); do cat /sys/class/net/${i}/address 2>/dev/null; done)
@@ -674,6 +675,7 @@ function powerWarning {
 		jobInfo
 		footer
 		# rtcwake --mode mem --seconds 3
+		rtcwake --mode no --seconds 3 && systemctl suspend
 		checkNetwork
 		jobInfo
 		footer
@@ -2042,6 +2044,7 @@ function autodetectClient {
 				linuxDNS="UIT_SERVER_HOSTNAME"
 				footer
 				# rtcwake --mode mem --seconds 3
+				rtcwake --mode no --seconds 3 && systemctl suspend
 				checkNetwork
 				footer
 				execute
@@ -2071,6 +2074,7 @@ function autodetectClient {
 				linuxDNS="UIT_SERVER_HOSTNAME"
 				footer
 				# rtcwake --mode mem --seconds 3
+				rtcwake --mode no --seconds 3 && systemctl suspend
 				checkNetwork
 				footer
 				execute
@@ -2102,6 +2106,7 @@ function autodetectClient {
 				/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "erase_mode" --value "${RMODE}" --post
 				footer
 				# rtcwake --mode mem --seconds 3
+				rtcwake --mode no --seconds 3 && systemctl suspend
 				checkNetwork
 				footer
 				execute
@@ -2133,6 +2138,7 @@ function autodetectClient {
 				/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "erase_mode" --value "${RMODE}" --post
 				footer
 				# rtcwake --mode mem --seconds 3
+				rtcwake --mode no --seconds 3 && systemctl suspend
 				checkNetwork
 				footer
 				execute
