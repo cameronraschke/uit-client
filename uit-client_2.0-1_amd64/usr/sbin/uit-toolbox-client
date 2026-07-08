@@ -275,8 +275,16 @@ function collectDiskData {
 		uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "disk_serial" --value "${diskSerial}" --post
 
 		# Disk Size
-		diskSize=$(cat /sys/class/block/${i}/size 2>/dev/null)
-		uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "disk_size_kb" --value "${diskSize}" --post
+		diskSectorCount=$(cat /sys/class/block/${i}/size 2>/dev/null)
+		if [[ -n $diskSectorCount && $diskSectorCount -gt 0 ]]; then
+			diskSizeBytes=$(( $diskSectorCount * 512))
+			if [[ -n $diskSizeBytes && $diskSizeBytes -gt 1024 ]]; then
+				diskSizeKB=$(( $diskSizeBytes / 1024 ))
+			fi
+			if [[ -n $diskSizeKB && $diskSizeKB -gt 0 ]]; then
+				uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "disk_size_kb" --value "${diskSizeKB}" --post
+			fi
+		fi
 
 		# Disk Power On Hours
 		diskPowerOnHours=$(cat /root/smartctl-data | grep -iP 'Power( |_)On( |_)Hours' | sed 's/[^0-9]//g')
