@@ -183,7 +183,7 @@ printf '%s\n' "${GREEN}Done.${RESET}"
 
 printf '\n'
 printf '%s\n' "${BOLD}Configuring networking....${RESET}"
-for i in $(ip addr | awk '/state UP/ {print $2}' | sed 's/://g'); do
+for i in $(ip addr | awk '/state UP/ {print $2}' | sed 's/://g' | grep '^e' | head -n1); do
   	ip addr flush dev ${iface}
   	dhclient -r ${iface}
   	dhclient -4 ${iface}
@@ -236,7 +236,8 @@ printf '%s\n' "${GREEN}Done.${RESET}"
 systemctl mask hibernate.target hybrid-sleep.target
 
 
-etherAddr=$(for i in $(ip addr | awk '/state UP/ {print $2}' | sed 's/://g'); do cat /sys/class/net/${i}/address 2>/dev/null; done)
+etherAddr=$(for i in $(ip addr | awk '/state UP/ {print $2}' | sed 's/://g' | grep '^e' | head -n1); do cat /sys/class/net/${i}/address 2>/dev/null; done)
+netInterfaceName=$(ip addr | awk '/state UP/ {print $2}' | sed 's/://g' | grep '^e' | head -n1)
 wifiMac=$(cat /sys/class/ieee80211/phy*/macaddress 2>/dev/null | head -n1)
 systemSerial=$(dmidecode --string system-serial-number 2>/dev/null)
 if [[ -z $systemSerial ]]; then
@@ -526,10 +527,21 @@ function checkNetwork {
 	while sleep 1; do
 		ping -c 1 UIT_CLIENT_PING_HOST &>/dev/null
 		if [[ $? == 0 ]]; then
-			break
+			if [[ -n $netInterfaceName ]]; then
+				driverName=$(basename $(readlink -f /sys/class/net/${netInterfaceName}/device/driver) 2>/dev/null)
+				if [[ -n $driverName ]]; then
+					pciBusAddr=$(basename $(find /sys/bus/pci/drivers/${driverName} -name "0000*"))
+					if [[ -n $pciBusAddr ]]; then
+						ethtool -K ${netInterfaceName} tso off gso off gro off wol off
+						echo "on" | sudo tee /sys/bus/pci/devices/${pciBusAddr}/power/control
+					fi
+				fi
+			fi
+			dhclient -r
+			dhclient -4
+			return
 		fi
-		dhclient -r
-		dhclient
+		checkNetwork
 	done
 }
 
