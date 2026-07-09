@@ -77,6 +77,11 @@ func handleConnection(ctx context.Context, conn net.Conn, wg *sync.WaitGroup) {
 	defer wg.Done()
 	defer conn.Close()
 
+	if ctx.Err() != nil {
+		wg.Done()
+		return
+	}
+
 	scanner := bufio.NewScanner(conn)
 	for scanner.Scan() {
 		select {
