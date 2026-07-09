@@ -232,8 +232,8 @@ printf '%s\n' "${BOLD}Configuring audio...${RESET}"
 printf '%s\n' "${GREEN}Done.${RESET}"
 
 
-# systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
-systemctl mask hibernate.target hybrid-sleep.target
+systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
+# systemctl mask hibernate.target hybrid-sleep.target
 
 
 etherAddr=$(for i in $(ip addr | awk '/state UP/ {print $2}' | sed 's/://g' | grep '^e' | head -n1); do cat /sys/class/net/${i}/address 2>/dev/null; done)
