@@ -524,9 +524,12 @@ fi
 }
 
 function checkNetwork {
-	while sleep 1; do
+	local i=0
+	while [ $i -lt 10 ]; do
 		ping -c 1 UIT_CLIENT_PING_HOST &>/dev/null
 		if [[ $? == 0 ]]; then
+			return
+		else
 			if [[ -n $netInterfaceName ]]; then
 				driverName=$(basename $(readlink -f /sys/class/net/${netInterfaceName}/device/driver) 2>/dev/null)
 				if [[ -n $driverName ]]; then
@@ -537,11 +540,17 @@ function checkNetwork {
 					fi
 				fi
 			fi
+			((i++))
 			dhclient -r
 			dhclient -4
-			return
+			sleep 1
+			ping -c 1 UIT_CLIENT_PING_HOST &>/dev/null
+			if [[ $? == 0 ]]; then
+				return
+			else
+				checkNetwork
+			fi
 		fi
-		checkNetwork
 	done
 }
 
@@ -686,8 +695,7 @@ function powerWarning {
 	if [[ $restartBool == "1" ]]; then
 		jobInfo
 		footer
-		# rtcwake --mode mem --seconds 3
-		rtcwake --mode no --seconds 3 && systemctl suspend
+		# rtcwake --mode no --seconds 3 && systemctl suspend
 		checkNetwork
 		jobInfo
 		footer
@@ -2055,8 +2063,7 @@ function autodetectClient {
 				linuxServer="UIT_CLIENT_DB_HOST"
 				linuxDNS="UIT_SERVER_HOSTNAME"
 				footer
-				# rtcwake --mode mem --seconds 3
-				rtcwake --mode no --seconds 3 && systemctl suspend
+				# rtcwake --mode no --seconds 3 && systemctl suspend
 				checkNetwork
 				footer
 				execute
@@ -2085,8 +2092,7 @@ function autodetectClient {
 				linuxServer="UIT_CLIENT_DB_HOST"
 				linuxDNS="UIT_SERVER_HOSTNAME"
 				footer
-				# rtcwake --mode mem --seconds 3
-				rtcwake --mode no --seconds 3 && systemctl suspend
+				# rtcwake --mode no --seconds 3 && systemctl suspend
 				checkNetwork
 				footer
 				execute
@@ -2117,8 +2123,7 @@ function autodetectClient {
 				RMODE="Autodetect"
 				/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "erase_mode" --value "${RMODE}" --post
 				footer
-				# rtcwake --mode mem --seconds 3
-				rtcwake --mode no --seconds 3 && systemctl suspend
+				# rtcwake --mode no --seconds 3 && systemctl suspend
 				checkNetwork
 				footer
 				execute
@@ -2149,8 +2154,7 @@ function autodetectClient {
 				RMODE="Verify Mode"
 				/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "erase_mode" --value "${RMODE}" --post
 				footer
-				# rtcwake --mode mem --seconds 3
-				rtcwake --mode no --seconds 3 && systemctl suspend
+				# rtcwake --mode no --seconds 3 && systemctl suspend
 				checkNetwork
 				footer
 				execute
