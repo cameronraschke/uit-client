@@ -92,8 +92,15 @@ func handleInput(ctx context.Context, stdinData string) (string, error) {
 }
 
 func main() {
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer cancel()
+	ctx, stop := signal.NotifyContext(
+		context.Background(),
+		syscall.SIGHUP,
+		syscall.SIGINT,
+		syscall.SIGQUIT,
+		syscall.SIGABRT,
+		syscall.SIGTERM,
+	)
+	defer stop()
 
 	config, err := GetClientConfig()
 	if err != nil {
@@ -128,6 +135,7 @@ func main() {
 		conn, err := listener.Accept()
 		if err != nil {
 			if ctx.Err() != nil || errors.Is(err, net.ErrClosed) {
+				fmt.Fprintf(os.Stderr, "shutting down: %v\n", ctx.Err())
 				wg.Wait()
 				return
 			}
