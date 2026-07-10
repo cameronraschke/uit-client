@@ -131,13 +131,13 @@ while true; do
 	done
 
 
-	#Network link speed
-	for i in $(ip addr | awk '/state UP/ {print $2}' | sed 's/://g'); do
-		netSpeed=$(cat /sys/class/net/${i}/speed 2>/dev/null)
-		if [[ $netSpeed != $(echo "SELECT network_speed AS result FROM job_queue WHERE tagnumber = '${tagNum}'" | /opt/uit-toolbox/select) ]]; then
-			echo "job_queue|${tagNum}|network_speed|$netSpeed" | /opt/uit-toolbox/parse
-		fi
-	done
+	# #Network link speed
+	# for i in $(ip addr | awk '/state UP/ {print $2}' | sed 's/://g'); do
+	# 	netSpeed=$(cat /sys/class/net/${i}/speed 2>/dev/null)
+	# 	if [[ $netSpeed != $(echo "SELECT network_speed AS result FROM job_queue WHERE tagnumber = '${tagNum}'" | /opt/uit-toolbox/select) ]]; then
+	# 		echo "job_queue|${tagNum}|network_speed|$netSpeed" | /opt/uit-toolbox/parse
+	# 	fi
+	# done
 
 	# Sleep before next loop
 	sleep 1
