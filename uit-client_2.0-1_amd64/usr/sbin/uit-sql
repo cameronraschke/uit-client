@@ -16,6 +16,20 @@ while true; do
 	fi
 	echo "api_post|${tagNum}|last_heard|$(date --iso-8601=seconds)" | /opt/uit-toolbox/parse
 
+	# Check if cancel job has been sent
+	if [[ $(echo "SELECT job_name AS result FROM job_queue WHERE tagnumber = '${tagNum}'" | /opt/uit-toolbox/select) == "cancel" ]]; then
+		echo "job_queue|${tagNum}|job_name|" | /opt/uit-toolbox/parse
+		echo "job_queue|${tagNum}|job_queued|FALSE" | /opt/uit-toolbox/parse
+		printf "%s" "api_post|${tagNum}|job_queued_at|clear|${UUID}" | /opt/uit-toolbox/parse
+		echo "job_queue|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
+		echo "job_queue|${tagNum}|status|fail - Job cancelled :(" | /opt/uit-toolbox/parse
+		UUID=$(printf '%s' "SELECT uuid AS result FROM jobstats WHERE tagnumber = '${tagNum}' AND host_connected = TRUE ORDER BY time DESC LIMIT 1" | /opt/uit-toolbox/select)
+		/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "erase_completed" --value "FALSE" --post
+		/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "clone_completed" --value "FALSE" --post
+		/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "job_cancelled" --value "TRUE" --post
+		pkill --terminal tty1
+	fi
+
 	for i in $(find /sys/class/hwmon/ -mindepth 1); do
 		deviceName=$(cat ${i}/name)    
 		if [[ $deviceName == "BAT0" || $deviceName == "BAT1" ]]; then
@@ -69,18 +83,6 @@ while true; do
 		echo "job_queue|${tagNum}|watts_now|${uj1}|${uj2}" | /opt/uit-toolbox/parse
 	fi
 
-
-	# Check if running kernel is up to date
-	for i in $(ls /lib/modules); do
-		echo "${i}" | grep -i --quiet "$(uname -r)"
-		if [[ ${PIPESTATUS[1]} == "0" ]]; then
-			echo "job_queue|${tagNum}|kernel_updated|1" | /opt/uit-toolbox/parse
-			break
-		else
-			echo "job_queue|${tagNum}|kernel_updated|" | /opt/uit-toolbox/parse
-		fi
-	done
-
 	# Get memory info
 	memTotal=$(cat /proc/meminfo  | grep -i memTotal | awk '{ print $2 }')
 	memAvailable=$(cat /proc/meminfo  | grep -i memAvailable | awk '{ print $2 }')
@@ -127,20 +129,6 @@ while true; do
 		netUsage=$(( (newBytes - originalBytes) * 8 ))
 		echo "api_post|${tagNum}|network|${netUsage}|${linkSpeed}" | /opt/uit-toolbox/parse
 	done
-
-	# Check if cancel job has been sent
-	if [[ $(echo "SELECT job_name AS result FROM job_queue WHERE tagnumber = '${tagNum}'" | /opt/uit-toolbox/select) == "cancel" ]]; then
-		echo "job_queue|${tagNum}|job_name|" | /opt/uit-toolbox/parse
-		echo "job_queue|${tagNum}|job_queued|FALSE" | /opt/uit-toolbox/parse
-		printf "%s" "api_post|${tagNum}|job_queued_at|clear|${UUID}" | /opt/uit-toolbox/parse
-		echo "job_queue|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
-		echo "job_queue|${tagNum}|status|fail - Job cancelled :(" | /opt/uit-toolbox/parse
-		UUID=$(printf '%s' "SELECT uuid AS result FROM jobstats WHERE tagnumber = '${tagNum}' AND host_connected = TRUE ORDER BY time DESC LIMIT 1" | /opt/uit-toolbox/select)
-		/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "erase_completed" --value "FALSE" --post
-		/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "clone_completed" --value "FALSE" --post
-		/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "job_cancelled" --value "TRUE" --post
-		pkill --terminal tty1
-	fi
 
 
 	#Network link speed

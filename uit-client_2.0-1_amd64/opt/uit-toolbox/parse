@@ -316,7 +316,7 @@ if ($arr[0] === "api_post") {
 	}
 
 	if ($key === "network") {
-		$url = "/api/client/network/usage";
+		$url = "/api/client/os/network/usage";
 		$body = json_encode([
 			'tagnumber' => $tagNum,
 			'network_usage' => (int)$value,

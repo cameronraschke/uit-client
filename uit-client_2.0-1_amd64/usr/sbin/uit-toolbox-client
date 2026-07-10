@@ -235,6 +235,17 @@ printf '%s\n' "${GREEN}Done.${RESET}"
 systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
 # systemctl mask hibernate.target hybrid-sleep.target
 
+	# Check if running kernel is up to date
+	for i in $(ls /lib/modules); do
+		echo "${i}" | grep -i --quiet "$(uname -r)"
+		if [[ ${PIPESTATUS[1]} == "0" ]]; then
+			break
+		else
+			echo "job_queue|${tagNum}|kernel_updated|" | /opt/uit-toolbox/parse
+			printf '%s\n' "${RED}Warning: Running kernel is not up to date. Please update the kernel.${RESET}"
+			exit 1
+		fi
+	done
 
 etherAddr=$(for i in $(ip addr | awk '/state UP/ {print $2}' | sed 's/://g' | grep '^e' | head -n1); do cat /sys/class/net/${i}/address 2>/dev/null; done)
 netInterfaceName=$(ip addr | awk '/state UP/ {print $2}' | sed 's/://g' | grep '^e' | head -n1)
