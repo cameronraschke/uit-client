@@ -84,8 +84,8 @@ while true; do
 	fi
 
 	# Get memory info
-	memTotal=$(cat /proc/meminfo  | grep -i memTotal | awk '{ print $2 }')
-	memAvailable=$(cat /proc/meminfo  | grep -i memAvailable | awk '{ print $2 }')
+	memTotal=$(cat /proc/meminfo | grep -i memTotal | awk '{ print $2 }')
+	memAvailable=$(cat /proc/meminfo | grep -i memAvailable | awk '{ print $2 }')
 	memUsage=$(( memTotal - memAvailable ))
 	/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --key memory_usage_kb --value "${memUsage}" --post
 
@@ -140,7 +140,7 @@ while true; do
 	# done
 
 	# Sleep before next loop
-	sleep 1
+	sleep 3
 	
 	endingSystemUptime=$(cat /proc/uptime | awk '{print int($1)}')
 

@@ -13,4 +13,5 @@ while true; do
 
 	SUM=$(( TX + RX ))
 	echo $SUM >> /tmp/network-usage.txt
+	sleep 3
 done
