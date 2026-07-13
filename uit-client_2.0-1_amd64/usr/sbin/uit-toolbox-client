@@ -232,8 +232,11 @@ printf '%s\n' "${BOLD}Configuring audio...${RESET}"
 printf '%s\n' "${GREEN}Done.${RESET}"
 
 
-systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
-# systemctl mask hibernate.target hybrid-sleep.target
+if [[ $(dmidecode --string system-product-name) != "Dell Pro Micro QCM1250" ]]; then
+	systemctl mask hibernate.target hybrid-sleep.target
+else
+	systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
+fi
 
 	# Check if running kernel is up to date
 	for i in $(ls /lib/modules); do
@@ -706,7 +709,9 @@ function powerWarning {
 	if [[ $restartBool == "1" ]]; then
 		jobInfo
 		footer
-		# rtcwake --mode no --seconds 3 && systemctl suspend
+		if [[ $(dmidecode --string system-product-name) != "Dell Pro Micro QCM1250" ]]; then
+			rtcwake --mode no --seconds 3 && systemctl suspend
+		fi
 		checkNetwork
 		jobInfo
 		footer
@@ -2074,7 +2079,9 @@ function autodetectClient {
 				linuxServer="UIT_CLIENT_DB_HOST"
 				linuxDNS="UIT_SERVER_HOSTNAME"
 				footer
-				# rtcwake --mode no --seconds 3 && systemctl suspend
+				if [[ $(dmidecode --string system-product-name) != "Dell Pro Micro QCM1250" ]]; then
+					rtcwake --mode no --seconds 3 && systemctl suspend
+				fi
 				checkNetwork
 				footer
 				execute
@@ -2103,7 +2110,9 @@ function autodetectClient {
 				linuxServer="UIT_CLIENT_DB_HOST"
 				linuxDNS="UIT_SERVER_HOSTNAME"
 				footer
-				# rtcwake --mode no --seconds 3 && systemctl suspend
+				if [[ $(dmidecode --string system-product-name) != "Dell Pro Micro QCM1250" ]]; then
+					rtcwake --mode no --seconds 3 && systemctl suspend
+				fi
 				checkNetwork
 				footer
 				execute
@@ -2134,7 +2143,9 @@ function autodetectClient {
 				RMODE="Autodetect"
 				/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "erase_mode" --value "${RMODE}" --post
 				footer
-				# rtcwake --mode no --seconds 3 && systemctl suspend
+				if [[ $(dmidecode --string system-product-name) != "Dell Pro Micro QCM1250" ]]; then
+					rtcwake --mode no --seconds 3 && systemctl suspend
+				fi
 				checkNetwork
 				footer
 				execute
@@ -2165,7 +2176,9 @@ function autodetectClient {
 				RMODE="Verify Mode"
 				/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "erase_mode" --value "${RMODE}" --post
 				footer
-				# rtcwake --mode no --seconds 3 && systemctl suspend
+				if [[ $(dmidecode --string system-product-name) != "Dell Pro Micro QCM1250" ]]; then
+					rtcwake --mode no --seconds 3 && systemctl suspend
+				fi
 				checkNetwork
 				footer
 				execute
