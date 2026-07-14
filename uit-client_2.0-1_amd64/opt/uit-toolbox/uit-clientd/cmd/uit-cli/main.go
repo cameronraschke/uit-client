@@ -75,8 +75,9 @@ func main() {
 	transactionUUID := flag.String("uuid", "", "Request/transaction UUID (optional)")
 	methodGET := flag.Bool("get", false, "Use GET method for the request (default is POST)")
 	methodPOST := flag.Bool("post", false, "Use POST method for the request (default is POST)")
+	methodDELETE := flag.Bool("delete", false, "Use DELETE method for the request (default is POST)")
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "cli: Usage: %s --serial <serial> [--tag <tagnumber>] --key <key> [--value <value>] [--uuid <uuid>] [--get | --post]\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "cli: Usage: %s --serial <serial> [--tag <tagnumber>] --key <key> [--value <value>] [--uuid <uuid>] [--get | --post | --delete]\n", os.Args[0])
 		flag.PrintDefaults()
 	}
 	flag.Parse()
@@ -93,6 +94,14 @@ func main() {
 	// cannot specify both GET and POST
 	if *methodGET && *methodPOST {
 		fmt.Fprintf(os.Stderr, "cli: cannot specify both --get and --post\n")
+		os.Exit(1)
+	}
+	if *methodGET && *methodDELETE {
+		fmt.Fprintf(os.Stderr, "cli: cannot specify both --get and --delete\n")
+		os.Exit(1)
+	}
+	if *methodPOST && *methodDELETE {
+		fmt.Fprintf(os.Stderr, "cli: cannot specify both --post and --delete\n")
 		os.Exit(1)
 	}
 
@@ -157,6 +166,8 @@ func main() {
 		httpPayload.RequestType = "GET"
 	} else if *methodPOST {
 		httpPayload.RequestType = "POST"
+	} else if *methodDELETE {
+		httpPayload.RequestType = "DELETE"
 	} else {
 		// default to POST if not specified
 		httpPayload.RequestType = "POST"
@@ -197,7 +208,7 @@ func main() {
 		fmt.Fprintf(os.Stdout, "%s\n", response)
 	}
 
-	if httpPayload.RequestType == "POST" {
+	if httpPayload.RequestType == "POST" || httpPayload.RequestType == "DELETE" {
 		os.Exit(0)
 	}
 }

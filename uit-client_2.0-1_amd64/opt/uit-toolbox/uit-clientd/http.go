@@ -59,7 +59,9 @@ func sendHTTPRequest(data *HTTPRequest) ([]byte, error) {
 	if data == nil || data.Config == nil {
 		return nil, fmt.Errorf("data variable and/or config is nil")
 	}
-	if data.Config.Method != "POST" && data.Config.Method != "GET" {
+	if data.Config.Method != "POST" &&
+		data.Config.Method != "GET" &&
+		data.Config.Method != "DELETE" {
 		return nil, fmt.Errorf("unsupported HTTP method: %s", data.Config.Method)
 	}
 	if strings.TrimSpace(data.Config.URL.Path) == "" {
@@ -98,11 +100,11 @@ func sendHTTPRequest(data *HTTPRequest) ([]byte, error) {
 
 	// HTTP body
 	var bodyReader io.Reader = http.NoBody
-	if data.Config.Method == "POST" {
+	if data.Config.Method == "POST" || data.Config.Method == "DELETE" {
 		if data.Payload == nil {
 			return nil, fmt.Errorf("payload cannot be nil")
 		}
-		if data.Payload.RequestType == "POST" && data.Payload.Value == nil {
+		if (data.Payload.RequestType == "POST" || data.Payload.RequestType == "DELETE") && data.Payload.Value == nil {
 			return nil, fmt.Errorf("payload value cannot be nil")
 		}
 		jsonData, err := json.Marshal(data.Payload.Value)
@@ -170,7 +172,7 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 	if method == "" {
 		method = "POST"
 	}
-	if method != "POST" && method != "GET" {
+	if method != "POST" && method != "DELETE" && method != "GET" {
 		return nil, fmt.Errorf("unsupported request_type: %s", inputPayload.RequestType)
 	}
 	rule, ok := keypolicy.Lookup(inputPayload.Key)
@@ -543,6 +545,14 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 			SystemSerial:  systemSerial,
 			MillidegreesC: &cpuTempMilliC,
 		}
+	case "delete_all_os_info":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/os/delete_all"}
+		q := httpRequestConfig.URL.Query()
+		q.Set("tagnumber", strconv.FormatInt(inputPayload.Tagnumber, 10))
+		q.Set("system_serial", inputPayload.SystemSerial)
+		httpRequestConfig.URL.RawQuery = q.Encode()
+		inputPayload.TransactionUUID = nil
+		inputPayload.Value = nil
 	case "disk_errors":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
 		diskErrors, err := strconv.ParseInt(inputPayload.StringValue, 10, 64)

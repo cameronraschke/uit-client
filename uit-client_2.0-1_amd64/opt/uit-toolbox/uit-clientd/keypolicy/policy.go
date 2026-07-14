@@ -39,6 +39,7 @@ var policies = map[string]Policy{
 	"cpu_max_speed_mhz":            {Method: "POST", RequiresSerial: true, RequiresTag: true, RequiresUUID: true, RequiresValue: true},
 	"cpu_model":                    {Method: "POST", RequiresSerial: true, RequiresTag: true, RequiresUUID: true, RequiresValue: true},
 	"cpu_millidegrees_c":           {Method: "POST", RequiresSerial: true, RequiresTag: true, RequiresUUID: false, RequiresValue: true},
+	"delete_all_os_info":           {Method: "DELETE", RequiresSerial: true, RequiresTag: true, RequiresUUID: false, RequiresValue: false},
 	"disk_errors":                  {Method: "POST", RequiresSerial: true, RequiresTag: true, RequiresUUID: true, RequiresValue: true},
 	"disk_firmware":                {Method: "POST", RequiresSerial: true, RequiresTag: true, RequiresUUID: true, RequiresValue: true},
 	"disk_image_name":              {Method: "GET", RequiresSerial: false, RequiresTag: false, RequiresUUID: false, RequiresValue: true},

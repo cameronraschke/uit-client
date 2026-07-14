@@ -1684,9 +1684,11 @@ function execute_Clone {
 	linuxDNS="UIT_SERVER_HOSTNAME"
 	umount /home/partimag 2>/dev/null
 	mkdir -p /home/partimag
+	/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --key "delete_all_os_info" --delete
 	if [[ $cloneMode == "restoredisk" ]]; then
 		mount -t nfs -o ro ${linuxServer}:/srv/nfs/uit-toolbox/${linuxPath} /home/partimag
 		footer
+		reset
 		sleep 1
 		/usr/sbin/ocs-sr --language en_US.UTF-8 --postaction command --user-mode beginner \
 			-k1 --skip-check-restorable-r ${cloneMode} ${cloneImgName} ${CLIENTDISK}
@@ -1694,6 +1696,7 @@ function execute_Clone {
 	if [[ $cloneMode == "savedisk" ]]; then
 		mount -t nfs ${linuxServer}:/srv/nfs/uit-toolbox/${linuxPath} /home/partimag
 		footer
+		reset
 		sleep 1
 		/usr/sbin/ocs-sr --language en_US.UTF-8 --postaction command --user-mode beginner \
 			--skip-enc-ocs-img --skip-fsck-src-part --use-partclone -z8 ${cloneMode} ${cloneImgName} ${CLIENTDISK}
@@ -1707,6 +1710,7 @@ function execute_Clone {
 
 
 function execute_Shred {
+	/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --key "delete_all_os_info" --delete
 	if [[ $APPSELECT == "EC" || $APPSELECT == "E" ]]; then
 		start_time=$SECONDS
 		if [[ $shredMode == 'nist' ]]; then
