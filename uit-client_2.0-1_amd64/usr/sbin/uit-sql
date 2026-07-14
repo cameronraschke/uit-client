@@ -23,7 +23,7 @@ while true; do
 		printf "%s" "api_post|${tagNum}|job_queued_at|clear|${UUID}" | /opt/uit-toolbox/parse
 		echo "job_queue|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
 		echo "job_queue|${tagNum}|status|fail - Job cancelled :(" | /opt/uit-toolbox/parse
-		UUID=$(printf '%s' "SELECT uuid AS result FROM jobstats WHERE tagnumber = '${tagNum}' AND host_connected = TRUE ORDER BY time DESC LIMIT 1" | /opt/uit-toolbox/select)
+		UUID=$(printf '%s' "SELECT uuid AS result FROM jobstats WHERE client_uuid = (SELECT uuid FROM ids WHERE tagnumber = '${tagNum}') ORDER BY time DESC LIMIT 1" | /opt/uit-toolbox/select)
 		/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "erase_completed" --value "FALSE" --post
 		/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "clone_completed" --value "FALSE" --post
 		/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "job_cancelled" --value "TRUE" --post
