@@ -232,9 +232,11 @@ printf '%s\n' "${BOLD}Configuring audio...${RESET}"
 printf '%s\n' "${GREEN}Done.${RESET}"
 
 
-if [[ $(dmidecode --string system-product-name) != "Dell Pro Micro QCM1250" ]]; then
-	systemctl mask hibernate.target hybrid-sleep.target
+if [[ $(dmidecode --string system-product-name) == "Dell Pro Micro QCM1250" ]]; then
+	# Issue with Intel Pro NICs on wake up, can't hibernate and wake up w/o NIC issues.
+	systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
 else
+	## Laptops need everything masked when lids are closed, fix later
 	systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
 fi
 
