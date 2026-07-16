@@ -4,6 +4,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
@@ -48,6 +49,7 @@ func newHTTPClient() *http.Client {
 	tr.Protocols = &protocols
 
 	return &http.Client{
+		Timeout:   time.Duration(10 * time.Second),
 		Transport: tr,
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
@@ -55,7 +57,7 @@ func newHTTPClient() *http.Client {
 	}
 }
 
-func sendHTTPRequest(data *HTTPRequest) ([]byte, error) {
+func sendHTTPRequest(ctx context.Context, data *HTTPRequest) ([]byte, error) {
 	if data == nil || data.Config == nil {
 		return nil, fmt.Errorf("data variable and/or config is nil")
 	}
@@ -115,7 +117,7 @@ func sendHTTPRequest(data *HTTPRequest) ([]byte, error) {
 	}
 
 	// HTTP request
-	req, err := http.NewRequest(data.Config.Method, requestURL.String(), bodyReader)
+	req, err := http.NewRequestWithContext(ctx, data.Config.Method, requestURL.String(), bodyReader)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -125,6 +127,10 @@ func sendHTTPRequest(data *HTTPRequest) ([]byte, error) {
 	req.Header.Set("User-Agent", "UIT-Client-CLI Daemon")
 
 	// Server response
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
+
 	resp, err := sharedHTTPClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)

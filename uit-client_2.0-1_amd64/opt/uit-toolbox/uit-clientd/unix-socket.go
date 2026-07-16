@@ -10,7 +10,6 @@ import (
 	"net"
 	"os"
 	"strconv"
-	"sync"
 )
 
 func getUnixSocketListener() (net.Listener, bool, error) {
@@ -73,34 +72,32 @@ func getInheritedUnixSocketListener() (net.Listener, error) {
 	return listener, nil
 }
 
-func handleConnection(ctx context.Context, conn net.Conn, wg *sync.WaitGroup) {
-	defer wg.Done()
+func handleConnection(ctx context.Context, conn net.Conn) {
 	defer conn.Close()
 
-	if ctx.Err() != nil {
-		wg.Done()
-		return
-	}
+	// Unblock Scan as soon as shutdown starts.
+	done := make(chan struct{})
+	go func() {
+		select {
+		case <-ctx.Done():
+			_ = conn.Close()
+		case <-done:
+		}
+	}()
+	defer close(done)
 
 	scanner := bufio.NewScanner(conn)
 	for scanner.Scan() {
-		select {
-		case <-ctx.Done():
-			return
-		default:
-		}
-
 		response, err := handleInput(ctx, scanner.Text())
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "failed to handle input: %v\n", err)
 			_, _ = fmt.Fprintf(conn, "ERROR: %v\n", err)
 			continue
 		}
-
 		_, _ = fmt.Fprintf(conn, "%s\n", response)
 	}
 
-	if err := scanner.Err(); err != nil && ctx.Err() == nil {
+	if err := scanner.Err(); err != nil && ctx.Err() == nil && !errors.Is(err, net.ErrClosed) {
 		fmt.Fprintf(os.Stderr, "unix socket read error: %v\n", err)
 	}
 }

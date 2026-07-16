@@ -42,7 +42,7 @@ func GetClientConfig() (*ClientConfig, error) {
 		Payload: nil,
 	}
 
-	jsonBody, err := sendHTTPRequest(httpRequest)
+	jsonBody, err := sendHTTPRequest(context.Background(), httpRequest)
 	if err != nil {
 		return nil, fmt.Errorf("error in GetClientConfig: %w", err)
 	}
@@ -79,7 +79,7 @@ func handleInput(ctx context.Context, stdinData string) (string, error) {
 		return "", err
 	}
 
-	res, err := sendHTTPRequest(httpRequest)
+	res, err := sendHTTPRequest(ctx, httpRequest)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to send request: %v\n", err)
 		return "", err
@@ -143,7 +143,6 @@ func main() {
 			continue
 		}
 
-		wg.Add(1)
-		go handleConnection(ctx, conn, &wg)
+		wg.Go((func() { handleConnection(ctx, conn) }))
 	}
 }
