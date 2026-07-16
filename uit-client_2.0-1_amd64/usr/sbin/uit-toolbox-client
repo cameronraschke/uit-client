@@ -695,6 +695,15 @@ function manualClient {
 	read -n 1 -p "${BOLD}Please enter [0-9]:${RESET} " mainMenuOpt
 }
 
+function putDeviceToSleep {
+	# idiosyncrasies
+	if [[ $(dmidecode --string system-product-name) == "HP ProBook 450 G6" ]]; then
+		rtcwake --mode mem --seconds 3
+	elif [[ $(dmidecode --string system-product-name) != "Dell Pro Micro QCM1250" ]]; then
+		rtcwake --mode no --seconds 3 && systemctl suspend
+	fi
+}
+
 function powerWarning {
 	if [[ $CLIENTDISK =~ $NVME_REGEX ]]; then
 		return
@@ -711,9 +720,7 @@ function powerWarning {
 	if [[ $restartBool == "1" ]]; then
 		jobInfo
 		footer
-		if [[ $(dmidecode --string system-product-name) != "Dell Pro Micro QCM1250" ]]; then
-			rtcwake --mode no --seconds 3 && systemctl suspend
-		fi
+		putDeviceToSleep
 		checkNetwork
 		jobInfo
 		footer
@@ -2085,9 +2092,7 @@ function autodetectClient {
 				linuxServer="UIT_CLIENT_DB_HOST"
 				linuxDNS="UIT_SERVER_HOSTNAME"
 				footer
-				if [[ $(dmidecode --string system-product-name) != "Dell Pro Micro QCM1250" ]]; then
-					rtcwake --mode no --seconds 3 && systemctl suspend
-				fi
+				putDeviceToSleep
 				checkNetwork
 				footer
 				execute
@@ -2116,9 +2121,7 @@ function autodetectClient {
 				linuxServer="UIT_CLIENT_DB_HOST"
 				linuxDNS="UIT_SERVER_HOSTNAME"
 				footer
-				if [[ $(dmidecode --string system-product-name) != "Dell Pro Micro QCM1250" ]]; then
-					rtcwake --mode no --seconds 3 && systemctl suspend
-				fi
+				putDeviceToSleep
 				checkNetwork
 				footer
 				execute
@@ -2149,9 +2152,7 @@ function autodetectClient {
 				RMODE="Autodetect"
 				/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "erase_mode" --value "${RMODE}" --post
 				footer
-				if [[ $(dmidecode --string system-product-name) != "Dell Pro Micro QCM1250" ]]; then
-					rtcwake --mode no --seconds 3 && systemctl suspend
-				fi
+				putDeviceToSleep
 				checkNetwork
 				footer
 				execute
@@ -2182,9 +2183,7 @@ function autodetectClient {
 				RMODE="Verify Mode"
 				/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "erase_mode" --value "${RMODE}" --post
 				footer
-				if [[ $(dmidecode --string system-product-name) != "Dell Pro Micro QCM1250" ]]; then
-					rtcwake --mode no --seconds 3 && systemctl suspend
-				fi
+				putDeviceToSleep
 				checkNetwork
 				footer
 				execute
