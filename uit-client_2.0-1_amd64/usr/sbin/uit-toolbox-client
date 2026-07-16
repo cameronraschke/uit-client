@@ -758,6 +758,7 @@ function appSelect {
 	elif [[ $APPSELECT == "3" ]]; then
 		APPSELECT="C"
 		ACTION="clone"
+		powerWarning
 	else
 		printf '\n'
 		printf '%s\n' "${BOLD}${RED}Please enter a valid number [1-3].${RESET}"
