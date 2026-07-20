@@ -1708,24 +1708,26 @@ function execute_Clone {
 			read -p "${BOLD}${RED}Cloning test failed${RESET}${BOLD}. Press ${GREEN}Enter${RESET}${BOLD}..."
 			pkill --terminal tty1
 		fi
-		if [[ $(dmidecode --string system-product-name) == "HP ProBook 450 G6" ]]; then
-			mkdir /mnt/efi
-			mkdir /mnt/win
-			mount /dev/${CLIENTDISK}1 /mnt/efi
-			mount /dev/${CLIENTDISK}3 /mnt/win
+		if [[ $(grep -a -E "Windows UEFI CA 2023" /sys/firmware/efi/efivars/db-*; echo $?) != 0 ]]; then
+			if [[ $(dmidecode --string system-product-name) == "HP ProBook 450 G6" ]]; then
+				mkdir /mnt/efi
+				mkdir /mnt/win
+				mount /dev/${CLIENTDISK}1 /mnt/efi
+				mount /dev/${CLIENTDISK}3 /mnt/win
 
-			cp -f /mnt/efi/EFI/Microsoft/Boot/bootmgfw.efi /mnt/efi/EFI/Boot/bootx64.efi
+				cp -f /mnt/efi/EFI/Microsoft/Boot/bootmgfw.efi /mnt/efi/EFI/Boot/bootx64.efi
 
-			BootloaderFrom2011=$(find /mnt/win/Windows/WinSxS/ -name "bootmgfw.efi" -exec sh -c 'grep -a -q "PCA 2011" "$1" && echo "$1"' _ {} \; | head -n 1)
-			if [[ -f $BootloaderFrom2011 ]]; then
-				cp -f "$BootloaderFrom2011" /mnt/efi/EFI/Microsoft/Boot/bootmgfw.efi
-				cp -f "$BootloaderFrom2011" /mnt/efi/EFI/Boot/bootx64.efi
-			else
-				printf "%s" "job_queue|${tagNum}|job_status|fail - cloning ${cloneImgName} -> ${CLIENTDISK} - 2011 bootloader does not exist" | /opt/uit-toolbox/parse
-				read -p "${BOLD}${RED}Cloning test failed${RESET}${BOLD}. Press ${GREEN}Enter${RESET}${BOLD}..."
+				BootloaderFrom2011=$(find /mnt/win/Windows/WinSxS/ -name "bootmgfw.efi" -exec sh -c 'grep -a -q "PCA 2011" "$1" && echo "$1"' _ {} \; | head -n 1)
+				if [[ -f $BootloaderFrom2011 ]]; then
+					cp -f "$BootloaderFrom2011" /mnt/efi/EFI/Microsoft/Boot/bootmgfw.efi
+					cp -f "$BootloaderFrom2011" /mnt/efi/EFI/Boot/bootx64.efi
+				else
+					printf "%s" "job_queue|${tagNum}|job_status|fail - cloning ${cloneImgName} -> ${CLIENTDISK} - 2011 bootloader does not exist" | /opt/uit-toolbox/parse
+					read -p "${BOLD}${RED}Cloning test failed${RESET}${BOLD}. Press ${GREEN}Enter${RESET}${BOLD}..."
+				fi
+				umount /mnt/efi
+				umount /mnt/win
 			fi
-			umount /mnt/efi
-			umount /mnt/win
 		fi
 	fi
 	if [[ $cloneMode == "savedisk" ]]; then
