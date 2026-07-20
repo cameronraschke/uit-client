@@ -1726,6 +1726,7 @@ function execute_Clone {
 			fi
 			umount /mnt/efi
 			umount /mnt/win
+		fi
 	fi
 	if [[ $cloneMode == "savedisk" ]]; then
 		mount -t nfs ${linuxServer}:/srv/nfs/uit-toolbox/${linuxPath} /home/partimag
