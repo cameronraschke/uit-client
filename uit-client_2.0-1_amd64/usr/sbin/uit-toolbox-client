@@ -1701,7 +1701,7 @@ function execute_Clone {
 		reset
 		sleep 1
 		/usr/sbin/ocs-sr --language en_US.UTF-8 --postaction command --user-mode beginner \
-			--skip-set-netboot-first --change-geometry auto --load-geometry-from-edd \
+			--ignore-update-efi-nvram --skip-set-netboot-first --change-geometry auto --load-geometry-from-edd \
 			-k1 --skip-check-restorable-r ${cloneMode} ${cloneImgName} ${CLIENTDISK}
 	fi
 	if [[ $cloneMode == "savedisk" ]]; then
