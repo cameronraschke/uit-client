@@ -1724,6 +1724,8 @@ function execute_Clone {
 				printf "%s" "job_queue|${tagNum}|job_status|fail - cloning ${cloneImgName} -> ${CLIENTDISK} - 2011 bootloader does not exist" | /opt/uit-toolbox/parse
 				read -p "${BOLD}${RED}Cloning test failed${RESET}${BOLD}. Press ${GREEN}Enter${RESET}${BOLD}..."
 			fi
+			umount /mnt/efi
+			umount /mnt/win
 	fi
 	if [[ $cloneMode == "savedisk" ]]; then
 		mount -t nfs ${linuxServer}:/srv/nfs/uit-toolbox/${linuxPath} /home/partimag
