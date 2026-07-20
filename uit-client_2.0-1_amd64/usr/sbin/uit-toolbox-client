@@ -1712,8 +1712,8 @@ function execute_Clone {
 			if [[ $(dmidecode --string system-product-name) == "HP ProBook 450 G6" ]]; then
 				mkdir /mnt/efi
 				mkdir /mnt/win
-				mount /dev/${CLIENTDISK}1 /mnt/efi
-				mount /dev/${CLIENTDISK}3 /mnt/win
+				mount /dev/${CLIENTDISK}p1 /mnt/efi
+				mount /dev/${CLIENTDISK}p3 /mnt/win
 
 				cp -f /mnt/efi/EFI/Microsoft/Boot/bootmgfw.efi /mnt/efi/EFI/Boot/bootx64.efi
 
