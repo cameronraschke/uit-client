@@ -80,6 +80,7 @@ $jsonObject = [PSCustomObject]@{
 	battery_charge_cycles = $null
 	battery_health = $null
 	installed_apps = $null
+	has_2023_ca = $false
 }
 
 # System UUID/SMBIOS GUID
@@ -595,6 +596,11 @@ if ($null -eq $installedPackages) {
 	Write-Host "Installed applications not found."
 } else {
 	$jsonObject.installed_apps = ($installedPackages | Select-Object -Property Name, Version | Sort-Object -Property Name | ForEach-Object { "$($_.Name) ($($_.Version))" }) -join ";"
+}
+
+$jsonObject.has_2023_ca = $false
+if ([System.Text.Encoding]::ASCII.GetString((Get-SecureBootUEFI db).bytes) -match 'Windows UEFI CA 2023') {
+	$jsonObject.has_2023_ca = $true
 }
 
 foreach ($key in $jsonObject.PSObject.Properties.Name) {
