@@ -2,6 +2,9 @@
 
 :: C:\Windows\Setup\Scripts\SetupComplete.cmd
 
+:: Turn hibernation back on
+powercfg /h on
+
 :: TPM reset, re-initializes TPM on next boot
 powershell -Command "Clear-Tpm"
 
