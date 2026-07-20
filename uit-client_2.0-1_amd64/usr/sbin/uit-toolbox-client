@@ -1703,6 +1703,27 @@ function execute_Clone {
 		/usr/sbin/ocs-sr --language en_US.UTF-8 --postaction command --user-mode beginner \
 			--ignore-update-efi-nvram --skip-set-netboot-first --change-geometry auto --load-geometry-from-edd \
 			-k1 --skip-check-restorable-r ${cloneMode} ${cloneImgName} ${CLIENTDISK}
+		if [[ $? -ne 0 ]]; then
+			printf "%s" "job_queue|${tagNum}|job_status|fail - cloning ${cloneImgName} -> ${CLIENTDISK}" | /opt/uit-toolbox/parse
+			read -p "${BOLD}${RED}Cloning test failed${RESET}${BOLD}. Press ${GREEN}Enter${RESET}${BOLD}..."
+			pkill --terminal tty1
+		fi
+		if [[ $(dmidecode --string system-product-name) == "HP ProBook 450 G6" ]]; then
+			mkdir /mnt/efi
+			mkdir /mnt/win
+			mount /dev/${CLIENTDISK}1 /mnt/efi
+			mount /dev/${CLIENTDISK}3 /mnt/win
+
+			cp -f /mnt/efi/EFI/Microsoft/Boot/bootmgfw.efi /mnt/efi/EFI/Boot/bootx64.efi
+
+			BootloaderFrom2011=$(find /mnt/win/Windows/WinSxS/ -name "bootmgfw.efi" -exec sh -c 'grep -a -q "PCA 2011" "$1" && echo "$1"' _ {} \; | head -n 1)
+			if [[ -f $BootloaderFrom2011 ]]; then
+				cp -f "$BootloaderFrom2011" /mnt/efi/EFI/Microsoft/Boot/bootmgfw.efi
+				cp -f "$BootloaderFrom2011" /mnt/efi/EFI/Boot/bootx64.efi
+			else
+				printf "%s" "job_queue|${tagNum}|job_status|fail - cloning ${cloneImgName} -> ${CLIENTDISK} - 2011 bootloader does not exist" | /opt/uit-toolbox/parse
+				read -p "${BOLD}${RED}Cloning test failed${RESET}${BOLD}. Press ${GREEN}Enter${RESET}${BOLD}..."
+			fi
 	fi
 	if [[ $cloneMode == "savedisk" ]]; then
 		mount -t nfs ${linuxServer}:/srv/nfs/uit-toolbox/${linuxPath} /home/partimag
