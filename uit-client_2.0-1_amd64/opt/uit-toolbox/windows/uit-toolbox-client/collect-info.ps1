@@ -1,3 +1,9 @@
+if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+	$CommandLine = "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`""
+	Start-Process powershell.exe -ArgumentList $CommandLine -Verb RunAs
+	Exit
+}
+
 $tagNum = Read-Host "Enter tag number (100000-999999)"
 $okayToGo = Read-Host "You entered tag number $tagNum. Is this correct? (Y/N)"
 if ($okayToGo -ne "Y") {

@@ -1,1 +1,1 @@
-powershell.exe -ExecutionPolicy Bypass -File ".\collect-info.ps1"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\collect-info.ps1"
