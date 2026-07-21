@@ -2292,6 +2292,11 @@ function main {
 	collectSystemData
 	printf "%s" "api_post|${tagNum}|last_hardware_check|${CURRENT_TIME}|${UUID}" | /opt/uit-toolbox/parse
 	tput reset
+
+	if [[ -d /home/partimag ]]; then
+		umount /home/partimag 2>/dev/null
+	fi
+	
 	autodetectClient
 	if [[ $mainMenuOpt == "1" ]]; then
 		APPSELECT="EC"
