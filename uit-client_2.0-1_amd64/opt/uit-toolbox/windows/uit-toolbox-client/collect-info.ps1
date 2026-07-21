@@ -621,7 +621,7 @@ foreach ($key in $jsonObject.PSObject.Properties.Name) {
 }
 
 $desktop = [Environment]::GetFolderPath("Desktop")
-Set-Variable -Name "outDir" -Value (Join-Path $desktop "00-uit-client-system-info.json")
+Set-Variable -Name "outDir" -Value (Join-Path $desktop ("${tagNum}-uit-client-system-info.json"))
 
 
 $jsonStr = $jsonObject | ConvertTo-Json
