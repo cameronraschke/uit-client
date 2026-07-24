@@ -65,6 +65,7 @@ $jsonObject = [PSCustomObject]@{
 	ad_computer_name = $null
 	ad_distinguished_name = $null
 	ad_admin_users = $null
+	ad_sid = $null
 	is_intune_joined = $null
 	memory_capacity_kb = $null
 	memory_serial = $null
@@ -332,9 +333,12 @@ $jsonObject.ad_computer_name = $null
 
 # AD distinguished name
 $jsonObject.ad_distinguished_name = $null
-Get-ADComputer -Identity $env:COMPUTERNAME -Properties DistinguishedName -ErrorAction SilentlyContinue | ForEach-Object {
+$jsonObject.ad_sid = $null
+Get-ADComputer -Credential promptme -Identity $env:COMPUTERNAME -Properties DistinguishedName -ErrorAction SilentlyContinue | ForEach-Object {
 	if (-not [System.String]::IsNullOrWhiteSpace($_.DistinguishedName)) {
 		$jsonObject.ad_distinguished_name = [System.String]$_.DistinguishedName.Trim()
+	} if (-not [System.String]::IsNullOrWhiteSpace($_.SID)) {
+		$jsonObject.ad_sid = [System.String]$_.SID.Value.Trim()
 	} else {
 		Write-Host "AD distinguished name not found for computer $env:COMPUTERNAME."
 	}
