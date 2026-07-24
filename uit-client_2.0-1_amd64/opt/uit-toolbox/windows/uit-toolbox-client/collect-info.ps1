@@ -48,6 +48,7 @@ $jsonObject = [PSCustomObject]@{
 	bios_version = $null
 	bios_release_date = $null
 	tpm_version = $null
+	tpm_public_key = $null
 	secure_boot_enabled = $null
 	os_installed_at = $null
 	os_vendor = $null
@@ -162,7 +163,7 @@ if (-not [System.String]::IsNullOrWhiteSpace($win32BiosObj.ReleaseDate)) {
 	Write-Host "BIOS release date not found in WMI."
 }
 
-#TPM version
+# TPM version
 $jsonObject.tpm_version = $null
 try {
 	$tpmVersion = (Get-WmiObject -Namespace "Root\CIMv2\Security\MicrosoftTpm" -Class Win32_Tpm | Select-Object -ExpandProperty SpecVersion) -split ", " | Select-Object -First 1
@@ -173,6 +174,19 @@ try {
 	}
 } catch {
 	Write-Host "Error retrieving TPM version: $_"
+}
+
+# TPM public key
+$jsonObject.tpm_public_key = $null
+try {
+	$tpmPublicKey = (Get-TpmEndorsementKeyInfo -HashAlgorithm "Sha256").PublicKeyHash
+	if (-not [System.String]::IsNullOrWhiteSpace($tpmPublicKey)) {
+		$jsonObject.tpm_public_key = [System.String]$tpmPublicKey
+	} else {
+		Write-Host "TPM public key not found."
+	}
+} catch {
+	Write-Host "Error retrieving TPM public key: $_"
 }
 
 # Secure boot state
