@@ -623,7 +623,9 @@ if ($null -eq $installedPackages) {
 }
 
 $jsonObject.has_2023_ca = $false
-if ((Get-ItemPropertyValue -Path "HKLM:\SYSTEM\CurrentControlSet\Control\SecureBoot\Servicing" -Name "UEFICA2023Status") -eq "Updated" -and [System.Text.Encoding]::ASCII.GetString((Get-SecureBootUEFI db).bytes) -match 'Windows UEFI CA 2023') {
+$secureBootUpdatedInRegistry = (Get-ItemPropertyValue -Path "HKLM:\SYSTEM\CurrentControlSet\Control\SecureBoot\Servicing" -Name "UEFICA2023Status") -eq "Updated"
+$newKeyInSecureBootDB = [System.Text.Encoding]::ASCII.GetString((Get-SecureBootUEFI db).bytes) -match 'Windows UEFI CA 2023'
+if ($secureBootUpdatedInRegistry -and $newKeyInSecureBootDB) {
 	$jsonObject.has_2023_ca = $true
 }
 
