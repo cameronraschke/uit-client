@@ -23,8 +23,15 @@ function clientLookup() {
 }
 
 while true; do
+	if [[ -e $pngPipe && ! -p $pngPipe ]]; then
+		rm -f "${pngPipe}"
+	fi
 	if [[ ! -p $pngPipe ]]; then
-		mkfifo "${pngPipe}"
+		if ! mkfifo "${pngPipe}"; then
+			echo "Failed to create FIFO at ${pngPipe}, retrying in 2 seconds..." >&2
+			sleep 2
+			continue
+		fi
 	fi
 
 	tag=$(clientLookup)
