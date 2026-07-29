@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 
+pngPipe="/tmp/screenshot"
+
 function cleanup {
-	rm -f /tmp/screenshot
+	rm -f "${pngPipe}"
 	pkill -P $$
 }
 trap 'cleanup' EXIT
@@ -21,14 +23,14 @@ function clientLookup() {
 }
 
 while true; do
-	if [[ ! -f /root/screenshot.png ]]; then
-		mkfifo /tmp/screenshot
+	if [[ ! -f $pngPipe ]]; then
+		mkfifo "${pngPipe}"
 	fi
 
 	tag=$(clientLookup)
-	fbgrab - > /tmp/screenshot
-	# printf '%s' "api_post|${tag}|live_image|/tmp/screenshot" | /opt/uit-toolbox/parse
-	uit-cli --tag "${tag}" --key "live_screenshot" --value "/tmp/screenshot" --post
+	fbgrab - > ${pngPipe}
+	# printf '%s' "api_post|${tag}|live_image|${pngPipe}" | /opt/uit-toolbox/parse
+	uit-cli --tag "${tag}" --key "live_screenshot" --value "${pngPipe}" --post
 	# Update more frequently if a job is active
 	if [[ -n $(printf "%s" "api_get|job_name|tagnumber|${tag}" | /opt/uit-toolbox/parse) ]]; then
 		sleep 3
