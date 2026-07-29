@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 
-pngPipe="/tmp/screenshot"
+pngPipe="/tmp/screenshot.$$"
+lockFile="/tmp/uit-screenshot.lock"
+
+exec 9>"${lockFile}"
+if ! flock -n 9; then
+	echo "Another uit-screenshot instance is already running; exiting." >&2
+	exit 0
+fi
 
 function cleanup {
 	rm -f "${pngPipe}"
