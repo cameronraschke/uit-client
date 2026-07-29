@@ -176,7 +176,12 @@ func sendHTTPRequest(ctx context.Context, data *HTTPRequest) ([]byte, error) {
 					return nil, fmt.Errorf("unable to open screenshot file: %w", err)
 				}
 				bodyCloser = file
-				bodyReader = newSinglePNGReader(file)
+
+				var pngBuffer bytes.Buffer
+				if err := streamSinglePNG(&pngBuffer, file); err != nil {
+					return nil, fmt.Errorf("unable to buffer PNG screenshot: %w", err)
+				}
+				bodyReader = bytes.NewReader(pngBuffer.Bytes())
 			} else {
 				imageBytes, ok := data.Payload.Value.([]byte)
 				if !ok {
