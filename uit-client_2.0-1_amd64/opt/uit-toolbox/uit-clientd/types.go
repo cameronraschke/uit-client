@@ -7,6 +7,8 @@ import (
 	"time"
 )
 
+type LiveScreenshotUploadRequest []byte
+
 type ClientConfig struct {
 	UIT_CLIENT_DB_USER   string `json:"UIT_CLIENT_DB_USER"`
 	UIT_CLIENT_DB_PASSWD string `json:"UIT_CLIENT_DB_PASSWD"`
@@ -30,8 +32,9 @@ type HTTPRequest struct {
 }
 
 type HTTPRequestConfig struct {
-	URL    url.URL
-	Method string
+	URL         url.URL
+	Method      string
+	ContentType string
 }
 
 type HTTPRequestPayload struct {

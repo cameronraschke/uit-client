@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -109,11 +110,19 @@ func sendHTTPRequest(ctx context.Context, data *HTTPRequest) ([]byte, error) {
 		if data.Payload.RequestType == "POST" && data.Payload.Value == nil {
 			return nil, fmt.Errorf("payload value cannot be nil")
 		}
-		jsonData, err := json.Marshal(data.Payload.Value)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal data: %w", err)
+		if strings.EqualFold(data.Config.ContentType, "application/octet-stream") {
+			imageBytes, ok := data.Payload.Value.([]byte)
+			if !ok {
+				return nil, fmt.Errorf("octet-stream payload value must be []byte")
+			}
+			bodyReader = bytes.NewReader(imageBytes)
+		} else {
+			jsonData, err := json.Marshal(data.Payload.Value)
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal data: %w", err)
+			}
+			bodyReader = bytes.NewReader(jsonData)
 		}
-		bodyReader = bytes.NewReader(jsonData)
 	}
 
 	// HTTP request
@@ -123,7 +132,11 @@ func sendHTTPRequest(ctx context.Context, data *HTTPRequest) ([]byte, error) {
 	}
 
 	// HTTP headers
-	req.Header.Set("Content-Type", "application/json; charset=utf-8")
+	if data.Config.ContentType != "" {
+		req.Header.Set("Content-Type", data.Config.ContentType)
+	} else {
+		req.Header.Set("Content-Type", "application/json; charset=utf-8")
+	}
 	req.Header.Set("User-Agent", "UIT-Client-CLI Daemon")
 
 	// Server response
@@ -786,6 +799,25 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 			TransactionUUID: *inputPayload.TransactionUUID,
 			JobStartTime:    &jobStartTime,
 		}
+	case "live_screenshot":
+		httpRequestConfig.URL = url.URL{Path: "/api/client/live_screenshot"}
+		httpRequestConfig.Method = "POST"
+		httpRequestConfig.ContentType = "application/octet-stream"
+		httpRequestConfig.URL.RawQuery = url.Values{
+			"tagnumber": []string{strconv.FormatInt(inputPayload.Tagnumber, 10)},
+		}.Encode()
+
+		file, err := os.Open(inputPayload.StringValue)
+		if err != nil {
+			return nil, fmt.Errorf("unable to open screenshot file: %w", err)
+		}
+		defer file.Close()
+
+		imageBytes, err := io.ReadAll(file)
+		if err != nil {
+			return nil, fmt.Errorf("unable to read screenshot file: %w", err)
+		}
+		inputPayload.Value = imageBytes
 	case "memory_capacity_kb":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
 		memoryCapacityKB, err := strconv.ParseInt(inputPayload.StringValue, 10, 64)

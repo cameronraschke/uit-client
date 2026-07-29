@@ -60,6 +60,7 @@ var policies = map[string]Policy{
 	"init":                         {Method: "POST", RequiresSerial: true, RequiresTag: true, RequiresUUID: true, RequiresValue: false},
 	"job_cancelled":                {Method: "POST", RequiresSerial: true, RequiresTag: true, RequiresUUID: true, RequiresValue: true},
 	"job_start_time":               {Method: "POST", RequiresSerial: true, RequiresTag: true, RequiresUUID: true, RequiresValue: true},
+	"live_screenshot":              {Method: "POST", RequiresSerial: false, RequiresTag: true, RequiresUUID: false, RequiresValue: true},
 	"memory_capacity_kb":           {Method: "POST", RequiresSerial: true, RequiresTag: true, RequiresUUID: true, RequiresValue: true},
 	"memory_serial":                {Method: "POST", RequiresSerial: true, RequiresTag: true, RequiresUUID: true, RequiresValue: true},
 	"memory_speed_mhz":             {Method: "POST", RequiresSerial: true, RequiresTag: true, RequiresUUID: true, RequiresValue: true},

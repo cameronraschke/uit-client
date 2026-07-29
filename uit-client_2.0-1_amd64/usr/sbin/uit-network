@@ -1,17 +1,51 @@
-#!/bin/bash
-while true; do
-	NIC=$(ip addr | awk '/state UP/ {print $2}' | sed 's/://g')
+#!/usr/bin/env bash
 
-	oldTXBytes=$(cat /sys/class/net/${NIC}/statistics/tx_bytes 2>/dev/null)
-	oldRXBytes=$(cat /sys/class/net/${NIC}/statistics/rx_bytes 2>/dev/null)
+function cleanup {
+	pkill -P $$
+}
+trap 'cleanup' EXIT
+
+function getTxRxSum() {
+	if [[ -z $1 ]]; then
+		echo "Usage: getTxRxSum <NIC>"
+		exit 1
+	fi
+	local netIF="${1}"
+	oldTXBytes=$(cat /sys/class/net/${netIF}/statistics/tx_bytes 2>/dev/null)
+	oldRXBytes=$(cat /sys/class/net/${netIF}/statistics/rx_bytes 2>/dev/null)
 	sleep 1
-	newTXBytes=$(cat /sys/class/net/${NIC}/statistics/tx_bytes 2>/dev/null)
-	newRXBytes=$(cat /sys/class/net/${NIC}/statistics/rx_bytes 2>/dev/null)
+	newTXBytes=$(cat /sys/class/net/${netIF}/statistics/tx_bytes 2>/dev/null)
+	newRXBytes=$(cat /sys/class/net/${netIF}/statistics/rx_bytes 2>/dev/null)
 
 	TX=$(( newTXBytes - oldTXBytes ))
 	RX=$(( newRXBytes - oldRXBytes ))
 
 	SUM=$(( TX + RX ))
-	echo $SUM >> /tmp/network-usage.txt
+	if [[ -z $SUM ]]; then
+		SUM=0
+	fi
+	echo "${SUM}"
+}
+
+function writeNetworkUsage() {
+	if [[ -z $1 ]]; then
+		echo "Usage: writeNetworkUsage <networkUsage>"
+		exit 1
+	fi
+	local networkUsage=$1
+	if [[ ! -f /tmp/network-usage.txt ]]; then
+		touch /tmp/network-usage.txt
+	fi
+	if [[ $(wc -l < /tmp/network-usage.txt) -gt 1000 ]]; then
+		tail -n 900 /tmp/network-usage.txt > /tmp/network-usage.txt.tmp
+		mv /tmp/network-usage.txt.tmp /tmp/network-usage.txt
+	fi
+	echo "$networkUsage" >> /tmp/network-usage.txt
+}
+
+while true; do
+	NIC=$(ip addr | awk '/state UP/ {print $2}' | sed 's/://g' | head -n 1)
+	SUM=$(getTxRxSum "${NIC}")
+	writeNetworkUsage "${SUM}"
 	sleep 3
 done

@@ -11,52 +11,6 @@ $arr = explode('|', $input);
 
 $dbPSQL = new dbPSQL();
 
-if ($arr[0] == "location") {
-
-	if (empty($arr[7])) {
-		$arr[7] = "unknown";
-	}
-
-	if ($arr[1] == "begin") {
-		$tagNum = $arr[2];
-		$serial = $arr[3];
-		$location = $arr[4];
-		$status = "0";
-		$note = "";
-	}
-
-	if ($arr[1] == "end") {
-		$tagNum = $arr[2];
-		$serial = $arr[3];
-		$location = $arr[4];
-		$status = "0";
-		$note = "";
-	}
-
-	if ($arr[1] == "custom") {
-		$tagNum = $arr[2];
-		$serial = $arr[3];
-		$location = $arr[4];
-		$status = $arr[5];
-		$note = $arr[6];
-	}
-
-	//$uuid = uniqid("location-", true);
-
-	//$dbPSQL->insertJob($uuid);
-	//$dbPSQL->updateJob("tagnumber", $tagNum, $uuid);
-	//$dbPSQL->updateJob("system_serial", $serial, $uuid);
-	//$dbPSQL->updateJob ("date", $date, $uuid);
-	//$dbPSQL->updateJob ("time", $time, $uuid);
-
-	$dbPSQL->insertLocation($time, $tagNum);
-	$dbPSQL->updateLocation("system_serial", $serial, $time);
-	$dbPSQL->updateLocation("location", $location, $time);
-	$dbPSQL->updateLocation("status", boolval($status), $time);
-	$dbPSQL->updateLocation("note", $note, $time);
-}
-
-
 if ($arr[0] == "general") {
 	$key = $arr[1];
 	$value = $arr[2];

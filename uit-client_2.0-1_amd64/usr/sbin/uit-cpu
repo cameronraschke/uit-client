@@ -1,6 +1,37 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
+function cleanup {
+	pkill -P $$
+}
+trap 'cleanup' EXIT
+
+function getCPUUsage() {
+	local cpuUsage=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | cut -d'%' -f1)
+	if [[ -z $cpuUsage ]]; then
+		cpuUsage=0
+	fi
+	echo "${cpuUsage}"
+}
+
+function writeCPUUsage() {
+	if [[ -z $1 ]]; then
+		echo "Usage: writeCPUUsage <cpuUsage>"
+		return 1
+	fi
+	local cpuUsage=$1
+	if [[ ! -f /tmp/cpu-usage.txt ]]; then
+		touch /tmp/cpu-usage.txt
+	fi
+	if [[ $(wc -l < /tmp/cpu-usage.txt) -gt 1000 ]]; then
+		tail -n 900 /tmp/cpu-usage.txt > /tmp/cpu-usage.txt.tmp
+		mv /tmp/cpu-usage.txt.tmp /tmp/cpu-usage.txt
+	fi
+	echo "$cpuUsage" >> /tmp/cpu-usage.txt
+}
+
 while true; do
-  cpuUsage=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | cut -d'%' -f1)
-  echo "$cpuUsage" >> /tmp/cpu-usage.txt
+	unset 'USAGE'
+	USAGE=$(getCPUUsage)
+	writeCPUUsage "${USAGE}"
   sleep 3
 done
