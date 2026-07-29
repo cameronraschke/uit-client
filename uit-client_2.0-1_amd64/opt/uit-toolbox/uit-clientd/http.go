@@ -209,7 +209,6 @@ func sendHTTPRequest(ctx context.Context, data *HTTPRequest) ([]byte, error) {
 		req.Header.Set("Content-Type", "application/json; charset=utf-8")
 	}
 	req.Header.Set("User-Agent", "UIT-Client-CLI Daemon")
-	req.Header.Set("Content-Length", strconv.FormatInt(req.ContentLength, 10))
 
 	// Server response
 	if ctx.Err() != nil {

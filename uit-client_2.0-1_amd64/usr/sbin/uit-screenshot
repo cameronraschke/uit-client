@@ -23,14 +23,16 @@ function clientLookup() {
 }
 
 while true; do
-	if [[ ! -f $pngPipe ]]; then
+	if [[ ! -p $pngPipe ]]; then
 		mkfifo "${pngPipe}"
 	fi
 
 	tag=$(clientLookup)
-	fbgrab - > ${pngPipe}
+	fbgrab - > "${pngPipe}" &
+	grabPid=$!
 	# printf '%s' "api_post|${tag}|live_image|${pngPipe}" | /opt/uit-toolbox/parse
 	uit-cli --tag "${tag}" --key "live_screenshot" --value "${pngPipe}" --post
+	wait "${grabPid}" 2>/dev/null || true
 	# Update more frequently if a job is active
 	if [[ -n $(printf "%s" "api_get|job_name|tagnumber|${tag}" | /opt/uit-toolbox/parse) ]]; then
 		sleep 3
