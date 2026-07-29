@@ -623,7 +623,9 @@ if ($null -eq $installedPackages) {
 }
 
 $jsonObject.has_2023_ca = $false
-$secureBootUpdatedInRegistry = (Get-ItemPropertyValue -Path "HKLM:\SYSTEM\CurrentControlSet\Control\SecureBoot\Servicing" -Name "UEFICA2023Status") -eq "Updated"
+$secureBootUpdatedInRegistry = $false
+$newKeyInSecureBootDB = $false
+$secureBootUpdatedInRegistry = (Get-ItemPropertyValue -Path "HKLM:\SYSTEM\CurrentControlSet\Control\SecureBoot\Servicing" -Name "UEFICA2023Status"  -ErrorAction SilentlyContinue) -eq "Updated"
 $newKeyInSecureBootDB = [System.Text.Encoding]::ASCII.GetString((Get-SecureBootUEFI db).bytes) -match 'Windows UEFI CA 2023'
 if ($secureBootUpdatedInRegistry -and $newKeyInSecureBootDB) {
 	$jsonObject.has_2023_ca = $true
@@ -647,3 +649,5 @@ Set-Variable -Name "outDir" -Value (Join-Path $desktop ("${tagNum}-uit-client-sy
 $jsonStr = $jsonObject | ConvertTo-Json
 Out-File -FilePath "$outDir" -InputObject $jsonStr -Encoding UTF8
 Write-Host $jsonStr
+
+Read-Host "System info collected, press Enter to continue..."
