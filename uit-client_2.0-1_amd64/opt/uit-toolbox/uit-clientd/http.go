@@ -3,9 +3,11 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"crypto/tls"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -58,6 +60,58 @@ func newHTTPClient() *http.Client {
 	}
 }
 
+func newSinglePNGReader(src io.Reader) io.Reader {
+	pipeReader, pipeWriter := io.Pipe()
+
+	go func() {
+		err := streamSinglePNG(pipeWriter, src)
+		_ = pipeWriter.CloseWithError(err)
+	}()
+
+	return pipeReader
+}
+
+func streamSinglePNG(dstWriter io.Writer, src io.Reader) error {
+	bufferReader := bufio.NewReader(src)
+
+	signature := make([]byte, 8)
+	if _, err := io.ReadFull(bufferReader, signature); err != nil {
+		return fmt.Errorf("failed to read PNG signature: %w", err)
+	}
+
+	// Defined in libpng/png.c: static const png_byte png_signature[8] = {137, 80, 78, 71, 13, 10, 26, 10};
+	pngSignature := []byte{137, 80, 78, 71, 13, 10, 26, 10}
+	if !bytes.Equal(signature, pngSignature) {
+		return fmt.Errorf("invalid PNG signature")
+	}
+	if _, err := dstWriter.Write(signature); err != nil {
+		return fmt.Errorf("failed to write PNG signature: %w", err)
+	}
+
+	for {
+		headerSignature := make([]byte, 8)
+		if _, err := io.ReadFull(bufferReader, headerSignature); err != nil {
+			return fmt.Errorf("failed to read PNG chunk header: %w", err)
+		}
+
+		if _, err := dstWriter.Write(headerSignature); err != nil {
+			return fmt.Errorf("failed to write PNG chunk header: %w", err)
+		}
+
+		// big-endian classification in libpng/manuals/libpng-manual.txt line 3491
+		chunkLen := binary.BigEndian.Uint32(headerSignature[:4])
+		chunkType := string(headerSignature[4:8])
+
+		if _, err := io.CopyN(dstWriter, bufferReader, int64(chunkLen)+4); err != nil {
+			return fmt.Errorf("failed to stream PNG chunk payload: %w", err)
+		}
+
+		if chunkType == "IEND" {
+			return nil
+		}
+	}
+}
+
 func sendHTTPRequest(ctx context.Context, data *HTTPRequest) ([]byte, error) {
 	if data == nil || data.Config == nil {
 		return nil, fmt.Errorf("data variable and/or config is nil")
@@ -103,6 +157,7 @@ func sendHTTPRequest(ctx context.Context, data *HTTPRequest) ([]byte, error) {
 
 	// HTTP body
 	var bodyReader io.Reader = http.NoBody
+	var bodyCloser io.Closer
 	if data.Config.Method == "POST" {
 		if data.Payload == nil {
 			return nil, fmt.Errorf("payload cannot be nil")
@@ -111,11 +166,24 @@ func sendHTTPRequest(ctx context.Context, data *HTTPRequest) ([]byte, error) {
 			return nil, fmt.Errorf("payload value cannot be nil")
 		}
 		if strings.EqualFold(data.Config.ContentType, "application/octet-stream") {
-			imageBytes, ok := data.Payload.Value.([]byte)
-			if !ok {
-				return nil, fmt.Errorf("octet-stream payload value must be []byte")
+			if data.Payload.Key == "live_screenshot" {
+				pngPath := strings.TrimSpace(data.Payload.StringValue)
+				if pngPath == "" {
+					return nil, fmt.Errorf("live_screenshot requires a PNG file path in string_value")
+				}
+				file, err := os.Open(pngPath)
+				if err != nil {
+					return nil, fmt.Errorf("unable to open screenshot file: %w", err)
+				}
+				bodyCloser = file
+				bodyReader = newSinglePNGReader(file)
+			} else {
+				imageBytes, ok := data.Payload.Value.([]byte)
+				if !ok {
+					return nil, fmt.Errorf("octet-stream payload value must be []byte")
+				}
+				bodyReader = bytes.NewReader(imageBytes)
 			}
-			bodyReader = bytes.NewReader(imageBytes)
 		} else {
 			jsonData, err := json.Marshal(data.Payload.Value)
 			if err != nil {
@@ -129,6 +197,9 @@ func sendHTTPRequest(ctx context.Context, data *HTTPRequest) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, data.Config.Method, requestURL.String(), bodyReader)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+	if bodyCloser != nil {
+		defer bodyCloser.Close()
 	}
 
 	// HTTP headers
@@ -806,18 +877,7 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 		httpRequestConfig.URL.RawQuery = url.Values{
 			"tagnumber": []string{strconv.FormatInt(inputPayload.Tagnumber, 10)},
 		}.Encode()
-
-		file, err := os.Open(inputPayload.StringValue)
-		if err != nil {
-			return nil, fmt.Errorf("unable to open screenshot file: %w", err)
-		}
-		defer file.Close()
-
-		imageBytes, err := io.ReadAll(file)
-		if err != nil {
-			return nil, fmt.Errorf("unable to read screenshot file: %w", err)
-		}
-		inputPayload.Value = imageBytes
+		inputPayload.Value = inputPayload.StringValue
 	case "memory_capacity_kb":
 		httpRequestConfig.URL = url.URL{Path: "/api/client/hardware"}
 		memoryCapacityKB, err := strconv.ParseInt(inputPayload.StringValue, 10, 64)
