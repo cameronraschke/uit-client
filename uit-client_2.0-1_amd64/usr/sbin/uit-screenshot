@@ -22,7 +22,7 @@ function clientLookup() {
 
 while true; do
 	if [[ ! -f /root/screenshot.png ]]; then
-		mkfifo /tpm/screenshot
+		mkfifo /tmp/screenshot
 	fi
 
 	tag=$(clientLookup)
