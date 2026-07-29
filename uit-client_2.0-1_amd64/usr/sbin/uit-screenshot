@@ -37,6 +37,6 @@ while true; do
 	if [[ -n $(printf "%s" "api_get|job_name|tagnumber|${tag}" | /opt/uit-toolbox/parse) ]]; then
 		sleep 3
 	else
-		sleep 10
+		sleep 5
 	fi
 done
