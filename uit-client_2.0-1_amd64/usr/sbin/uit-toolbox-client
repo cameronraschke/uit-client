@@ -12,10 +12,81 @@ cloneElapsed="0"
 shredElapsed="0"
 UIT_CLIENT_DRY_RUN="${UIT_CLIENT_DRY_RUN:-false}"
 
-for i in $(ps | grep 'uit-cpu' | awk '{ print $1 }'); do kill "${i}" 2>/dev/null; done
-for i in $(ps | grep 'uit-network' | awk '{ print $1 }'); do kill "${i}" 2>/dev/null; done
-for i in $(ps | grep 'uit-sql' | awk '{ print $1 }'); do kill "${i}" 2>/dev/null; done
-for i in $(ps | grep 'uit-screenshot' | awk '{ print $1 }'); do kill "${i}" 2>/dev/null; done
+function cleanup {
+	stopBackgroundProcs
+	pkill -P $$
+}
+
+trap 'cleanup' EXIT
+
+backgroundProcs=(
+	"uit-cpu"
+	"uit-network"
+	"uit-sql"
+	"uit-screenshot"
+)
+
+function startBackgroundProcs() {
+	local processName pidFile pid
+	mkdir -p /var/run/uit-toolbox 2>/dev/null || true
+	mkdir -p /var/log/uit-toolbox 2>/dev/null || true
+
+	for processName in ${backgroundProcs[@]}; do
+		pidFile="/var/run/uit-toolbox/${processName}.pid"
+		if [[ -f "${pidFile}" ]]; then
+			pid=$(<"${pidFile}")
+			if [[ -n "${pid}" ]] && kill -0 "${pid}" 2>/dev/null; then
+				continue
+			fi
+			rm -f "${pidFile}"
+		fi
+
+		case "${processName}" in
+			uit-cpu)
+				(
+					exec >>"/var/log/uit-toolbox/${processName}.log" 2>&1
+					exec /usr/bin/nohup uit-cpu </dev/null
+				) &
+				;;
+			uit-network)
+				(
+					exec >>"/var/log/uit-toolbox/${processName}.log" 2>&1
+					exec /usr/bin/nohup uit-network </dev/null
+				) &
+				;;
+			uit-sql)
+				(
+					exec >>"/var/log/uit-toolbox/${processName}.log" 2>&1
+					exec /usr/bin/nohup uit-sql </dev/null
+				) &
+				;;
+			uit-screenshot)
+				(
+					exec >>"/var/log/uit-toolbox/${processName}.log" 2>&1
+					exec /usr/bin/nohup uit-screenshot </dev/null
+				) &
+				;;
+		esac
+
+		pid=$!
+		echo "${pid}" > "${pidFile}"
+	done
+}
+
+function stopBackgroundProcs() {
+	local processName pidFile pid
+
+	for processName in ${backgroundProcs[@]}; do
+		pidFile="/var/run/uit-toolbox/${processName}.pid"
+		if [[ -f "${pidFile}" ]]; then
+			pid=$(<"${pidFile}")
+			if [[ -n "${pid}" ]]; then
+				kill "${pid}" 2>/dev/null || true
+			fi
+			rm -f "${pidFile}"
+		fi
+	done
+}
 
 function resetUsageData {
 	printf "%s" '0' > /root/client_app_uptime
@@ -585,10 +656,7 @@ function findIdentityInDB {
 
 	if [[ -n $tagNum && $tagNum != "null" ]]; then
 		uit-cli --serial "${systemSerial}" --tag "${tagNum}" --key "init" --value "${systemSerial}" --uuid "${UUID}" --post
-		coproc uit_cpu { uit-cpu 2>/dev/null; }
-		coproc uit_network { uit-network 2>/dev/null; }
-		coproc uit_sql { uit-sql 2>/dev/null; }
-		coproc uit_screenshot { uit-screenshot 2>/dev/null; }
+		startBackgroundProcs
 		return
 	else
 		read -p "${BOLD}Please enter the ${GREEN}6-digit tag number${RESET} ${BOLD}followed by ${GREEN}Enter${RESET}${BOLD}:${RESET} " tagNum
@@ -1982,10 +2050,7 @@ function resetForClientRestart {
 	printf "%s" "job_queue|${tagNum}|job_queued|FALSE" | /opt/uit-toolbox/parse
 	printf "%s" "api_post|${tagNum}|job_queued_at|clear|${UUID}" | /opt/uit-toolbox/parse
 	printf "%s" "job_queue|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
-	for i in $(ps | grep 'uit-cpu' | awk '{ print $1 }'); do kill "${i}" 2>/dev/null; done
-	for i in $(ps | grep 'uit-network' | awk '{ print $1 }'); do kill "${i}" 2>/dev/null; done
-	for i in $(ps | grep 'uit-sql' | awk '{ print $1 }'); do kill "${i}" 2>/dev/null; done
-	for i in $(ps | grep 'uit-screenshot' | awk '{ print $1 }'); do kill "${i}" 2>/dev/null; done
+	stopBackgroundProcs
 	dpkg --purge uit-toolbox-client
 	rm -r /root/uit-toolbox-client*
 	rm -r /root/.ssh/known_hosts*
