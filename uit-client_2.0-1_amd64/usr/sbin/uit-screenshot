@@ -1,7 +1,22 @@
 #!/usr/bin/env bash
 
 pngPipe="/tmp/screenshot.$$"
-lockFile="/tmp/uit-screenshot.lock"
+lockDir="/var/lock/uit-toolbox"
+lockFile=""
+tagNum=""
+systemSerial=$(dmidecode --string system-serial-number 2>/dev/null)
+if [[ -z $systemSerial ]]; then
+	systemSerial=$(cat /sys/class/dmi/id/product_serial)
+fi
+
+if ! mkdir -p "${lockDir}" 2>/dev/null; then
+	lockDir="/tmp/uit-toolbox-locks"
+	if ! mkdir -p "${lockDir}" 2>/dev/null; then
+		echo "Unable to create lock directory for uit-screenshot" >&2
+		exit 1
+	fi
+fi
+lockFile="${lockDir}/uit-screenshot.lock"
 
 exec 9>"${lockFile}"
 if ! flock -n 9; then
@@ -16,15 +31,11 @@ function cleanup {
 trap 'cleanup' EXIT
 
 function clientLookup() {
-	local systemSerial=$(dmidecode --string system-serial-number 2>/dev/null)
-	if [[ -z $systemSerial ]]; then
-		systemSerial=$(cat /sys/class/dmi/id/product_serial)
-	fi
-	local tagNum=$(uit-cli --serial "${systemSerial}" --key "client_lookup_by_serial" --value "${systemSerial}" --get | jq -r '.tagnumber' 2>/dev/null)
+	tagNum=$(uit-cli --serial "${systemSerial}" --key "client_lookup_by_serial" --value "${systemSerial}" --get | jq -r '.tagnumber // empty' 2>/dev/null)
 	while [[ -z $tagNum ]]; do
 		echo "Unable to find tag number for system serial ${systemSerial}, retrying in 5 seconds..."
 		sleep 5
-		tagNum=$(uit-cli --serial "${systemSerial}" --key "client_lookup_by_serial" --value "${systemSerial}" --get | jq -r '.tagnumber' 2>/dev/null)
+		tagNum=$(uit-cli --serial "${systemSerial}" --key "client_lookup_by_serial" --value "${systemSerial}" --get | jq -r '.tagnumber // empty' 2>/dev/null)
 	done
 	echo "${tagNum}"
 }
@@ -41,14 +52,17 @@ while true; do
 		fi
 	fi
 
-	tag=$(clientLookup)
+	if [[ -z $tagNum ]]; then
+		tagNum=$(clientLookup)
+		continue
+	fi
 	fbgrab - > "${pngPipe}" &
 	grabPid=$!
 	# printf '%s' "api_post|${tag}|live_image|${pngPipe}" | /opt/uit-toolbox/parse
-	uit-cli --tag "${tag}" --key "live_screenshot" --value "${pngPipe}" --post
+	uit-cli --tag "${tagNum}" --key "live_screenshot" --value "${pngPipe}" --post
 	wait "${grabPid}" 2>/dev/null || true
 	# Update more frequently if a job is active
-	if [[ -n $(printf "%s" "api_get|job_name|tagnumber|${tag}" | /opt/uit-toolbox/parse) ]]; then
+	if [[ -n $(printf "%s" "api_get|job_name|tagnumber|${tagNum}" | /opt/uit-toolbox/parse) ]]; then
 		sleep 3
 	else
 		sleep 5

@@ -27,50 +27,62 @@ backgroundProcs=(
 )
 
 function startBackgroundProcs() {
-	local processName pidFile pid
+	local processName pidFile pid launchLockDir launchLockFile
 	mkdir -p /var/run/uit-toolbox 2>/dev/null || true
 	mkdir -p /var/log/uit-toolbox 2>/dev/null || true
+	launchLockDir="/var/lock/uit-toolbox"
+	if ! mkdir -p "${launchLockDir}" 2>/dev/null; then
+		launchLockDir="/tmp/uit-toolbox-locks"
+		mkdir -p "${launchLockDir}" 2>/dev/null || return
+	fi
+	launchLockFile="${launchLockDir}/background-launch.lock"
 
-	for processName in ${backgroundProcs[@]}; do
-		pidFile="/var/run/uit-toolbox/${processName}.pid"
-		if [[ -f "${pidFile}" ]]; then
-			pid=$(<"${pidFile}")
-			if [[ -n "${pid}" ]] && kill -0 "${pid}" 2>/dev/null; then
-				continue
-			fi
-			rm -f "${pidFile}"
+	{
+		if ! flock -n 8; then
+			return
 		fi
 
-		case "${processName}" in
-			uit-cpu)
-				(
-					exec >>"/var/log/uit-toolbox/${processName}.log" 2>&1
-					exec /usr/bin/nohup uit-cpu </dev/null
-				) &
-				;;
-			uit-network)
-				(
-					exec >>"/var/log/uit-toolbox/${processName}.log" 2>&1
-					exec /usr/bin/nohup uit-network </dev/null
-				) &
-				;;
-			uit-sql)
-				(
-					exec >>"/var/log/uit-toolbox/${processName}.log" 2>&1
-					exec /usr/bin/nohup uit-sql </dev/null
-				) &
-				;;
-			uit-screenshot)
-				(
-					exec >>"/var/log/uit-toolbox/${processName}.log" 2>&1
-					exec /usr/bin/nohup uit-screenshot </dev/null
-				) &
-				;;
-		esac
+		for processName in ${backgroundProcs[@]}; do
+			pidFile="/var/run/uit-toolbox/${processName}.pid"
+			if [[ -f "${pidFile}" ]]; then
+				pid=$(<"${pidFile}")
+				if [[ -n "${pid}" ]] && kill -0 "${pid}" 2>/dev/null; then
+					continue
+				fi
+				rm -f "${pidFile}"
+			fi
 
-		pid=$!
-		echo "${pid}" > "${pidFile}"
-	done
+			case "${processName}" in
+				uit-cpu)
+					(
+						exec >>"/var/log/uit-toolbox/${processName}.log" 2>&1
+						exec /usr/bin/nohup uit-cpu </dev/null
+					) &
+					;;
+				uit-network)
+					(
+						exec >>"/var/log/uit-toolbox/${processName}.log" 2>&1
+						exec /usr/bin/nohup uit-network </dev/null
+					) &
+					;;
+				uit-sql)
+					(
+						exec >>"/var/log/uit-toolbox/${processName}.log" 2>&1
+						exec /usr/bin/nohup uit-sql </dev/null
+					) &
+					;;
+				uit-screenshot)
+					(
+						exec >>"/var/log/uit-toolbox/${processName}.log" 2>&1
+						exec /usr/bin/nohup uit-screenshot </dev/null
+					) &
+					;;
+			esac
+
+			pid=$!
+			echo "${pid}" > "${pidFile}"
+		done
+	} 8>"${launchLockFile}"
 }
 
 function stopBackgroundProcs() {
