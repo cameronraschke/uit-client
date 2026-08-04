@@ -16,6 +16,23 @@ while true; do
 	fi
 	echo "api_post|${tagNum}|last_heard|$(date --iso-8601=seconds)" | /opt/uit-toolbox/parse
 
+	currentJob=$(printf '%s' "api_get|job_name|tagnumber|${tagNum}" | /opt/uit-toolbox/parse)
+	if [[ -z $currentJob ]]; then
+		verifyJobPosition=$(printf '%s' "api_get|job_queue_position|tagnumber|${tagNum}" | /opt/uit-toolbox/parse)
+		if [[ $verifyJobPosition -gt 1 ]]; then
+			echo "job_queue|${tagNum}|job_name|" | /opt/uit-toolbox/parse
+			echo "job_queue|${tagNum}|job_queued|FALSE" | /opt/uit-toolbox/parse
+			printf "%s" "api_post|${tagNum}|job_queued_at|clear|${UUID}" | /opt/uit-toolbox/parse
+			echo "job_queue|${tagNum}|job_active|FALSE" | /opt/uit-toolbox/parse
+			echo "job_queue|${tagNum}|status|fail - queued simultaneously with other client :(" | /opt/uit-toolbox/parse
+			UUID=$(printf '%s' "SELECT uuid AS result FROM jobstats WHERE client_uuid = (SELECT uuid FROM ids WHERE tagnumber = '${tagNum}') ORDER BY time DESC LIMIT 1" | /opt/uit-toolbox/select)
+			/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "erase_completed" --value "FALSE" --post
+			/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "clone_completed" --value "FALSE" --post
+			/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "job_cancelled" --value "TRUE" --post
+			pkill --terminal tty1
+		fi
+	fi
+
 	# Check if cancel job has been sent
 	if [[ $(echo "SELECT job_name AS result FROM job_queue WHERE tagnumber = '${tagNum}'" | /opt/uit-toolbox/select) == "cancel" ]]; then
 		echo "job_queue|${tagNum}|job_name|" | /opt/uit-toolbox/parse

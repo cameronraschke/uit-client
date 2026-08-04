@@ -2136,12 +2136,16 @@ function autodetectClient {
 					break
 				fi
 				if [[ $jobQueuedPosition -eq 0 || $jobQueuedPosition -eq 1 ]]; then
-					sleep 1
-					okay_to_go=$(printf '%s' "api_get|job_queue_position|tagnumber|${tagNum}" | /opt/uit-toolbox/parse)
-					if [[ $okay_to_go -le 1 ]]; then
-						printf "%s" "job_queue|${tagNum}|job_queued|TRUE" | /opt/uit-toolbox/parse
-						printf "%s" "job_queue|${tagNum}|job_active|TRUE" | /opt/uit-toolbox/parse
-						break
+					sleep 7
+					firstCheck=$(printf '%s' "api_get|job_queue_position|tagnumber|${tagNum}" | /opt/uit-toolbox/parse)
+					if [[ $firstCheck -le 1 ]]; then
+						sleep $(( RANDOM % (10 - 1 + 1) + 1 ))
+						secondCheck=$(printf '%s' "api_get|job_queue_position|tagnumber|${tagNum}" | /opt/uit-toolbox/parse)
+						if [[ $secondCheck -le 1 ]]; then
+							printf "%s" "job_queue|${tagNum}|job_queued|TRUE" | /opt/uit-toolbox/parse
+							printf "%s" "job_queue|${tagNum}|job_active|TRUE" | /opt/uit-toolbox/parse
+							break
+						fi
 					fi
 				fi
 				printf '%s\n' "	${BOLD}Tagnumber ${tagNum} (${systemSerial}) is scheduled for ${jobNameFormatted} and is ${jobQueuedPosition} in queue. Press ${BOLD}${GREEN}'q' ${RESET}${BOLD}to exit.${RESET}"
