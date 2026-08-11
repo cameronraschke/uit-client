@@ -51,7 +51,7 @@ type AppStatusRequest struct {
 	SystemUptime  time.Duration `json:"system_uptime"`
 }
 
-func GetCPUData() (usagePcnt float64, mhz float64, temp float64, err error) {
+func GetCPUData() (cpuUsagePcnt float64, cpuMHzAvg float64, cpuTemp float64, err error) {
 
 	readProcStat := func() (iter.Seq[string], error) {
 		f, err := os.Open("/proc/stat")
@@ -75,7 +75,6 @@ func GetCPUData() (usagePcnt float64, mhz float64, temp float64, err error) {
 			// The space after cpu is important, matches only first aggregated row
 			if strings.HasPrefix(i, "cpu ") {
 				cols := strings.Fields(i)
-				fmt.Printf("col count=%d", len(cols))
 				user, _ := strconv.ParseInt(cols[1], 10, 64)
 				nice, _ := strconv.ParseInt(cols[2], 10, 64)
 				system, _ := strconv.ParseInt(cols[3], 10, 64)
@@ -86,27 +85,44 @@ func GetCPUData() (usagePcnt float64, mhz float64, temp float64, err error) {
 				steal, _ := strconv.ParseInt(cols[8], 10, 64)
 				guest, _ := strconv.ParseInt(cols[9], 10, 64)
 				guest_nice, _ := strconv.ParseInt(cols[10], 10, 64)
-				fmt.Printf("user=%d\nnice=%d\nsystem=%d\nidle=%d\niowait=%d\nirq=%d\nsoftirq=%d\nsteal=%d\nguest=%d\nguest_nice=%d\n", user, nice, system, idle, iowait, irq, softirq, steal, guest, guest_nice)
 				totalCPUTime = user + nice + system + idle + iowait + irq + softirq + steal + guest + guest_nice
-				fmt.Printf("Total CPU Time=%d jiffies\n", totalCPUTime)
 				idleTime := idle + iowait
-				fmt.Printf("Total Idle Time=%d jiffies\n", idleTime)
 				totalActiveCPUTime = totalCPUTime - idleTime
-				fmt.Printf("Active Time=%d jiffies\n", totalActiveCPUTime)
 			}
 		}
 		return totalActiveCPUTime, totalCPUTime
 	}
 
+	// CPU usage percent
 	active1, total1 := processProcStat()
-	fmt.Printf("active1=%d, total1=%d\n", active1, total1)
 	time.Sleep(1 * time.Second)
 	active2, total2 := processProcStat()
-	fmt.Printf("active2=%d, total2=%d\n", active2, total2)
-	usagePcnt = ((float64(active2) - float64(active1)) / (float64(total2) - float64(total1))) * 100
-	fmt.Printf("Usage after sleep=%.4f\n", usagePcnt)
+	cpuUsagePcnt = ((float64(active2) - float64(active1)) / (float64(total2) - float64(total1))) * 100
 
-	return usagePcnt, mhz, temp, nil
+	// CPU MHz
+	data, err := os.ReadFile("/proc/cpuinfo")
+	if err != nil {
+		return 0, 0, 0, fmt.Errorf("error opening /proc/cpuinfo: %v", err)
+	}
+
+	lines := strings.Lines(string(data))
+	var totalMHz float64
+	var entryCount int
+	for line := range lines {
+		if strings.HasPrefix(line, "cpu MHz") {
+			fieldsArr := strings.Fields(line)
+			mhz, err := strconv.ParseFloat(fieldsArr[3], 64)
+			if err != nil {
+				return 0, 0, 0, fmt.Errorf("error parsing /proc/cpuinfo columns/fields: %v", err)
+			}
+			totalMHz = totalMHz + mhz
+			entryCount++
+		}
+	}
+
+	cpuMHzAvg = totalMHz / float64(entryCount)
+
+	return cpuUsagePcnt, cpuMHzAvg, cpuTemp, nil
 }
 
 func GetMemoryData() (totalCapacityKB int64, totalUsageKB int64, err error) {
