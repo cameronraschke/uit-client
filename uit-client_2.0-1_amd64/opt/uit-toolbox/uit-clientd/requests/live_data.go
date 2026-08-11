@@ -5,6 +5,8 @@ import (
 	"io"
 	"iter"
 	"os"
+	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -121,6 +123,53 @@ func GetCPUData() (cpuUsagePcnt float64, cpuMHzAvg float64, cpuTemp float64, err
 	}
 
 	cpuMHzAvg = totalMHz / float64(entryCount)
+
+	// CPU temp
+	// find coretemp name/type
+	hwmons, err := os.ReadDir("/sys/class/hwmon/")
+	if err != nil {
+		return 0, 0, 0, fmt.Errorf("error opening directory /sys/class/hwmon: %v", err)
+	}
+
+	var totalDegrees int64
+	var totalEntries int
+	for _, hwmonDir := range hwmons {
+		hwmonNamePath := filepath.Join("/sys/class/hwmon/", hwmonDir.Name(), "name")
+		data, err := os.ReadFile(hwmonNamePath)
+		if err != nil {
+			return 0, 0, 0, fmt.Errorf("cannot open hwmon file '%s': %v", hwmonNamePath, err)
+		}
+		hwmonName := strings.TrimSpace(string(data)) // string not trimmed for some reason
+		if hwmonName != "coretemp" {
+			continue
+		}
+		hwmonDir := filepath.Join("/sys/class/hwmon/", hwmonDir.Name())
+		hwmonDirEntries, err := os.ReadDir(hwmonDir)
+		if err != nil {
+			return 0, 0, 0, fmt.Errorf("cannot open hwmon dir: %v", err)
+		}
+		if len(hwmonDirEntries) == 0 {
+			return 0, 0, 0, fmt.Errorf("hwmonDirEntries has len of 0")
+		}
+		for _, input := range hwmonDirEntries {
+			matches, err := regexp.MatchString(`temp[0-9]+\_input`, input.Name())
+			if err != nil || !matches {
+				continue
+			}
+			fullFilePath := filepath.Join(hwmonDir, input.Name())
+			fileBytes, err := os.ReadFile(fullFilePath)
+			if err != nil {
+				return 0, 0, 0, fmt.Errorf("error reading temp input value from '%s': %v", input.Name(), err)
+			}
+			intVal, err := strconv.ParseInt(strings.TrimSpace(string(fileBytes)), 10, 64)
+			if err != nil {
+				return 0, 0, 0, fmt.Errorf("cannot parse hwmon temp value for file '%s': %v", fullFilePath, err)
+			}
+			totalDegrees = totalDegrees + intVal
+			totalEntries++
+		}
+	}
+	cpuTemp = (float64(totalDegrees) / float64(totalEntries)) / 1000
 
 	return cpuUsagePcnt, cpuMHzAvg, cpuTemp, nil
 }
