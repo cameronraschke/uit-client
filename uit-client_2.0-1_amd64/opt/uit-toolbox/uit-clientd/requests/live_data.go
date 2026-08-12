@@ -25,8 +25,8 @@ type HardwareDataRequest struct {
 	CPUUsagePcnt      float64 `json:"cpu_usage_pcnt"`
 	CPUMhz            int64   `json:"cpu_mhz"`
 	CPUTemp           float64 `json:"cpu_temp"`
-	MemUsageKB        int64   `json:"int64"`
-	MemCapacityKB     int64   `json:"mem_capacity_kb"`
+	MemUsageKB        int64   `json:"memory_usage_kb"`
+	MemCapacityKB     int64   `json:"memory_capacity_kb"`
 	NetLinkSpeedMbit  float64 `json:"net_link_speed_mbit"`
 	NetUsageMbit      float64 `json:"net_usage_mbit"`
 	PowerUsageWatts   float64 `json:"power_usage_watts"`
