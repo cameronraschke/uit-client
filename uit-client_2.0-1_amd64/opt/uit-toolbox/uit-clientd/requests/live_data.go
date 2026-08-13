@@ -12,6 +12,10 @@ import (
 	"time"
 )
 
+const (
+	hwmonDirRoot = "/sys/class/hwmon/"
+)
+
 type LiveDataRequest struct {
 	Hardware   *HardwareDataRequest `json:"hardware"`
 	Job        *JobQueueDataRequest `json:"job"`
@@ -20,13 +24,15 @@ type LiveDataRequest struct {
 }
 
 type HardwareDataRequest struct {
-	BatteryChargePcnt float64 `json:"battery_charge_pcnt"`
+	BatteryChargePcnt int64   `json:"battery_charge_pcnt"`
 	BatteryStatus     string  `json:"battery_status"`
 	CPUUsagePcnt      float64 `json:"cpu_usage_pcnt"`
-	CPUMhz            int64   `json:"cpu_mhz"`
+	CPUMhz            float64 `json:"cpu_mhz"`
 	CPUTemp           float64 `json:"cpu_temp"`
-	MemUsageKB        int64   `json:"int64"`
-	MemCapacityKB     int64   `json:"mem_capacity_kb"`
+	DiskTemp          float64 `json:"disk_temp"`
+	DiskMaxTemp       float64 `json:"disk_max_temp"`
+	MemUsageKB        int64   `json:"memory_usage_kb"`
+	MemCapacityKB     int64   `json:"memory_capacity_kb"`
 	NetLinkSpeedMbit  float64 `json:"net_link_speed_mbit"`
 	NetUsageMbit      float64 `json:"net_usage_mbit"`
 	PowerUsageWatts   float64 `json:"power_usage_watts"`
@@ -54,11 +60,10 @@ type AppStatusRequest struct {
 }
 
 func GetCPUData() (cpuUsagePcnt float64, cpuMHzAvg float64, cpuTemp float64, err error) {
-
 	readProcStat := func() (iter.Seq[string], error) {
 		f, err := os.Open("/proc/stat")
 		if err != nil {
-			return nil, fmt.Errorf("Error opening file '/proc/stat': %v", err)
+			return nil, fmt.Errorf("Error opening file '/proc/stat': %w", err)
 		}
 		defer f.Close()
 
@@ -104,7 +109,7 @@ func GetCPUData() (cpuUsagePcnt float64, cpuMHzAvg float64, cpuTemp float64, err
 	// CPU MHz
 	data, err := os.ReadFile("/proc/cpuinfo")
 	if err != nil {
-		return 0, 0, 0, fmt.Errorf("error opening /proc/cpuinfo: %v", err)
+		return 0, 0, 0, fmt.Errorf("error opening /proc/cpuinfo: %w", err)
 	}
 
 	lines := strings.Lines(string(data))
@@ -115,7 +120,7 @@ func GetCPUData() (cpuUsagePcnt float64, cpuMHzAvg float64, cpuTemp float64, err
 			fieldsArr := strings.Fields(line)
 			mhz, err := strconv.ParseFloat(fieldsArr[3], 64)
 			if err != nil {
-				return 0, 0, 0, fmt.Errorf("error parsing /proc/cpuinfo columns/fields: %v", err)
+				return 0, 0, 0, fmt.Errorf("error parsing /proc/cpuinfo columns/fields: %w", err)
 			}
 			totalMHz = totalMHz + mhz
 			entryCount++
@@ -128,7 +133,7 @@ func GetCPUData() (cpuUsagePcnt float64, cpuMHzAvg float64, cpuTemp float64, err
 	// find coretemp name/type
 	hwmons, err := os.ReadDir("/sys/class/hwmon/")
 	if err != nil {
-		return 0, 0, 0, fmt.Errorf("error opening directory /sys/class/hwmon: %v", err)
+		return 0, 0, 0, fmt.Errorf("error opening directory /sys/class/hwmon: %w", err)
 	}
 
 	var totalDegrees int64
@@ -137,7 +142,7 @@ func GetCPUData() (cpuUsagePcnt float64, cpuMHzAvg float64, cpuTemp float64, err
 		hwmonNamePath := filepath.Join("/sys/class/hwmon/", hwmonDir.Name(), "name")
 		data, err := os.ReadFile(hwmonNamePath)
 		if err != nil {
-			return 0, 0, 0, fmt.Errorf("cannot open hwmon file '%s': %v", hwmonNamePath, err)
+			return 0, 0, 0, fmt.Errorf("cannot open hwmon file '%s': %w", hwmonNamePath, err)
 		}
 		hwmonName := strings.TrimSpace(string(data)) // string not trimmed for some reason
 		if hwmonName != "coretemp" {
@@ -146,7 +151,7 @@ func GetCPUData() (cpuUsagePcnt float64, cpuMHzAvg float64, cpuTemp float64, err
 		hwmonDir := filepath.Join("/sys/class/hwmon/", hwmonDir.Name())
 		hwmonDirEntries, err := os.ReadDir(hwmonDir)
 		if err != nil {
-			return 0, 0, 0, fmt.Errorf("cannot open hwmon dir: %v", err)
+			return 0, 0, 0, fmt.Errorf("cannot open hwmon dir: %w", err)
 		}
 		if len(hwmonDirEntries) == 0 {
 			return 0, 0, 0, fmt.Errorf("hwmonDirEntries has len of 0")
@@ -159,11 +164,11 @@ func GetCPUData() (cpuUsagePcnt float64, cpuMHzAvg float64, cpuTemp float64, err
 			fullFilePath := filepath.Join(hwmonDir, input.Name())
 			fileBytes, err := os.ReadFile(fullFilePath)
 			if err != nil {
-				return 0, 0, 0, fmt.Errorf("error reading temp input value from '%s': %v", input.Name(), err)
+				return 0, 0, 0, fmt.Errorf("error reading temp input value from '%s': %w", input.Name(), err)
 			}
 			intVal, err := strconv.ParseInt(strings.TrimSpace(string(fileBytes)), 10, 64)
 			if err != nil {
-				return 0, 0, 0, fmt.Errorf("cannot parse hwmon temp value for file '%s': %v", fullFilePath, err)
+				return 0, 0, 0, fmt.Errorf("cannot parse hwmon temp value for file '%s': %w", fullFilePath, err)
 			}
 			totalDegrees = totalDegrees + intVal
 			totalEntries++
@@ -177,7 +182,7 @@ func GetCPUData() (cpuUsagePcnt float64, cpuMHzAvg float64, cpuTemp float64, err
 func GetMemoryData() (totalCapacityKB int64, totalUsageKB int64, err error) {
 	f, err := os.Open("/proc/meminfo")
 	if err != nil {
-		return 0, 0, fmt.Errorf("Error opening file '/proc/meminfo': %v", err)
+		return 0, 0, fmt.Errorf("Error opening file '/proc/meminfo': %w", err)
 	}
 	defer f.Close()
 
@@ -200,7 +205,7 @@ func GetMemoryData() (totalCapacityKB int64, totalUsageKB int64, err error) {
 			}
 			totalCapacityKB, err = strconv.ParseInt(memTotalLine[1], 10, 64)
 			if err != nil {
-				return 0, 0, fmt.Errorf("Error parsing MemTotal in '/proc/meminfo': %v", err)
+				return 0, 0, fmt.Errorf("Error parsing MemTotal in '/proc/meminfo': %w", err)
 			}
 		}
 		if strings.HasPrefix(i, "MemAvailable") {
@@ -210,9 +215,107 @@ func GetMemoryData() (totalCapacityKB int64, totalUsageKB int64, err error) {
 			}
 			totalUsageKB, err = strconv.ParseInt(memAvailableLine[1], 10, 64)
 			if err != nil {
-				return 0, 0, fmt.Errorf("Error parsing MemAvailable in '/proc/meminfo': %v", err)
+				return 0, 0, fmt.Errorf("Error parsing MemAvailable in '/proc/meminfo': %w", err)
 			}
 		}
 	}
 	return totalCapacityKB, totalUsageKB, nil
+}
+
+func GetBatteryData() (chargePcnt int64, statusStr string, err error) {
+	hwmonDirs, err := os.ReadDir(hwmonDirRoot)
+	if err != nil {
+		return 0, "", fmt.Errorf("error opening directory '%s': %w", hwmonDirRoot, err)
+	}
+	for _, dir := range hwmonDirs {
+		hwmonDir := filepath.Join(hwmonDirRoot, dir.Name())
+		deviceNameBytes, _ := os.ReadFile(filepath.Join(hwmonDir, "name"))
+		deviceName := strings.TrimSpace(string(deviceNameBytes))
+		if deviceName != "BAT0" && deviceName != "BAT1" {
+			continue
+		}
+		chargePcntBytes, err := os.ReadFile(filepath.Join(hwmonDir, "device", "capacity"))
+		if err != nil {
+			return 0, "", fmt.Errorf("cannot read file '%s': %w", filepath.Join(hwmonDir, "device", "capacity"), err)
+		}
+		chargePcntStr := strings.TrimSpace(string(chargePcntBytes))
+		chargePcnt, err = strconv.ParseInt(chargePcntStr, 10, 64)
+		if err != nil {
+			return 0, "", fmt.Errorf("cannot parse battery charge percent: %w", err)
+		}
+
+		statusBytes, _ := os.ReadFile(filepath.Join(hwmonDir, "device", "status"))
+		statusStr = strings.TrimSpace(string(statusBytes))
+	}
+	return chargePcnt, statusStr, nil
+}
+
+func GetDiskData() (curTemp float64, maxTemp float64, err error) {
+	hwmonDirs, err := os.ReadDir(hwmonDirRoot)
+	if err != nil {
+		return 0, 0, fmt.Errorf("error opening directory '%s': %w", hwmonDirRoot, err)
+	}
+	for _, dir := range hwmonDirs {
+		hwmonDir := filepath.Join(hwmonDirRoot, dir.Name())
+		hwmonNameBytes, _ := os.ReadFile(filepath.Join(hwmonDir, "name"))
+		hwmonNameStr := strings.TrimSpace(string(hwmonNameBytes))
+		if hwmonNameStr != "nvme" {
+			continue
+		}
+
+		// TODO: loop over temp*_input and temp1*_max
+		curTempBytes, _ := os.ReadFile(filepath.Join(hwmonDir, "temp1_input"))
+		curTempStr := strings.TrimSpace(string(curTempBytes))
+		cur, err := strconv.ParseInt(curTempStr, 10, 64)
+		if err != nil {
+			return 0, 0, fmt.Errorf("cannot parse current disk temp: %w", err)
+		}
+		curTemp = float64(cur) / 1000
+
+		maxTempBytes, err := os.ReadFile(filepath.Join(hwmonDir, "temp1_max"))
+		if err != nil {
+			return 0, 0, fmt.Errorf("cannot read file '%s': %w", filepath.Join(hwmonDir, "temp1_max"), err)
+		}
+		maxTempStr := strings.TrimSpace(string(maxTempBytes))
+		max, err := strconv.ParseInt(maxTempStr, 10, 64)
+		if err != nil {
+			return 0, 0, fmt.Errorf("cannot parse max disk temp: %w", err)
+		}
+		maxTemp = float64(max) / 1000
+	}
+	return curTemp, maxTemp, nil
+}
+
+func printHardwareData() {
+	hardwareData := new(HardwareDataRequest)
+	cpuUsage, cpuMHz, cpuTemp, err := GetCPUData()
+	if err != nil {
+		fmt.Printf("error retrieving CPU data: %v\n", err)
+	}
+	hardwareData.CPUUsagePcnt = cpuUsage
+	hardwareData.CPUMhz = cpuMHz
+	hardwareData.CPUTemp = cpuTemp
+
+	memCapacity, memUsage, err := GetMemoryData()
+	if err != nil {
+		fmt.Printf("error retrieving memory data: %v\n", err)
+	}
+	hardwareData.MemCapacityKB = memCapacity
+	hardwareData.MemUsageKB = memUsage
+
+	batCharge, batStatus, err := GetBatteryData()
+	if err != nil {
+		fmt.Printf("error retrieving battery data: %v\n", err)
+	}
+	hardwareData.BatteryChargePcnt = batCharge
+	hardwareData.BatteryStatus = batStatus
+
+	diskTemp, diskMaxTemp, err := GetDiskData()
+	if err != nil {
+		fmt.Printf("error retrieving disk data: %v\n", err)
+	}
+	hardwareData.DiskTemp = diskTemp
+	hardwareData.DiskMaxTemp = diskMaxTemp
+
+	fmt.Printf("data: \n%#v\n", hardwareData)
 }
