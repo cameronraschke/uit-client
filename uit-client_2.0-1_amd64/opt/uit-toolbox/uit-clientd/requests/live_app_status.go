@@ -2,7 +2,6 @@ package requests
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"os"
 	"sync"
@@ -10,15 +9,18 @@ import (
 )
 
 const (
-	appLastHeardFilePath = "/tmp/uit_app_last_heard"
-	appUptimeFilePath    = "/tmp/uit_app_uptime"
+	appLastHeardFilePath  = "/tmp/uit_app_last_heard"
+	appUptimeFilePath     = "/tmp/uit_app_uptime"
+	kernelUpdatedFilePath = "/tmp/uit_kernel_updated"
 )
 
 var (
-	appLastHeardBufMu sync.RWMutex
-	appLastHeardBuf   bytes.Buffer
-	appUptimeBufMu    sync.RWMutex
-	appUptimeBuf      bytes.Buffer
+	appLastHeardBufMu  sync.Mutex
+	appLastHeardBuf    bytes.Buffer
+	appUptimeBufMu     sync.Mutex
+	appUptimeBuf       bytes.Buffer
+	kernelUpdatedBuf   bytes.Buffer
+	kernelUpdatedBufMu sync.Mutex
 )
 
 type AppStatusRequest struct {
@@ -31,13 +33,30 @@ type AppStatusRequest struct {
 	SystemUptime  time.Duration `json:"system_uptime"`
 }
 
+func getKernelUpdated() (bool, error) {
+	f, err := os.Open(kernelUpdatedFilePath)
+	if err != nil {
+		return false, fmt.Errorf("cannot open '%s' for reading: %w", kernelUpdatedFilePath, err)
+	}
+	defer f.Close()
+
+	kernelUpdatedBufMu.Lock()
+	defer kernelUpdatedBufMu.Unlock()
+
+	kernelUpdatedBuf.Reset()
+	kernelUpdatedBuf.ReadFrom(f)
+
+	if kernelUpdatedBuf.String() != "true" {
+		return false, nil
+	}
+
+	return true, nil
+}
+
 func getLastHeard() (time.Time, error) {
 	f, err := os.Open(appLastHeardFilePath)
 	if err != nil {
-		_, ok := errors.AsType[*os.PathError](err)
-		if !ok {
-			return time.Time{}, err
-		}
+		return time.Time{}, err
 	}
 	defer f.Close()
 
@@ -83,6 +102,8 @@ func getAppUptime() (time.Duration, error) {
 	if err != nil {
 		return 0, err
 	}
+	defer f.Close()
+
 	appUptimeBufMu.Lock()
 	defer appUptimeBufMu.Unlock()
 

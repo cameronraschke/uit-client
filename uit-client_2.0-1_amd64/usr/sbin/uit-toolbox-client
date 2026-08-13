@@ -327,6 +327,7 @@ fi
 	for i in $(ls /lib/modules); do
 		echo "${i}" | grep -i --quiet "$(uname -r)"
 		if [[ ${PIPESTATUS[1]} == "0" ]]; then
+			echo -n "true" > /tmp/uit_kernel_updated
 			break
 		else
 			echo "job_queue|${tagNum}|kernel_updated|" | /opt/uit-toolbox/parse
