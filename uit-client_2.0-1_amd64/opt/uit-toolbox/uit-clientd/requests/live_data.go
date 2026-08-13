@@ -644,46 +644,81 @@ func GetNetworkData(rootCtx context.Context) (linkSpeed int64, mbpsThroughput fl
 }
 
 func printHardwareData() {
-	ctx, ctxCancel := context.WithCancel(context.Background())
+	parentCtx, ctxCancel := context.WithCancel(context.Background())
 	defer ctxCancel()
+	var wg sync.WaitGroup
+	errChan := make(chan error, 1)
+	sendToErrChan := func(err error) {
+		if err != nil {
+			errChan <- err
+			ctxCancel()
+		}
+	}
 
 	hardwareData := new(HardwareDataRequest)
-	cpuUsage, cpuMHz, cpuTemp, err := GetCPUData(ctx)
-	if err != nil {
-		fmt.Printf("error retrieving CPU data: %v\n", err)
-	}
-	hardwareData.CPUUsagePcnt = cpuUsage
-	hardwareData.CPUMhz = cpuMHz
-	hardwareData.CPUTemp = cpuTemp
 
-	memCapacity, memUsage, err := GetMemoryData()
-	if err != nil {
-		fmt.Printf("error retrieving memory data: %v\n", err)
-	}
-	hardwareData.MemCapacityKB = memCapacity
-	hardwareData.MemUsageKB = memUsage
+	// CPU data
+	wg.Go(func() {
+		cpuUsage, cpuMHz, cpuTemp, err := GetCPUData(parentCtx)
+		if err != nil {
+			sendToErrChan(fmt.Errorf("error retrieving CPU data: %w", err))
+			return
+		}
+		hardwareData.CPUUsagePcnt = cpuUsage
+		hardwareData.CPUMhz = cpuMHz
+		hardwareData.CPUTemp = cpuTemp
+	})
 
-	powerUsage, batCharge, batStatus, err := GetPowerSupplyData(ctx)
-	if err != nil {
-		fmt.Printf("error retrieving battery data: %v\n", err)
-	}
-	hardwareData.PowerUsageWatts = powerUsage
-	hardwareData.BatteryChargePcnt = batCharge
-	hardwareData.BatteryStatus = batStatus
+	// Memory data
+	wg.Go(func() {
+		memCapacity, memUsage, err := GetMemoryData()
+		if err != nil {
+			sendToErrChan(fmt.Errorf("error retrieving memory data: %w", err))
+			return
+		}
+		hardwareData.MemCapacityKB = memCapacity
+		hardwareData.MemUsageKB = memUsage
+	})
 
-	diskTemp, diskMaxTemp, err := GetDiskData()
-	if err != nil {
-		fmt.Printf("error retrieving disk data: %v\n", err)
-	}
-	hardwareData.DiskTemp = diskTemp
-	hardwareData.DiskMaxTemp = diskMaxTemp
+	// Power supply and battery data
+	wg.Go(func() {
+		powerUsage, batCharge, batStatus, err := GetPowerSupplyData(parentCtx)
+		if err != nil {
+			sendToErrChan(fmt.Errorf("error retrieving battery data: %w", err))
+			return
+		}
+		hardwareData.PowerUsageWatts = powerUsage
+		hardwareData.BatteryChargePcnt = batCharge
+		hardwareData.BatteryStatus = batStatus
+	})
 
-	netLinkSpeed, netThroughput, err := GetNetworkData(ctx)
-	if err != nil {
-		fmt.Printf("error retrieving net interface data: %v", err)
+	// Disk data
+	wg.Go(func() {
+		diskTemp, diskMaxTemp, err := GetDiskData()
+		if err != nil {
+			sendToErrChan(fmt.Errorf("error retrieving disk data: %w", err))
+			return
+		}
+		hardwareData.DiskTemp = diskTemp
+		hardwareData.DiskMaxTemp = diskMaxTemp
+	})
+
+	wg.Go(func() {
+		netLinkSpeed, netThroughput, err := GetNetworkData(parentCtx)
+		if err != nil {
+			sendToErrChan(fmt.Errorf("error retrieving net interface data: %w\n", err))
+			return
+		}
+		hardwareData.NetLinkSpeedMbit = netLinkSpeed
+		hardwareData.NetUsageMbit = netThroughput
+	})
+
+	wg.Wait()
+	close(errChan)
+
+	for err := range errChan {
+		fmt.Fprintf(os.Stderr, "[Error] hardware data error: %v", err)
 	}
-	hardwareData.NetLinkSpeedMbit = netLinkSpeed
-	hardwareData.NetUsageMbit = netThroughput
 
 	fmt.Printf("data: \n%#v\n", hardwareData)
 }
