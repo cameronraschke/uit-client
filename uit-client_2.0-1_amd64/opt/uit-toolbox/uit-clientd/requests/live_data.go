@@ -38,8 +38,8 @@ type HardwareDataRequest struct {
 	DiskMaxTemp       float64 `json:"disk_max_temp"`
 	MemUsageKB        int64   `json:"memory_usage_kb"`
 	MemCapacityKB     int64   `json:"memory_capacity_kb"`
-	NetLinkSpeedMbit  int64   `json:"net_link_speed_mbit"`
-	NetUsageMbit      float64 `json:"net_usage_mbit"`
+	NetLinkSpeedKbit  int64   `json:"net_link_speed_kbit"`
+	NetUsageKbit      float64 `json:"net_usage_kbit"`
 	PowerUsageWatts   float64 `json:"power_usage_watts"`
 }
 
@@ -82,7 +82,7 @@ func GetCPUData(rootCtx context.Context) (cpuUsagePcnt float64, cpuMHzAvg float6
 
 	readProcStat := func(ctx context.Context) (iter.Seq[string], error) {
 		if ctx.Err() != nil {
-			return nil, fmt.Errorf("context error: %w", ctx.Err())
+			return nil, fmt.Errorf("context error (GetCPUData/readProcStat): %w", ctx.Err())
 		}
 		f, err := os.Open("/proc/stat")
 		if err != nil {
@@ -102,11 +102,11 @@ func GetCPUData(rootCtx context.Context) (cpuUsagePcnt float64, cpuMHzAvg float6
 	processProcStat := func(ctx context.Context) (totalActiveCPUTime int64, totalCPUTime int64, err error) {
 		lines, err := readProcStat(ctx)
 		if err != nil {
-			return 0, 0, fmt.Errorf("context error: %w", ctx.Err())
+			return 0, 0, fmt.Errorf("context error (GetCPUData/processProcStat): %w", ctx.Err())
 		}
 		for i := range lines {
 			if ctx.Err() != nil {
-				return 0, 0, fmt.Errorf("context error: %w", ctx.Err())
+				return 0, 0, fmt.Errorf("context error (GetCPUData/processProcStat): %w", ctx.Err())
 			}
 			// The space after cpu is important, matches only first aggregated row
 			if strings.HasPrefix(i, "cpu ") {
@@ -140,7 +140,7 @@ func GetCPUData(rootCtx context.Context) (cpuUsagePcnt float64, cpuMHzAvg float6
 		defer timer.Stop()
 		select {
 		case <-ctx.Done():
-			sendToErrChanOnce(fmt.Errorf("context error: %w", ctx.Err()))
+			sendToErrChanOnce(fmt.Errorf("context error (GetCPUData - CPU Usage): %w", ctx.Err()))
 			return
 		case <-timer.C:
 			// continue
@@ -153,7 +153,8 @@ func GetCPUData(rootCtx context.Context) (cpuUsagePcnt float64, cpuMHzAvg float6
 		activeDelta := float64(active2) - float64(active1)
 		totalDelta := float64(total2) - float64(total1)
 		if activeDelta == totalDelta || activeDelta == 0 || totalDelta == 0 {
-			sendToErrChanOnce(fmt.Errorf("arithmetic error between active and total CPU time deltas"))
+			// The CPU can be close to 0% usage on a computer that's not doing anything. Just return 0 without error.
+			// sendToErrChanOnce(fmt.Errorf("arithmetic error between active and total CPU time deltas"))
 			return
 		}
 
@@ -173,7 +174,7 @@ func GetCPUData(rootCtx context.Context) (cpuUsagePcnt float64, cpuMHzAvg float6
 		var entryCount int
 		for line := range lines {
 			if ctx.Err() != nil {
-				sendToErrChanOnce(fmt.Errorf("context error: %w", ctx.Err()))
+				sendToErrChanOnce(fmt.Errorf("context error (GetCPUData - CPU Mhz): %w", ctx.Err()))
 				return
 			}
 			if strings.HasPrefix(line, "cpu MHz") {
@@ -204,7 +205,7 @@ func GetCPUData(rootCtx context.Context) (cpuUsagePcnt float64, cpuMHzAvg float6
 		var totalEntries int64
 		for _, hwmonDir := range hwmons {
 			if ctx.Err() != nil {
-				sendToErrChanOnce(fmt.Errorf("context error: %w", ctx.Err()))
+				sendToErrChanOnce(fmt.Errorf("context error (GetCPUData - CPU Temp outer loop): %w", ctx.Err()))
 				return
 			}
 			hwmonNamePath := filepath.Join("/sys/class/hwmon/", hwmonDir.Name(), "name")
@@ -229,7 +230,7 @@ func GetCPUData(rootCtx context.Context) (cpuUsagePcnt float64, cpuMHzAvg float6
 			}
 			for _, input := range hwmonDirEntries {
 				if ctx.Err() != nil {
-					sendToErrChanOnce(fmt.Errorf("context error: %w", ctx.Err()))
+					sendToErrChanOnce(fmt.Errorf("context error (GetCPUData - CPU Temp inner loop): %w", ctx.Err()))
 					return
 				}
 				matches, err := regexp.MatchString(`temp[0-9]+\_input`, input.Name())
@@ -333,7 +334,7 @@ func GetPowerSupplyData(rootCtx context.Context) (powerUsageWatts float64, batCh
 		var totaluJoules int64
 		for _, dir := range powercapDirs {
 			if ctx.Err() != nil {
-				return 0, fmt.Errorf("context error: %w", ctx.Err())
+				return 0, fmt.Errorf("context error (GetPowerSupplyData/getTotalWatts): %w", ctx.Err())
 			}
 			powercapDir := filepath.Join(powercapRootDir, dir.Name(), "energy_uj")
 			powercapDir2 := filepath.Join(powercapRootDir2, "intel-rapl:0", "energy_uj")
@@ -371,7 +372,7 @@ func GetPowerSupplyData(rootCtx context.Context) (powerUsageWatts float64, batCh
 		defer timer.Stop()
 		select {
 		case <-ctx.Done():
-			sendToErrChanOnce(fmt.Errorf("context error: %w", ctx.Err()))
+			sendToErrChanOnce(fmt.Errorf("context error (GetPowerSupplyData - Current wattage): %w", ctx.Err()))
 			return
 		case <-timer.C:
 			// continue
@@ -393,7 +394,7 @@ func GetPowerSupplyData(rootCtx context.Context) (powerUsageWatts float64, batCh
 		}
 		for _, dir := range hwmonDirs {
 			if ctx.Err() != nil {
-				sendToErrChanOnce(fmt.Errorf("context error: %w", ctx.Err()))
+				sendToErrChanOnce(fmt.Errorf("context error (GetPowerSupplyData - Bat charge & status): %w", ctx.Err()))
 				return
 			}
 			hwmonDir := filepath.Join(hwmonDirRoot, dir.Name())
@@ -464,7 +465,7 @@ func GetDiskData() (curTemp float64, maxTemp float64, err error) {
 	return curTemp, maxTemp, nil
 }
 
-func GetNetworkData(rootCtx context.Context) (linkSpeed int64, mbpsThroughput float64, err error) {
+func GetNetworkData(rootCtx context.Context) (linkSpeed int64, kbpsThroughput float64, err error) {
 	var initialValidNetDirs []string
 	var initialValidNetDirsMu sync.RWMutex
 	ctx, ctxCancel := context.WithCancel(rootCtx)
@@ -489,7 +490,7 @@ func GetNetworkData(rootCtx context.Context) (linkSpeed int64, mbpsThroughput fl
 		}
 		for _, dir := range netDirs {
 			if ctx.Err() != nil {
-				return fmt.Errorf("context error: %w", ctx.Err())
+				return fmt.Errorf("context error (GetNetworkData/initValidNetIFDirs): %w", ctx.Err())
 			}
 			ifDir := filepath.Join(netIfRootDir, dir.Name())
 			b, err := os.ReadFile(filepath.Join(ifDir, "type"))
@@ -526,7 +527,7 @@ func GetNetworkData(rootCtx context.Context) (linkSpeed int64, mbpsThroughput fl
 	// returns slice of directories ex /sys/class/net/en...
 	getValidNetIFDirs := func(ctx context.Context) ([]string, error) {
 		if ctx.Err() != nil {
-			return nil, fmt.Errorf("context error: %w", ctx.Err())
+			return nil, fmt.Errorf("context error (GetNetworkData/getValidNetIFDIrs): %w", ctx.Err())
 		}
 		initialValidNetDirsMu.RLock()
 		defer initialValidNetDirsMu.RUnlock()
@@ -548,7 +549,7 @@ func GetNetworkData(rootCtx context.Context) (linkSpeed int64, mbpsThroughput fl
 		// before allValidNetDirs is returned, it checks to make sure it's populated
 		for _, dir := range allValidNetDirs {
 			if ctx.Err() != nil {
-				return 0, fmt.Errorf("context error: %w", ctx.Err())
+				return 0, fmt.Errorf("context error (GetNetworkData/getTxRxSum): %w", ctx.Err())
 			}
 			txTotalBytes, err := os.ReadFile(filepath.Join(dir, "statistics", "tx_bytes"))
 			if err != nil {
@@ -584,7 +585,7 @@ func GetNetworkData(rootCtx context.Context) (linkSpeed int64, mbpsThroughput fl
 		defer timer.Stop()
 		select {
 		case <-ctx.Done():
-			sendToErrChanOnce(fmt.Errorf("context error: %w", ctx.Err()))
+			sendToErrChanOnce(fmt.Errorf("context error (GetNetworkData - TX & RX Sum Calculations): %w", ctx.Err()))
 			return
 		case <-timer.C:
 			// continue
@@ -594,7 +595,7 @@ func GetNetworkData(rootCtx context.Context) (linkSpeed int64, mbpsThroughput fl
 			sendToErrChanOnce(fmt.Errorf("error reading second tx/rx sum value: %w", err))
 			return
 		}
-		mbpsThroughput = (float64(txrxSum2) - float64(txrxSum1)) * 8 / 1e6
+		kbpsThroughput = (float64(txrxSum2) - float64(txrxSum1)) * 8 / 1e3
 	})
 
 	// Link speed
@@ -607,7 +608,7 @@ func GetNetworkData(rootCtx context.Context) (linkSpeed int64, mbpsThroughput fl
 		}
 		for _, dir := range allValidNetDirs {
 			if ctx.Err() != nil {
-				sendToErrChanOnce(fmt.Errorf("context error: %w", ctx.Err()))
+				sendToErrChanOnce(fmt.Errorf("context error (GetNetworkData - Link speed): %w", ctx.Err()))
 				return
 			}
 			pluggedInBytes, err := os.ReadFile(filepath.Join(dir, "carrier"))
@@ -640,18 +641,25 @@ func GetNetworkData(rootCtx context.Context) (linkSpeed int64, mbpsThroughput fl
 	if err, ok := <-errChan; ok {
 		return 0, 0, err
 	}
-	return linkSpeed, mbpsThroughput, nil
+	return linkSpeed, kbpsThroughput, nil
 }
 
 func printHardwareData() {
 	parentCtx, ctxCancel := context.WithCancel(context.Background())
 	defer ctxCancel()
 	var wg sync.WaitGroup
-	errChan := make(chan error, 1)
+	errChan := make(chan error, 5) // CPU, memory, power, disk, network
 	sendToErrChan := func(err error) {
 		if err != nil {
-			errChan <- err
-			ctxCancel()
+			select {
+			case errChan <- err:
+				ctxCancel()
+			default:
+				// Do not block goroutines, channel drained after wg.Wait(),
+				// so use Fprintf as a fallback in case errChan's buffer is full
+				fmt.Fprintf(os.Stderr, "[Error] hardware data error: %v\n", err)
+				ctxCancel()
+			}
 		}
 	}
 
@@ -703,14 +711,15 @@ func printHardwareData() {
 		hardwareData.DiskMaxTemp = diskMaxTemp
 	})
 
+	// Network data
 	wg.Go(func() {
 		netLinkSpeed, netThroughput, err := GetNetworkData(parentCtx)
 		if err != nil {
 			sendToErrChan(fmt.Errorf("error retrieving net interface data: %w\n", err))
 			return
 		}
-		hardwareData.NetLinkSpeedMbit = netLinkSpeed
-		hardwareData.NetUsageMbit = netThroughput
+		hardwareData.NetLinkSpeedKbit = netLinkSpeed * 1000 // By default this unit is in mbit, converting to kbit for consistency
+		hardwareData.NetUsageKbit = netThroughput
 	})
 
 	wg.Wait()
