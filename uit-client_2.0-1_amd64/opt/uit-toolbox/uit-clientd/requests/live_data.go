@@ -1,6 +1,7 @@
 package requests
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"iter"
@@ -9,11 +10,15 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
 const (
-	hwmonDirRoot = "/sys/class/hwmon/"
+	hwmonDirRoot     = "/sys/class/hwmon/"
+	powercapRootDir  = "/sys/class/powercap/"
+	powercapRootDir2 = "/sys/class/powercap/intel-rapl/"
+	netIfRootDir     = "/sys/class/net/"
 )
 
 type LiveDataRequest struct {
@@ -33,7 +38,7 @@ type HardwareDataRequest struct {
 	DiskMaxTemp       float64 `json:"disk_max_temp"`
 	MemUsageKB        int64   `json:"memory_usage_kb"`
 	MemCapacityKB     int64   `json:"memory_capacity_kb"`
-	NetLinkSpeedMbit  float64 `json:"net_link_speed_mbit"`
+	NetLinkSpeedMbit  int64   `json:"net_link_speed_mbit"`
 	NetUsageMbit      float64 `json:"net_usage_mbit"`
 	PowerUsageWatts   float64 `json:"power_usage_watts"`
 }
@@ -59,8 +64,26 @@ type AppStatusRequest struct {
 	SystemUptime  time.Duration `json:"system_uptime"`
 }
 
-func GetCPUData() (cpuUsagePcnt float64, cpuMHzAvg float64, cpuTemp float64, err error) {
-	readProcStat := func() (iter.Seq[string], error) {
+func GetCPUData(rootCtx context.Context) (cpuUsagePcnt float64, cpuMHzAvg float64, cpuTemp float64, err error) {
+	ctx, ctxCancel := context.WithCancel(rootCtx)
+	defer ctxCancel()
+	var wg sync.WaitGroup
+	errChan := make(chan error, 1)
+	var errChanOnce sync.Once // Only get first error
+	sendToErrChanOnce := func(err error) {
+		if err == nil {
+			return
+		}
+		errChanOnce.Do(func() {
+			errChan <- err
+			ctxCancel()
+		})
+	}
+
+	readProcStat := func(ctx context.Context) (iter.Seq[string], error) {
+		if ctx.Err() != nil {
+			return nil, fmt.Errorf("context error: %w", ctx.Err())
+		}
 		f, err := os.Open("/proc/stat")
 		if err != nil {
 			return nil, fmt.Errorf("Error opening file '/proc/stat': %w", err)
@@ -76,9 +99,15 @@ func GetCPUData() (cpuUsagePcnt float64, cpuMHzAvg float64, cpuTemp float64, err
 		return strings.Lines(string(data[:count])), nil
 	}
 
-	processProcStat := func() (totalActiveCPUTime int64, totalCPUTime int64) {
-		lines, _ := readProcStat()
+	processProcStat := func(ctx context.Context) (totalActiveCPUTime int64, totalCPUTime int64, err error) {
+		lines, err := readProcStat(ctx)
+		if err != nil {
+			return 0, 0, fmt.Errorf("context error: %w", ctx.Err())
+		}
 		for i := range lines {
+			if ctx.Err() != nil {
+				return 0, 0, fmt.Errorf("context error: %w", ctx.Err())
+			}
 			// The space after cpu is important, matches only first aggregated row
 			if strings.HasPrefix(i, "cpu ") {
 				cols := strings.Fields(i)
@@ -97,84 +126,140 @@ func GetCPUData() (cpuUsagePcnt float64, cpuMHzAvg float64, cpuTemp float64, err
 				totalActiveCPUTime = totalCPUTime - idleTime
 			}
 		}
-		return totalActiveCPUTime, totalCPUTime
+		return totalActiveCPUTime, totalCPUTime, nil
 	}
 
 	// CPU usage percent
-	active1, total1 := processProcStat()
-	time.Sleep(1 * time.Second)
-	active2, total2 := processProcStat()
-	cpuUsagePcnt = ((float64(active2) - float64(active1)) / (float64(total2) - float64(total1))) * 100
+	wg.Go(func() {
+		active1, total1, err := processProcStat(ctx)
+		if err != nil {
+			sendToErrChanOnce(fmt.Errorf("error processing first read of /proc/stat: %w", err))
+			return
+		}
+		timer := time.NewTimer(1 * time.Second)
+		defer timer.Stop()
+		select {
+		case <-ctx.Done():
+			sendToErrChanOnce(fmt.Errorf("context error: %w", ctx.Err()))
+			return
+		case <-timer.C:
+			// continue
+		}
+		active2, total2, err := processProcStat(ctx)
+		if err != nil {
+			sendToErrChanOnce(fmt.Errorf("error processing second read of /proc/stat: %w", err))
+			return
+		}
+		activeDelta := float64(active2) - float64(active1)
+		totalDelta := float64(total2) - float64(total1)
+		if activeDelta == totalDelta || activeDelta == 0 || totalDelta == 0 {
+			sendToErrChanOnce(fmt.Errorf("arithmetic error between active and total CPU time deltas"))
+			return
+		}
+
+		cpuUsagePcnt = (activeDelta / totalDelta) * 100
+	})
 
 	// CPU MHz
-	data, err := os.ReadFile("/proc/cpuinfo")
-	if err != nil {
-		return 0, 0, 0, fmt.Errorf("error opening /proc/cpuinfo: %w", err)
-	}
-
-	lines := strings.Lines(string(data))
-	var totalMHz float64
-	var entryCount int
-	for line := range lines {
-		if strings.HasPrefix(line, "cpu MHz") {
-			fieldsArr := strings.Fields(line)
-			mhz, err := strconv.ParseFloat(fieldsArr[3], 64)
-			if err != nil {
-				return 0, 0, 0, fmt.Errorf("error parsing /proc/cpuinfo columns/fields: %w", err)
-			}
-			totalMHz = totalMHz + mhz
-			entryCount++
+	wg.Go(func() {
+		data, err := os.ReadFile("/proc/cpuinfo")
+		if err != nil {
+			sendToErrChanOnce(fmt.Errorf("error opening /proc/cpuinfo: %w", err))
+			return
 		}
-	}
 
-	cpuMHzAvg = totalMHz / float64(entryCount)
+		lines := strings.Lines(string(data))
+		var totalMHz float64
+		var entryCount int
+		for line := range lines {
+			if ctx.Err() != nil {
+				sendToErrChanOnce(fmt.Errorf("context error: %w", ctx.Err()))
+				return
+			}
+			if strings.HasPrefix(line, "cpu MHz") {
+				fieldsArr := strings.Fields(line)
+				mhz, err := strconv.ParseFloat(fieldsArr[3], 64)
+				if err != nil {
+					sendToErrChanOnce(fmt.Errorf("error parsing /proc/cpuinfo columns/fields: %w", err))
+					return
+				}
+				totalMHz = totalMHz + mhz
+				entryCount++
+			}
+		}
+
+		cpuMHzAvg = totalMHz / float64(entryCount)
+	})
 
 	// CPU temp
-	// find coretemp name/type
-	hwmons, err := os.ReadDir("/sys/class/hwmon/")
-	if err != nil {
-		return 0, 0, 0, fmt.Errorf("error opening directory /sys/class/hwmon: %w", err)
-	}
+	wg.Go(func() {
+		// find coretemp name/type
+		hwmons, err := os.ReadDir("/sys/class/hwmon/")
+		if err != nil {
+			sendToErrChanOnce(fmt.Errorf("error opening directory /sys/class/hwmon: %w", err))
+			return
+		}
 
-	var totalDegrees int64
-	var totalEntries int
-	for _, hwmonDir := range hwmons {
-		hwmonNamePath := filepath.Join("/sys/class/hwmon/", hwmonDir.Name(), "name")
-		data, err := os.ReadFile(hwmonNamePath)
-		if err != nil {
-			return 0, 0, 0, fmt.Errorf("cannot open hwmon file '%s': %w", hwmonNamePath, err)
-		}
-		hwmonName := strings.TrimSpace(string(data)) // string not trimmed for some reason
-		if hwmonName != "coretemp" {
-			continue
-		}
-		hwmonDir := filepath.Join("/sys/class/hwmon/", hwmonDir.Name())
-		hwmonDirEntries, err := os.ReadDir(hwmonDir)
-		if err != nil {
-			return 0, 0, 0, fmt.Errorf("cannot open hwmon dir: %w", err)
-		}
-		if len(hwmonDirEntries) == 0 {
-			return 0, 0, 0, fmt.Errorf("hwmonDirEntries has len of 0")
-		}
-		for _, input := range hwmonDirEntries {
-			matches, err := regexp.MatchString(`temp[0-9]+\_input`, input.Name())
-			if err != nil || !matches {
+		var totalDegrees int64
+		var totalEntries int64
+		for _, hwmonDir := range hwmons {
+			if ctx.Err() != nil {
+				sendToErrChanOnce(fmt.Errorf("context error: %w", ctx.Err()))
+				return
+			}
+			hwmonNamePath := filepath.Join("/sys/class/hwmon/", hwmonDir.Name(), "name")
+			data, err := os.ReadFile(hwmonNamePath)
+			if err != nil {
+				sendToErrChanOnce(fmt.Errorf("cannot open hwmon file '%s': %w", hwmonNamePath, err))
+				return
+			}
+			hwmonName := strings.TrimSpace(string(data)) // string not trimmed for some reason
+			if hwmonName != "coretemp" {
 				continue
 			}
-			fullFilePath := filepath.Join(hwmonDir, input.Name())
-			fileBytes, err := os.ReadFile(fullFilePath)
+			hwmonDir := filepath.Join("/sys/class/hwmon/", hwmonDir.Name())
+			hwmonDirEntries, err := os.ReadDir(hwmonDir)
 			if err != nil {
-				return 0, 0, 0, fmt.Errorf("error reading temp input value from '%s': %w", input.Name(), err)
+				sendToErrChanOnce(fmt.Errorf("cannot open hwmon dir: %w", err))
+				return
 			}
-			intVal, err := strconv.ParseInt(strings.TrimSpace(string(fileBytes)), 10, 64)
-			if err != nil {
-				return 0, 0, 0, fmt.Errorf("cannot parse hwmon temp value for file '%s': %w", fullFilePath, err)
+			if len(hwmonDirEntries) == 0 {
+				sendToErrChanOnce(fmt.Errorf("hwmonDirEntries has len of 0"))
+				return
 			}
-			totalDegrees = totalDegrees + intVal
-			totalEntries++
+			for _, input := range hwmonDirEntries {
+				if ctx.Err() != nil {
+					sendToErrChanOnce(fmt.Errorf("context error: %w", ctx.Err()))
+					return
+				}
+				matches, err := regexp.MatchString(`temp[0-9]+\_input`, input.Name())
+				if err != nil || !matches {
+					continue
+				}
+				fullFilePath := filepath.Join(hwmonDir, input.Name())
+				fileBytes, err := os.ReadFile(fullFilePath)
+				if err != nil {
+					sendToErrChanOnce(fmt.Errorf("error reading temp input value from '%s': %w", input.Name(), err))
+					return
+				}
+				intVal, err := strconv.ParseInt(strings.TrimSpace(string(fileBytes)), 10, 64)
+				if err != nil {
+					sendToErrChanOnce(fmt.Errorf("cannot parse hwmon temp value for file '%s': %w", fullFilePath, err))
+					return
+				}
+				totalDegrees = totalDegrees + intVal
+				totalEntries++
+			}
 		}
+		cpuTemp = (float64(totalDegrees) / float64(totalEntries)) / 1000
+	})
+
+	wg.Wait()
+	close(errChan)
+
+	if err, ok := <-errChan; ok {
+		return 0, 0, 0, fmt.Errorf("error getting CPU data: %w", err)
 	}
-	cpuTemp = (float64(totalDegrees) / float64(totalEntries)) / 1000
 
 	return cpuUsagePcnt, cpuMHzAvg, cpuTemp, nil
 }
@@ -213,41 +298,134 @@ func GetMemoryData() (totalCapacityKB int64, totalUsageKB int64, err error) {
 			if len(memAvailableLine) == 0 {
 				return 0, 0, fmt.Errorf("Error parsing MemAvailable in '/proc/meminfo': %s", "memAvailableLine has len of 0")
 			}
-			totalUsageKB, err = strconv.ParseInt(memAvailableLine[1], 10, 64)
+			memAvailable, err := strconv.ParseInt(memAvailableLine[1], 10, 64)
 			if err != nil {
 				return 0, 0, fmt.Errorf("Error parsing MemAvailable in '/proc/meminfo': %w", err)
 			}
+			totalUsageKB = totalCapacityKB - memAvailable
 		}
 	}
 	return totalCapacityKB, totalUsageKB, nil
 }
 
-func GetBatteryData() (chargePcnt int64, statusStr string, err error) {
-	hwmonDirs, err := os.ReadDir(hwmonDirRoot)
-	if err != nil {
-		return 0, "", fmt.Errorf("error opening directory '%s': %w", hwmonDirRoot, err)
+func GetPowerSupplyData(rootCtx context.Context) (powerUsageWatts float64, batChargePcnt int64, batStatus string, err error) {
+	ctx, ctxCancel := context.WithCancel(rootCtx)
+	defer ctxCancel()
+	var wg sync.WaitGroup
+	errChan := make(chan error, 1)
+	var errChanOnce sync.Once // Only get first error
+	sendToErrChanOnce := func(err error) {
+		if err == nil {
+			return
+		}
+		errChanOnce.Do(func() {
+			errChan <- err
+			ctxCancel()
+		})
 	}
-	for _, dir := range hwmonDirs {
-		hwmonDir := filepath.Join(hwmonDirRoot, dir.Name())
-		deviceNameBytes, _ := os.ReadFile(filepath.Join(hwmonDir, "name"))
-		deviceName := strings.TrimSpace(string(deviceNameBytes))
-		if deviceName != "BAT0" && deviceName != "BAT1" {
-			continue
-		}
-		chargePcntBytes, err := os.ReadFile(filepath.Join(hwmonDir, "device", "capacity"))
-		if err != nil {
-			return 0, "", fmt.Errorf("cannot read file '%s': %w", filepath.Join(hwmonDir, "device", "capacity"), err)
-		}
-		chargePcntStr := strings.TrimSpace(string(chargePcntBytes))
-		chargePcnt, err = strconv.ParseInt(chargePcntStr, 10, 64)
-		if err != nil {
-			return 0, "", fmt.Errorf("cannot parse battery charge percent: %w", err)
-		}
 
-		statusBytes, _ := os.ReadFile(filepath.Join(hwmonDir, "device", "status"))
-		statusStr = strings.TrimSpace(string(statusBytes))
+	// Returns total watts used by system (at least that is reported by the kernel)
+	getTotalWatts := func(ctx context.Context) (float64, error) {
+		powercapDirs, err := os.ReadDir(powercapRootDir)
+		if err != nil {
+			return 0, fmt.Errorf("cannot open powercap directory: %w", err)
+		}
+		var totaluJoules int64
+		for _, dir := range powercapDirs {
+			if ctx.Err() != nil {
+				return 0, fmt.Errorf("context error: %w", ctx.Err())
+			}
+			powercapDir := filepath.Join(powercapRootDir, dir.Name(), "energy_uj")
+			powercapDir2 := filepath.Join(powercapRootDir2, "intel-rapl:0", "energy_uj")
+			var powercapBytes []byte
+			var err1 error
+			var err2 error
+			powercapBytes, err1 = os.ReadFile(powercapDir)
+			if err1 != nil { // fallback to other directory (powercapDir2)
+				powercapBytes, err2 = os.ReadFile(powercapDir2)
+				if err2 != nil {
+					return 0, fmt.Errorf("cannot read '%s' (%w) or '%s' (%w)", powercapDir, err1, powercapDir2, err2)
+				}
+			}
+			powercapStr := strings.TrimSpace(string(powercapBytes))
+			joules, err := strconv.ParseInt(powercapStr, 10, 64)
+			if err != nil {
+				return 0, fmt.Errorf("unable to parse total microjoules value: %w", err)
+			}
+			totaluJoules += joules
+		}
+		if totaluJoules == 0 {
+			return 0, fmt.Errorf("aggregate microjoule value is zero")
+		}
+		return (float64(totaluJoules) / 1e6), nil
 	}
-	return chargePcnt, statusStr, nil
+
+	// Current wattage
+	wg.Go(func() {
+		totalWatts1, err := getTotalWatts(ctx)
+		if err != nil {
+			sendToErrChanOnce(fmt.Errorf("error during wattage reading: %w", err))
+			return
+		}
+		timer := time.NewTimer(1 * time.Second)
+		defer timer.Stop()
+		select {
+		case <-ctx.Done():
+			sendToErrChanOnce(fmt.Errorf("context error: %w", ctx.Err()))
+			return
+		case <-timer.C:
+			// continue
+		}
+		totalWatts2, err := getTotalWatts(ctx)
+		if err != nil {
+			sendToErrChanOnce(fmt.Errorf("error during wattage reading: %w", err))
+			return
+		}
+		powerUsageWatts = totalWatts2 - totalWatts1
+	})
+
+	// Battery charge percent and status string
+	wg.Go(func() {
+		hwmonDirs, err := os.ReadDir(hwmonDirRoot)
+		if err != nil {
+			sendToErrChanOnce(fmt.Errorf("error opening directory '%s': %w", hwmonDirRoot, err))
+			return
+		}
+		for _, dir := range hwmonDirs {
+			if ctx.Err() != nil {
+				sendToErrChanOnce(fmt.Errorf("context error: %w", ctx.Err()))
+				return
+			}
+			hwmonDir := filepath.Join(hwmonDirRoot, dir.Name())
+			deviceNameBytes, _ := os.ReadFile(filepath.Join(hwmonDir, "name"))
+			deviceName := strings.TrimSpace(string(deviceNameBytes))
+			if deviceName != "BAT0" && deviceName != "BAT1" {
+				continue
+			}
+			chargePcntBytes, err := os.ReadFile(filepath.Join(hwmonDir, "device", "capacity"))
+			if err != nil {
+				sendToErrChanOnce(fmt.Errorf("cannot read file '%s': %w", filepath.Join(hwmonDir, "device", "capacity"), err))
+				return
+			}
+			chargePcntStr := strings.TrimSpace(string(chargePcntBytes))
+			batChargePcnt, err = strconv.ParseInt(chargePcntStr, 10, 64)
+			if err != nil {
+				sendToErrChanOnce(fmt.Errorf("cannot parse battery charge percent: %w", err))
+				return
+			}
+
+			statusBytes, _ := os.ReadFile(filepath.Join(hwmonDir, "device", "status"))
+			batStatus = strings.TrimSpace(string(statusBytes))
+		}
+	})
+
+	wg.Wait()
+	close(errChan)
+
+	if err, ok := <-errChan; ok {
+		return 0, 0, "", fmt.Errorf("error getting power supply data: %w", err)
+	}
+	return powerUsageWatts, batChargePcnt, batStatus, nil
 }
 
 func GetDiskData() (curTemp float64, maxTemp float64, err error) {
@@ -286,9 +464,191 @@ func GetDiskData() (curTemp float64, maxTemp float64, err error) {
 	return curTemp, maxTemp, nil
 }
 
+func GetNetworkData(rootCtx context.Context) (linkSpeed int64, mbpsThroughput float64, err error) {
+	var initialValidNetDirs []string
+	var initialValidNetDirsMu sync.RWMutex
+	ctx, ctxCancel := context.WithCancel(rootCtx)
+	defer ctxCancel()
+	var wg sync.WaitGroup
+	errChan := make(chan error, 1)
+	var errChanOnce sync.Once // Only get first error
+	sendToErrChanOnce := func(err error) {
+		if err == nil {
+			return
+		}
+		errChanOnce.Do(func() {
+			errChan <- err
+			ctxCancel()
+		})
+	}
+
+	initValidNetIFDirs := func(ctx context.Context) error {
+		netDirs, err := os.ReadDir(netIfRootDir)
+		if err != nil {
+			return fmt.Errorf("error reading dir '%s': %w", netIfRootDir, err)
+		}
+		for _, dir := range netDirs {
+			if ctx.Err() != nil {
+				return fmt.Errorf("context error: %w", ctx.Err())
+			}
+			ifDir := filepath.Join(netIfRootDir, dir.Name())
+			b, err := os.ReadFile(filepath.Join(ifDir, "type"))
+			if err != nil {
+				return fmt.Errorf("cannot read interface type of '%s': %w", dir.Name(), err)
+			}
+			bStr := strings.TrimSpace(string(b))
+			ifType, err := strconv.ParseInt(bStr, 10, 64)
+			if err != nil {
+				return fmt.Errorf("cannot parse interface type of '%s' to int64: %w", dir.Name(), err)
+			}
+			// interface types in linux kernel: include/uapi/linux/if_arp.h
+			if ifType != 1 || ifType == 772 { // redundant, but 772 is a loopback device
+				continue
+			}
+			initialValidNetDirsMu.Lock()
+			initialValidNetDirs = append(initialValidNetDirs, ifDir)
+			initialValidNetDirsMu.Unlock()
+		}
+		return nil
+	}
+	// Try to have this write occur before goroutines or anything else writes to it
+	var populateValidDirsOnce sync.Once
+	populateValidDirs := func() {
+		populateValidDirsOnce.Do(func() {
+			if err := initValidNetIFDirs(ctx); err != nil {
+				sendToErrChanOnce(fmt.Errorf("error during initValidNetIFDirs: %w", err))
+				return
+			}
+		})
+	}
+	populateValidDirs()
+
+	// returns slice of directories ex /sys/class/net/en...
+	getValidNetIFDirs := func(ctx context.Context) ([]string, error) {
+		if ctx.Err() != nil {
+			return nil, fmt.Errorf("context error: %w", ctx.Err())
+		}
+		initialValidNetDirsMu.RLock()
+		defer initialValidNetDirsMu.RUnlock()
+		if len(initialValidNetDirs) == 0 {
+			return nil, fmt.Errorf("initialValidNetDirs has len of 0")
+		}
+		validNetDirsCopy := make([]string, len(initialValidNetDirs))
+		copy(validNetDirsCopy, initialValidNetDirs)
+		return validNetDirsCopy, nil
+	}
+
+	// gets sum of /sys/class/net/*/statistics/(tx|rx)_bytes - only for valid ethernet interfaces
+	getTxRxSum := func(ctx context.Context) (int64, error) {
+		var txRxSum int64
+		allValidNetDirs, err := getValidNetIFDirs(ctx)
+		if err != nil {
+			return 0, fmt.Errorf("error retrieving all valid network interface directories: %w", err)
+		}
+		// before allValidNetDirs is returned, it checks to make sure it's populated
+		for _, dir := range allValidNetDirs {
+			if ctx.Err() != nil {
+				return 0, fmt.Errorf("context error: %w", ctx.Err())
+			}
+			txTotalBytes, err := os.ReadFile(filepath.Join(dir, "statistics", "tx_bytes"))
+			if err != nil {
+				return 0, fmt.Errorf("cannot read tx_bytes of interface '%s': %w", dir, err)
+			}
+			txTotalStr := strings.TrimSpace(string(txTotalBytes))
+			txTotal, err := strconv.ParseInt(txTotalStr, 10, 64)
+			if err != nil {
+				return 0, fmt.Errorf("cannot parse tx_bytes of '%s' to int64", filepath.Base(dir))
+			}
+			rxTotalBytes, err := os.ReadFile(filepath.Join(dir, "statistics", "rx_bytes"))
+			if err != nil {
+				return 0, fmt.Errorf("cannot read rx_bytes of interface '%s': %w", filepath.Base(dir), err)
+			}
+			rxTotalStr := strings.TrimSpace(string(rxTotalBytes))
+			rxTotal, err := strconv.ParseInt(rxTotalStr, 10, 64)
+			if err != nil {
+				return 0, fmt.Errorf("cannot parse rx_bytes of '%s' to int64", filepath.Base(dir))
+			}
+			txRxSum += txTotal + rxTotal
+		}
+		return txRxSum, nil
+	}
+
+	// TX and RX sum calculations
+	wg.Go(func() {
+		txrxSum1, err := getTxRxSum(ctx)
+		if err != nil {
+			sendToErrChanOnce(fmt.Errorf("error reading first tx/rx sum value: %w", err))
+			return
+		}
+		timer := time.NewTimer(1 * time.Second)
+		defer timer.Stop()
+		select {
+		case <-ctx.Done():
+			sendToErrChanOnce(fmt.Errorf("context error: %w", ctx.Err()))
+			return
+		case <-timer.C:
+			// continue
+		}
+		txrxSum2, err := getTxRxSum(ctx)
+		if err != nil {
+			sendToErrChanOnce(fmt.Errorf("error reading second tx/rx sum value: %w", err))
+			return
+		}
+		mbpsThroughput = (float64(txrxSum2) - float64(txrxSum1)) * 8 / 1e6
+	})
+
+	// Link speed
+	wg.Go(func() {
+		// before allValidNetDirs is returned, it checks to make sure it's populated
+		allValidNetDirs, err := getValidNetIFDirs(ctx)
+		if err != nil {
+			sendToErrChanOnce(fmt.Errorf("error retrieving all valid network interface directories: %w", err))
+			return
+		}
+		for _, dir := range allValidNetDirs {
+			if ctx.Err() != nil {
+				sendToErrChanOnce(fmt.Errorf("context error: %w", ctx.Err()))
+				return
+			}
+			pluggedInBytes, err := os.ReadFile(filepath.Join(dir, "carrier"))
+			if err != nil {
+				sendToErrChanOnce(fmt.Errorf("error reading link speed of interface '%s'", filepath.Base(dir)))
+				return
+			}
+			pluggedInStr := strings.TrimSpace(string(pluggedInBytes))
+			if pluggedInStr != "1" { // means it's active or plugged in, no need to convert to int really
+				continue
+			}
+			b, err := os.ReadFile(filepath.Join(dir, "speed"))
+			if err != nil {
+				sendToErrChanOnce(fmt.Errorf("error reading link speed of interface '%s'", filepath.Base(dir)))
+				return
+			}
+			bStr := strings.TrimSpace(string(b))
+			ls, err := strconv.ParseInt(bStr, 10, 64)
+			if err != nil {
+				sendToErrChanOnce(fmt.Errorf("error parsing net interface link speed of '%s': %w", filepath.Base(dir), err))
+				return
+			}
+			linkSpeed = ls
+		}
+	})
+
+	wg.Wait()
+	close(errChan)
+
+	if err, ok := <-errChan; ok {
+		return 0, 0, err
+	}
+	return linkSpeed, mbpsThroughput, nil
+}
+
 func printHardwareData() {
+	ctx, ctxCancel := context.WithCancel(context.Background())
+	defer ctxCancel()
+
 	hardwareData := new(HardwareDataRequest)
-	cpuUsage, cpuMHz, cpuTemp, err := GetCPUData()
+	cpuUsage, cpuMHz, cpuTemp, err := GetCPUData(ctx)
 	if err != nil {
 		fmt.Printf("error retrieving CPU data: %v\n", err)
 	}
@@ -303,10 +663,11 @@ func printHardwareData() {
 	hardwareData.MemCapacityKB = memCapacity
 	hardwareData.MemUsageKB = memUsage
 
-	batCharge, batStatus, err := GetBatteryData()
+	powerUsage, batCharge, batStatus, err := GetPowerSupplyData(ctx)
 	if err != nil {
 		fmt.Printf("error retrieving battery data: %v\n", err)
 	}
+	hardwareData.PowerUsageWatts = powerUsage
 	hardwareData.BatteryChargePcnt = batCharge
 	hardwareData.BatteryStatus = batStatus
 
@@ -316,6 +677,13 @@ func printHardwareData() {
 	}
 	hardwareData.DiskTemp = diskTemp
 	hardwareData.DiskMaxTemp = diskMaxTemp
+
+	netLinkSpeed, netThroughput, err := GetNetworkData(ctx)
+	if err != nil {
+		fmt.Printf("error retrieving net interface data: %v", err)
+	}
+	hardwareData.NetLinkSpeedMbit = netLinkSpeed
+	hardwareData.NetUsageMbit = netThroughput
 
 	fmt.Printf("data: \n%#v\n", hardwareData)
 }
