@@ -263,16 +263,26 @@ func MapInputToHTTPRequest(input string) (*HTTPRequest, error) {
 		return nil, fmt.Errorf("key is empty")
 	}
 
+	rule, ok := keypolicy.Lookup(inputPayload.Key)
+	if !ok {
+		return nil, fmt.Errorf("unsupported key: '%s'", inputPayload.Key)
+	}
+
+	if rule.BypassHTTP {
+		pl := &HTTPRequestPayload{
+			Key: inputPayload.Key,
+		}
+		return &HTTPRequest{
+			Payload: pl,
+		}, nil
+	}
+
 	method := strings.ToUpper(strings.TrimSpace(inputPayload.RequestType))
 	if method == "" {
 		method = "POST"
 	}
 	if method != "POST" && method != "DELETE" && method != "GET" {
 		return nil, fmt.Errorf("unsupported request_type: %s", inputPayload.RequestType)
-	}
-	rule, ok := keypolicy.Lookup(inputPayload.Key)
-	if !ok {
-		return nil, fmt.Errorf("unsupported key: '%s'", inputPayload.Key)
 	}
 
 	// HTTP method checks
