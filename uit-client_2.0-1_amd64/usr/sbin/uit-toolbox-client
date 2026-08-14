@@ -2121,8 +2121,8 @@ function autodetectClient {
 		printf '\n'
 		printf '\n'
 
-		sql=$(printf "%s" "SELECT tagnumber AS result FROM job_queue WHERE tagnumber = '${tagNum}' AND job_status NOT like 'fail%'" | /opt/uit-toolbox/select)
-		if [[ $sql == $tagNum ]]; then
+		clientStatus=$(jq -r '.status //empty' "$jobQueueDataFile")
+		if [[ ! $clientStatus =~ ^fail\ -\ .* ]]; then 
 			printf "%s" "job_queue|${tagNum}|job_status|Waiting for job" | /opt/uit-toolbox/parse
 		fi
 
