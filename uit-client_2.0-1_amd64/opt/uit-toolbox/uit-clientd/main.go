@@ -203,27 +203,47 @@ func main() {
 
 	// Main app loop
 	wg.Go(func() {
-		for {
+		timer := time.NewTimer(3 * time.Second)
+		defer timer.Stop()
+
+		mainLoop := func() error {
 			if rootCtx.Err() != nil {
-				fmt.Fprintf(os.Stdout, "(main - tag num loop): %v\n", rootCtx.Err())
-				return
+				return fmt.Errorf("(main - app loop): %v\n", rootCtx.Err())
 			}
 			jqd, err := requests.GetJobQueueData(rootCtx, tagnumber.Load())
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "error retrieving client job queue data: %v\n", err)
+				return fmt.Errorf("error retrieving client job queue data: %v\n", err)
 			}
 			jobQueueData.Store(&jqd)
 
 			jobQueueBytes, err := json.Marshal(jobQueueData.Load())
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "cannot unmarshal ClientJobQueueDataResponse JSON (main): %v\n", err)
+				return fmt.Errorf("cannot unmarshal ClientJobQueueDataResponse JSON (main): %v\n", err)
 			}
 			if err := os.WriteFile("/root/job_queue_data", jobQueueBytes, 0644); err != nil {
-				fmt.Fprintf(os.Stderr, "error writing client job queue data to disk: %v\n", err)
+				return fmt.Errorf("error writing client job queue data to disk: %v\n", err)
 			}
-			time.Sleep(3 * time.Second)
+			return nil
+		}
+
+		for {
+			timer.Reset(3 * time.Second)
+			select {
+			case <-rootCtx.Done():
+				fmt.Fprintf(os.Stdout, "(main - app loop case stmt): %v\n", rootCtx.Err())
+				return
+			case <-timer.C:
+				if err := mainLoop(); err != nil {
+					fmt.Fprintf(os.Stdout, "error in main/mainLoop(), continuing: %v", err)
+				}
+			}
 		}
 	})
 
 	wg.Wait()
+
+	if rootCtx.Err() != nil {
+		fmt.Fprintf(os.Stdout, "uit-clientd shutdown due to context: %v", rootCtx.Err())
+		return
+	}
 }
