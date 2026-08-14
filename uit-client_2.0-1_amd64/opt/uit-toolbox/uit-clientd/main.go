@@ -22,9 +22,9 @@ import (
 
 var (
 	clientConfig atomic.Pointer[ClientConfig]
-	systemSerial string
-	tagnumber    int64
-	jobQueueData requests.ClientJobQueueDataResponse
+	systemSerial atomic.Pointer[string]
+	tagnumber    atomic.Int64
+	jobQueueData atomic.Pointer[requests.ClientJobQueueDataResponse]
 )
 
 const unixSocketPath = "/run/uit-client/uit-clientd.sock"
@@ -120,7 +120,6 @@ func initListener(rootCtx context.Context, wg *sync.WaitGroup) error {
 		if err != nil {
 			if rootCtx.Err() != nil || errors.Is(err, net.ErrClosed) {
 				fmt.Fprintf(os.Stderr, "shutting down: %v\n", rootCtx.Err())
-				wg.Wait()
 				return nil // no error on regular shutdown
 			}
 			fmt.Fprintf(os.Stderr, "unix socket accept error: %v\n", err)
@@ -161,25 +160,35 @@ func main() {
 
 	// System serial, set once
 	for {
-		if systemSerial != "" {
+		if rootCtx.Err() != nil {
+			fmt.Fprintf(os.Stdout, "(main - system serial # loop): %v", rootCtx.Err())
+		}
+		if systemSerial.Load() != nil && *systemSerial.Load() != "" {
 			break
 		}
-		systemSerial, err = requests.GetSerial(rootCtx)
+		s, err := requests.GetSerial(rootCtx)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "failed to retrieve system serial, retrying: %v", err)
+			continue
 		}
+		systemSerial.Store(&s)
 		time.Sleep(1 * time.Second)
 	}
 
 	// Tag number, set once
 	for {
-		if tagnumber > 100000 && tagnumber < 999999 {
+		if rootCtx.Err() != nil {
+			fmt.Fprintf(os.Stdout, "(main - tag # loop): %v", rootCtx.Err())
+		}
+		if tagnumber.Load() > 100000 && tagnumber.Load() < 999999 {
 			break
 		}
-		tagnumber, err = requests.GetTagFromSerial(rootCtx, systemSerial)
+		tag, err := requests.GetTagFromSerial(rootCtx, *systemSerial.Load())
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "failed to retrieve tag number, retrrying: %v", err)
+			continue
 		}
+		tagnumber.Store(tag)
 		time.Sleep(1 * time.Second)
 	}
 
@@ -193,12 +202,13 @@ func main() {
 	// Main app loop
 	wg.Go(func() {
 		for {
-			jobQueueData, err = requests.GetJobQueueData(rootCtx, tagnumber)
+			jqd, err := requests.GetJobQueueData(rootCtx, tagnumber.Load())
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "error retrieving client job queue data: %v", err)
 			}
+			jobQueueData.Store(&jqd)
 
-			jobQueueBytes, err := json.Marshal(jobQueueData)
+			jobQueueBytes, err := json.Marshal(jobQueueData.Load())
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "cannot unmarshal ClientJobQueueDataResponse JSON (main): %v", err)
 			}
