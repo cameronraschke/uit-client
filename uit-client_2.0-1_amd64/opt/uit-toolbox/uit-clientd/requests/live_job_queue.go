@@ -18,7 +18,7 @@ type ClientJobQueueDataResponse struct {
 	IsRunning     *bool  `json:"is_running"`
 	Name          string `json:"name"`
 	NameFormatted string `json:"name_formatted"`
-	QueuePosition int64  `json:"queue_position"`
+	QueuePosition *int64 `json:"queue_position"`
 	Status        string `json:"status"`
 }
 

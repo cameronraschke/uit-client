@@ -351,7 +351,7 @@ ipAddr=$(ip addr | grep -C 2 'state UP' | grep 'inet' | grep -oP '10.0.0.[0-9]{1
 function fetchJobQueueData {
 	jobName=$(jq -r '.name //empty' "$jobQueueDataFile" 2>/dev/null)
 	jobNameFormatted=$(jq -r '.name_formatted //empty' "$jobQueueDataFile" 2> /dev/null)
-	jobQueuedPosition=$(jq -r '.job_queue_position //empty' "$jobQueueDataFile" 2> /dev/null)
+	jobQueuedPosition=$(jq -r '.queue_position //empty' "$jobQueueDataFile" 2> /dev/null)
 }
 
 linuxPath="images"
@@ -2060,7 +2060,7 @@ function terminate {
 	poweroff
 }
 
-function resetForClientRestart {
+function cleanupForClientRestart {
 	printf "%s" "job_queue|${tagNum}|job_name|" | /opt/uit-toolbox/parse
 	printf "%s" "job_queue|${tagNum}|job_queued|FALSE" | /opt/uit-toolbox/parse
 	printf "%s" "api_post|${tagNum}|job_queued_at|clear|${UUID}" | /opt/uit-toolbox/parse
@@ -2101,8 +2101,10 @@ function autodetectClient {
 	done
 
 	cloneImgName=$(jq -r '.disk_image_name //empty' "$jobQueueDataFile" 2>/dev/null)
+	# fallback to HP image
 	if [[ -z $cloneImgName ]]; then
-		cloneImgName="TechCommons-HP-LaptopsLZ4"
+		printf "%s" "job_queue|${tagNum}|job_status|fail - selected disk image is empty" | /opt/uit-toolbox/parse
+		autodetectClient
 	fi
 
 	if [[ $(printf "%s" "${chassisType}" | grep -i "notebook") ]]; then
@@ -2118,8 +2120,7 @@ function autodetectClient {
 		CLIENTDISK=""
 		cloneMode=""
 		header
-		printf '\n'
-		printf '\n'
+		printf '\n\n'
 
 		clientStatus=$(jq -r '.status //empty' "$jobQueueDataFile")
 		if [[ ! $clientStatus =~ ^fail\ -\ .* ]]; then 
@@ -2129,7 +2130,7 @@ function autodetectClient {
 		unattended="true"
 
 		fetchJobQueueData
-		if [[ $jobName != "" ]]; then
+		if [[ -n $jobName ]]; then
 			printf "%s" "job_queue|${tagNum}|job_queued|TRUE" | /opt/uit-toolbox/parse
 			printf "%s" "api_post|${tagNum}|job_queued_at|now|${UUID}" | /opt/uit-toolbox/parse
 			
@@ -2141,16 +2142,17 @@ function autodetectClient {
 				tput cuu1
 				tput el
 				fetchJobQueueData
-				if [[ $jobName == "" ]]; then
+				if [[ -z $jobName ]]; then
 					break
 				fi
-				if [[ $jobQueuedPosition -eq 0 || $jobQueuedPosition -eq 1 ]]; then
+				# although jobQueuedPosition is an int, using -eq on an empty -z value makes it act as if it is zero
+				if [[ $jobQueuedPosition == "0" || $jobQueuedPosition == "1" ]]; then
 					sleep 7
-					firstCheck=$(printf '%s' "api_get|job_queue_position|tagnumber|${tagNum}" | /opt/uit-toolbox/parse)
-					if [[ $firstCheck -le 1 ]]; then
+					fetchJobQueueData # first check
+					if [[ $jobQueuedPosition == "0" || $jobQueuedPosition == "1" ]]; then
 						sleep $(( RANDOM % (10 - 1 + 1) + 1 ))
-						secondCheck=$(printf '%s' "api_get|job_queue_position|tagnumber|${tagNum}" | /opt/uit-toolbox/parse)
-						if [[ $secondCheck -le 1 ]]; then
+						fetchJobQueueData # second check
+						if [[ $jobQueuedPosition == "0" || $jobQueuedPosition == "1" ]]; then
 							printf "%s" "job_queue|${tagNum}|job_queued|TRUE" | /opt/uit-toolbox/parse
 							printf "%s" "job_queue|${tagNum}|job_active|TRUE" | /opt/uit-toolbox/parse
 							break
@@ -2185,11 +2187,11 @@ function autodetectClient {
 					sleep 1
 				done
 				dpkg --install /root/uit-toolbox-client.deb &>/dev/null
-				resetForClientRestart
+				cleanupForClientRestart
 			elif [[ $jobName == "findmy" ]]; then
 				printf "%s" "job_queue|${tagNum}|job_status|Playing sound" | /opt/uit-toolbox/parse
 				play /root/findmy1.mp3 &> /dev/null
-				resetForClientRestart
+				cleanupForClientRestart
 			elif [[ $jobName == "hpEraseAndClone" ]]; then
 				findIdentityInDB
 				collectSystemData
@@ -2221,7 +2223,7 @@ function autodetectClient {
 				printf "%s" "api_post|${tagNum}|health_erase_completed|1|${UUID}" | /opt/uit-toolbox/parse
 				printf "%s" "system-stats|cpu|${UUID}" | /opt/uit-toolbox/parse
 				printf "%s" "system-stats|network|${UUID}" | /opt/uit-toolbox/parse
-				resetForClientRestart
+				cleanupForClientRestart
 			elif [[ $jobName == "hpCloneOnly" ]]; then
 				findIdentityInDB
 				collectSystemData
@@ -2248,7 +2250,7 @@ function autodetectClient {
 				printf "%s" "api_post|${tagNum}|health_clone_completed|1|${UUID}" | /opt/uit-toolbox/parse
 				printf "%s" "system-stats|cpu|${UUID}" | /opt/uit-toolbox/parse
 				printf "%s" "system-stats|network|${UUID}" | /opt/uit-toolbox/parse
-				resetForClientRestart
+				cleanupForClientRestart
 			elif [[ $jobName == "nvmeErase" ]]; then
 				findIdentityInDB
 				collectSystemData
@@ -2279,7 +2281,7 @@ function autodetectClient {
 				printf "%s" "api_post|${tagNum}|health_erase_completed|1|${UUID}" | /opt/uit-toolbox/parse
 				printf "%s" "system-stats|cpu|${UUID}" | /opt/uit-toolbox/parse
 				printf "%s" "system-stats|network|${UUID}" | /opt/uit-toolbox/parse
-				resetForClientRestart
+				cleanupForClientRestart
 			elif [[ $jobName == "nvmeVerify" ]]; then
 				findIdentityInDB
 				collectSystemData
@@ -2310,7 +2312,7 @@ function autodetectClient {
 				printf "%s" "api_post|${tagNum}|health_erase_completed|1|${UUID}" | /opt/uit-toolbox/parse
 				printf "%s" "system-stats|cpu|${UUID}" | /opt/uit-toolbox/parse
 				printf "%s" "system-stats|network|${UUID}" | /opt/uit-toolbox/parse
-				resetForClientRestart
+				cleanupForClientRestart
 			elif [[ $jobName == "shutdown" ]]; then
 				printf "%s" "job_queue|${tagNum}|job_status|Shutting down" | /opt/uit-toolbox/parse
 				printf "%s" "job_queue|${tagNum}|job_queued|FALSE" | /opt/uit-toolbox/parse
@@ -2320,7 +2322,7 @@ function autodetectClient {
 				poweroff				
 			elif [[ $jobName == "fail-test" ]]; then
 				printf "%s" "job_queue|${tagNum}|job_status|fail - test" | /opt/uit-toolbox/parse
-				resetForClientRestart
+				cleanupForClientRestart
 			fi
 		else
 			tput cuu1
