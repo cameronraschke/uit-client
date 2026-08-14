@@ -204,6 +204,10 @@ func main() {
 	// Main app loop
 	wg.Go(func() {
 		for {
+			if rootCtx.Err() != nil {
+				fmt.Fprintf(os.Stdout, "(main - tag num loop): %v\n", rootCtx.Err())
+				return
+			}
 			jqd, err := requests.GetJobQueueData(rootCtx, tagnumber.Load())
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "error retrieving client job queue data: %v\n", err)
