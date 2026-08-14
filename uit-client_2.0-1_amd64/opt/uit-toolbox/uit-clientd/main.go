@@ -148,11 +148,11 @@ func main() {
 	config, err := GetClientConfig()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to get client config: %v\n", err)
-		os.Exit(1)
+		return
 	}
 	if config == nil || strings.TrimSpace(config.UIT_WEB_HTTPS_HOST) == "" || strings.TrimSpace(config.UIT_WEB_HTTPS_PORT) == "" {
 		fmt.Fprintf(os.Stderr, "client config is invalid\n")
-		os.Exit(1)
+		return
 	}
 	clientConfig.Store(config)
 
@@ -161,14 +161,15 @@ func main() {
 	// System serial, set once
 	for {
 		if rootCtx.Err() != nil {
-			fmt.Fprintf(os.Stdout, "(main - system serial # loop): %v", rootCtx.Err())
+			fmt.Fprintf(os.Stdout, "(main - system serial loop): %v\n", rootCtx.Err())
+			return
 		}
 		if systemSerial.Load() != nil && *systemSerial.Load() != "" {
 			break
 		}
 		s, err := requests.GetSerial(rootCtx)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "failed to retrieve system serial, retrying: %v", err)
+			fmt.Fprintf(os.Stderr, "failed to retrieve system serial, retrying: %v\n", err)
 			continue
 		}
 		systemSerial.Store(&s)
@@ -178,14 +179,15 @@ func main() {
 	// Tag number, set once
 	for {
 		if rootCtx.Err() != nil {
-			fmt.Fprintf(os.Stdout, "(main - tag # loop): %v", rootCtx.Err())
+			fmt.Fprintf(os.Stdout, "(main - tag num loop): %v\n", rootCtx.Err())
+			return
 		}
 		if tagnumber.Load() > 100000 && tagnumber.Load() < 999999 {
 			break
 		}
 		tag, err := requests.GetTagFromSerial(rootCtx, *systemSerial.Load())
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "failed to retrieve tag number, retrrying: %v", err)
+			fmt.Fprintf(os.Stderr, "failed to retrieve tag number, retrying: %v\n", err)
 			continue
 		}
 		tagnumber.Store(tag)
@@ -204,16 +206,16 @@ func main() {
 		for {
 			jqd, err := requests.GetJobQueueData(rootCtx, tagnumber.Load())
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "error retrieving client job queue data: %v", err)
+				fmt.Fprintf(os.Stderr, "error retrieving client job queue data: %v\n", err)
 			}
 			jobQueueData.Store(&jqd)
 
 			jobQueueBytes, err := json.Marshal(jobQueueData.Load())
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "cannot unmarshal ClientJobQueueDataResponse JSON (main): %v", err)
+				fmt.Fprintf(os.Stderr, "cannot unmarshal ClientJobQueueDataResponse JSON (main): %v\n", err)
 			}
 			if err := os.WriteFile("/root/job_queue_data", jobQueueBytes, 0644); err != nil {
-				fmt.Fprintf(os.Stderr, "error writing client job queue data to disk: %v", err)
+				fmt.Fprintf(os.Stderr, "error writing client job queue data to disk: %v\n", err)
 			}
 			time.Sleep(3 * time.Second)
 		}
