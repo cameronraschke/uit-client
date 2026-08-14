@@ -63,7 +63,7 @@ func GetTagFromSerial(ctx context.Context, s string) (int64, error) {
 		return 0, fmt.Errorf("cannot unmarshal JSON (GetTagFromSerial): %v", err)
 	}
 
-	if clr.Tagnumber == nil || *clr.Tagnumber > 100000 || *clr.Tagnumber < 999999 {
+	if clr.Tagnumber == nil || *clr.Tagnumber < 100000 || *clr.Tagnumber > 999999 {
 		return 0, fmt.Errorf("tagnumber invalid or out of range (GetTagFromSerial)")
 	}
 
