@@ -34,6 +34,9 @@ func constructURL(u url.URL) url.URL {
 }
 
 func getRequest(u url.URL) (io.Reader, error) {
+	if client == nil || tr == nil {
+		initRequests()
+	}
 	merged := constructURL(u)
 
 	resp, err := client.Get(merged.String())
@@ -46,6 +49,9 @@ func getRequest(u url.URL) (io.Reader, error) {
 }
 
 func postRequest(u url.URL, contentType string, body io.Reader) error {
+	if client == nil || tr == nil {
+		initRequests()
+	}
 	merged := constructURL(u)
 
 	resp, err := client.Post(merged.String(), contentType, body)

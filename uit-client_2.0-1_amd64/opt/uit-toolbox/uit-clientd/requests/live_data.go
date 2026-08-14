@@ -14,13 +14,3 @@ type LiveDataRequest struct {
 	Screenshot []byte               `json:"live_screenshot"`
 }
 
-type JobQueueDataRequest struct {
-	CloneMode     string `json:"clone_mode"`
-	EraseMode     string `json:"erase_mode"`
-	IsQueued      *bool  `json:"is_queued"`
-	IsRunning     *bool  `json:"is_running"`
-	Name          string `json:"name"`
-	NameFormatted string `json:"name_formatted"`
-	DiskImageName string `json:"disk_image_name"`
-	QueuePosition string `json:"queue_position"`
-}
