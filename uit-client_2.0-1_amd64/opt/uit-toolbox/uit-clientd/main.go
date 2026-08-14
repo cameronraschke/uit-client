@@ -18,6 +18,8 @@ import (
 	"syscall"
 	"time"
 	"uit-clientd/requests"
+
+	"github.com/google/uuid"
 )
 
 var (
@@ -84,6 +86,17 @@ func handleInput(ctx context.Context, stdinData string) (string, error) {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to create array from input: %v\n", err)
 		return "", err
+	}
+
+	// Bypass HTTP for some keys
+	switch httpRequest.Payload.Key {
+	case "new_transaction_uuid":
+		u, err := uuid.NewV7()
+		if err != nil {
+			return "", err
+		}
+		return u.String(), nil
+	default:
 	}
 
 	res, err := sendHTTPRequest(ctx, httpRequest)

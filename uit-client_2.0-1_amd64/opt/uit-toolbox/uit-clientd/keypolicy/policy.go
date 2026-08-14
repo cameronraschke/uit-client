@@ -2,7 +2,9 @@
 
 package keypolicy
 
-import "sort"
+import (
+	"sort"
+)
 
 type Policy struct {
 	Method         string
@@ -10,6 +12,7 @@ type Policy struct {
 	RequiresTag    bool
 	RequiresUUID   bool
 	RequiresValue  bool
+	BypassHTTP     bool
 }
 
 var policies = map[string]Policy{
@@ -67,7 +70,7 @@ var policies = map[string]Policy{
 	"memory_usage_kb":              {Method: "POST", RequiresSerial: true, RequiresTag: true, RequiresUUID: false, RequiresValue: true},
 	"motherboard_manufacturer":     {Method: "POST", RequiresSerial: true, RequiresTag: true, RequiresUUID: true, RequiresValue: true},
 	"motherboard_serial":           {Method: "POST", RequiresSerial: true, RequiresTag: true, RequiresUUID: true, RequiresValue: true},
-	"new_transaction_uuid":         {Method: "GET", RequiresSerial: false, RequiresTag: false, RequiresUUID: false, RequiresValue: false},
+	"new_transaction_uuid":         {Method: "GET", BypassHTTP: true},
 	"system_manufacturer":          {Method: "POST", RequiresSerial: true, RequiresTag: true, RequiresUUID: true, RequiresValue: true},
 	"system_model":                 {Method: "POST", RequiresSerial: true, RequiresTag: true, RequiresUUID: true, RequiresValue: true},
 	"system_sku":                   {Method: "POST", RequiresSerial: true, RequiresTag: true, RequiresUUID: true, RequiresValue: true},
@@ -90,3 +93,4 @@ func AllowedKeys() []string {
 	sort.Strings(keys)
 	return keys
 }
+

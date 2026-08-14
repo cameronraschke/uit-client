@@ -111,6 +111,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "cli: key is required\n")
 		os.Exit(1)
 	}
+
 	rule, ok := keypolicy.Lookup(*key)
 	if !ok {
 		fmt.Fprintf(os.Stderr, "cli: key '%s' is not allowed\n", *key)

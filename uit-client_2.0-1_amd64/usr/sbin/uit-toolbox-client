@@ -10,7 +10,6 @@ DIM=$(tput dim)
 RESET=$(tput sgr0)
 cloneElapsed="0"
 shredElapsed="0"
-UIT_CLIENT_DRY_RUN="${UIT_CLIENT_DRY_RUN:-false}"
 
 jobQueueDataFile="/root/job_queue_data"
 
@@ -102,42 +101,10 @@ function stopBackgroundProcs() {
 	done
 }
 
-function resetUsageData {
+function resetResourceUsageData {
 	printf "%s" '0' > /root/client_app_uptime
 	printf "%s" '0' > /tmp/cpu-usage.txt
 	printf "%s" '0' > /tmp/network-usage.txt
-}
-
-function dryRunEnabled {
-	case "${UIT_CLIENT_DRY_RUN}" in
-		1|[Tt][Rr][Uu][Ee]|[Yy][Ee][Ss]|[Oo][Nn])
-			return 0
-			;;
-		*)
-			return 1
-			;;
-	esac
-}
-
-function dryRunLog {
-	printf '%s\n' "[dry-run] $*"
-}
-
-function dryRunSectionLog {
-	local action="$1"
-	local index="$2"
-	local total="$3"
-	local sectorMin="$4"
-	local sectorMax="$5"
-	local sectorDiff="$6"
-	local count="$7"
-	local startSector="$8"
-	local bs="$9"
-	local sectionLast sampleLast
-
-	sectionLast=$((sectorMax - 1))
-	sampleLast=$((startSector + count - 1))
-	dryRunLog "${action} section ${index}/${total}: range=${sectorMin}-${sectionLast} sectors=${sectorDiff} bytes=$((sectorDiff * bs)) sample=${startSector}-${sampleLast} sample_sectors=${count} sample_bytes=$((count * bs)) percent=${PCNTOFSECTOR}"
 }
 
 function patternToHex_Shred {
@@ -178,7 +145,8 @@ function expectedPatternHex_Shred {
 }
 
 function emitSource_Shred {
-	case "${WMODE}" in
+	local mode="$1"
+	case "$mode" in
 		zero)
 			cat /dev/zero
 			;;
@@ -195,7 +163,7 @@ function emitSource_Shred {
 			emitHexPattern_Shred "$(patternToHex_Shred "${CHAR}")"
 			;;
 		*)
-			return 1
+			cat /dev/urandom
 			;;
 	esac
 }
@@ -1090,19 +1058,11 @@ function writeDisk_Shred {
 	BS='512'
 	diskBytes=$(blockdev --getsize64 /dev/${CLIENTDISK})
 	sectorCount=$((diskBytes / BS))
-	if dryRunEnabled; then
-		dryRunLog "writeDisk_Shred: disk=/dev/${CLIENTDISK} mode=${WMODE} bits=${BITS} sections=${writeSections} sector_count=${sectorCount} sector_size=${BS} disk_bytes=${diskBytes} percent=${PCNTOFSECTOR} source=${SOURCE_DESC}"
-	fi
-
 	printf '%s\n' "Filling ${PCNTOFSECTOR}% of ${CLIENTDISK} with a stream of ${BITS}...."
 	printf "%s" "general|erase_diskpercent|${PCNTOFSECTOR}|${UUID}" | /opt/uit-toolbox/parse
 
 	if [[ $PCNTOFSECTOR == '100' ]]; then
-		if dryRunEnabled; then
-			dryRunLog "would overwrite entire disk: target=/dev/${CLIENTDISK} sectors=${sectorCount} bytes=${diskBytes} source=${SOURCE_DESC}"
-		else
-			emitSource_Shred | (pv > /dev/${CLIENTDISK})
-		fi
+		emitSource_Shred "${WMODE}" | (pv > /dev/${CLIENTDISK})
 		return 0
 	fi
 	
@@ -1139,7 +1099,7 @@ function writeDisk_Shred {
 		if dryRunEnabled; then
 			dryRunSectionLog "write" "${i}" "${writeSections}" "${sectorMin}" "${sectorMax}" "${sectorDiff}" "${COUNT}" "${SKIP}" "${BS}"
 		else
-	    		emitSource_Shred | dd bs=${BS} count=${COUNT} seek=${SKIP} of=/dev/${CLIENTDISK} iflag=fullblock status=none 2>/dev/null
+			emitSource_Shred "${WMODE}" | dd bs=${BS} count=${COUNT} seek=${SKIP} of=/dev/${CLIENTDISK} iflag=fullblock status=none 2>/dev/null
 		fi
 	done
 
@@ -1148,13 +1108,13 @@ function writeDisk_Shred {
 	if dryRunEnabled; then
 		dryRunLog "write boundary: first_sector=0 count=10 bytes=$((BS * 10))"
 	else
-		emitSource_Shred | dd bs=${BS} count=10 seek=0 of=/dev/${CLIENTDISK} iflag=fullblock status=none 2>/dev/null
+		emitSource_Shred "${WMODE}" | dd bs=${BS} count=10 seek=0 of=/dev/${CLIENTDISK} iflag=fullblock status=none 2>/dev/null
 	fi
 	printf '%s\n' "Completely filling the last 10 sectors...."
 	if dryRunEnabled; then
 		dryRunLog "write boundary: last_sector=$((sectorCount - 10)) count=10 bytes=$((BS * 10))"
 	else
-		emitSource_Shred | dd bs=${BS} count=10 seek=$(( sectorCount - 10 )) of=/dev/${CLIENTDISK} iflag=fullblock status=none 2>/dev/null
+		emitSource_Shred "${WMODE}" | dd bs=${BS} count=10 seek=$(( sectorCount - 10 )) of=/dev/${CLIENTDISK} iflag=fullblock status=none 2>/dev/null
 	fi
 }
 
@@ -1771,7 +1731,7 @@ function clientselect_Clone {
 function execute_Clone {
 	/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "clone_image_name" --value "${cloneImgName}" --post
 	printf "%s" "job_queue|${tagNum}|job_status|Cloning ${cloneImgName} -> ${CLIENTDISK} ($cloneMode)" | /opt/uit-toolbox/parse
-	resetUsageData
+	resetResourceUsageData
 	start_time=$SECONDS
 	linuxServer="UIT_CLIENT_DB_HOST"
 	linuxDNS="UIT_SERVER_HOSTNAME"
@@ -1873,7 +1833,7 @@ function execute_Shred {
 
 
 function execute {
-	resetUsageData
+	resetResourceUsageData
 	/sbin/uit-cli --serial "${systemSerial}" --tag "${tagNum}" --uuid "${UUID}" --key "job_start_time" --value "$(date --iso-8601=seconds)" --post
 	printf "%s" "job_queue|${tagNum}|job_queued|TRUE" | /opt/uit-toolbox/parse
 	printf "%s" "job_queue|${tagNum}|job_active|TRUE" | /opt/uit-toolbox/parse
@@ -1965,7 +1925,7 @@ function terminate {
 	printf "%s" "job_queue|${tagNum}|job_status|Waiting for job" | /opt/uit-toolbox/parse
 	printf "%s" "system-stats|cpu|${UUID}" | /opt/uit-toolbox/parse
 	printf "%s" "system-stats|network|${UUID}" | /opt/uit-toolbox/parse
-	resetUsageData
+	resetResourceUsageData
 	
 	footer
 	totaltime
@@ -2060,7 +2020,7 @@ function terminate {
 	poweroff
 }
 
-function cleanupForClientRestart {
+function cleanupAndRestartApp {
 	printf "%s" "job_queue|${tagNum}|job_name|" | /opt/uit-toolbox/parse
 	printf "%s" "job_queue|${tagNum}|job_queued|FALSE" | /opt/uit-toolbox/parse
 	printf "%s" "api_post|${tagNum}|job_queued_at|clear|${UUID}" | /opt/uit-toolbox/parse
@@ -2069,7 +2029,7 @@ function cleanupForClientRestart {
 	dpkg --purge uit-toolbox-client
 	rm -r /root/uit-toolbox-client*
 	rm -r /root/.ssh/known_hosts*
-	resetUsageData
+	resetResourceUsageData
 	pkill --terminal tty1
 }
 
@@ -2145,7 +2105,7 @@ function autodetectClient {
 				if [[ -z $jobName ]]; then
 					break
 				fi
-				# although jobQueuedPosition is an int, using -eq on an empty -z value makes it act as if it is zero
+				# although jobQueuedPosition is an int, using -eq on an empty/null -z value makes it act as if it is zero
 				if [[ $jobQueuedPosition == "0" || $jobQueuedPosition == "1" ]]; then
 					sleep 7
 					fetchJobQueueData # first check
@@ -2163,7 +2123,7 @@ function autodetectClient {
 				printf "%s" "job_queue|${tagNum}|job_status|Scheduled for ${jobNameFormatted}, ${jobQueuedPosition} in queue." | /opt/uit-toolbox/parse
 				read -t 3 -N 1 input
 				if [[ $input = "q" ]] || [[ $input = "Q" ]]; then
-					resetUsageData
+					resetResourceUsageData
 					printf "%s" "job_queue|${tagNum}|job_name|" | /opt/uit-toolbox/parse
 					printf "%s" "job_queue|${tagNum}|job_queued|FALSE" | /opt/uit-toolbox/parse
 					printf "%s" "api_post|${tagNum}|job_queued_at|clear|${UUID}" | /opt/uit-toolbox/parse
@@ -2187,11 +2147,11 @@ function autodetectClient {
 					sleep 1
 				done
 				dpkg --install /root/uit-toolbox-client.deb &>/dev/null
-				cleanupForClientRestart
+				cleanupAndRestartApp
 			elif [[ $jobName == "findmy" ]]; then
 				printf "%s" "job_queue|${tagNum}|job_status|Playing sound" | /opt/uit-toolbox/parse
 				play /root/findmy1.mp3 &> /dev/null
-				cleanupForClientRestart
+				cleanupAndRestartApp
 			elif [[ $jobName == "hpEraseAndClone" ]]; then
 				findIdentityInDB
 				collectSystemData
@@ -2223,7 +2183,7 @@ function autodetectClient {
 				printf "%s" "api_post|${tagNum}|health_erase_completed|1|${UUID}" | /opt/uit-toolbox/parse
 				printf "%s" "system-stats|cpu|${UUID}" | /opt/uit-toolbox/parse
 				printf "%s" "system-stats|network|${UUID}" | /opt/uit-toolbox/parse
-				cleanupForClientRestart
+				cleanupAndRestartApp
 			elif [[ $jobName == "hpCloneOnly" ]]; then
 				findIdentityInDB
 				collectSystemData
@@ -2250,7 +2210,7 @@ function autodetectClient {
 				printf "%s" "api_post|${tagNum}|health_clone_completed|1|${UUID}" | /opt/uit-toolbox/parse
 				printf "%s" "system-stats|cpu|${UUID}" | /opt/uit-toolbox/parse
 				printf "%s" "system-stats|network|${UUID}" | /opt/uit-toolbox/parse
-				cleanupForClientRestart
+				cleanupAndRestartApp
 			elif [[ $jobName == "nvmeErase" ]]; then
 				findIdentityInDB
 				collectSystemData
@@ -2281,7 +2241,7 @@ function autodetectClient {
 				printf "%s" "api_post|${tagNum}|health_erase_completed|1|${UUID}" | /opt/uit-toolbox/parse
 				printf "%s" "system-stats|cpu|${UUID}" | /opt/uit-toolbox/parse
 				printf "%s" "system-stats|network|${UUID}" | /opt/uit-toolbox/parse
-				cleanupForClientRestart
+				cleanupAndRestartApp
 			elif [[ $jobName == "nvmeVerify" ]]; then
 				findIdentityInDB
 				collectSystemData
@@ -2312,7 +2272,7 @@ function autodetectClient {
 				printf "%s" "api_post|${tagNum}|health_erase_completed|1|${UUID}" | /opt/uit-toolbox/parse
 				printf "%s" "system-stats|cpu|${UUID}" | /opt/uit-toolbox/parse
 				printf "%s" "system-stats|network|${UUID}" | /opt/uit-toolbox/parse
-				cleanupForClientRestart
+				cleanupAndRestartApp
 			elif [[ $jobName == "shutdown" ]]; then
 				printf "%s" "job_queue|${tagNum}|job_status|Shutting down" | /opt/uit-toolbox/parse
 				printf "%s" "job_queue|${tagNum}|job_queued|FALSE" | /opt/uit-toolbox/parse
@@ -2322,7 +2282,7 @@ function autodetectClient {
 				poweroff				
 			elif [[ $jobName == "fail-test" ]]; then
 				printf "%s" "job_queue|${tagNum}|job_status|fail - test" | /opt/uit-toolbox/parse
-				cleanupForClientRestart
+				cleanupAndRestartApp
 			fi
 		else
 			tput cuu1
