@@ -12,6 +12,8 @@ cloneElapsed="0"
 shredElapsed="0"
 UIT_CLIENT_DRY_RUN="${UIT_CLIENT_DRY_RUN:-false}"
 
+jobQueueDataFile="/root/job_queue_data"
+
 function cleanup {
 	stopBackgroundProcs
 	pkill -P $$
@@ -347,9 +349,9 @@ ipAddr=$(ip addr | grep -C 2 'state UP' | grep 'inet' | grep -oP '10.0.0.[0-9]{1
 
 
 function fetchJobQueueData {
-	jobName=$(printf "%s" "api_get|job_name|tagnumber|${tagNum}" | /opt/uit-toolbox/parse)
-	jobNameFormatted=$(printf "%s" "api_get|job_name_formatted|job_name|${jobName}" | /opt/uit-toolbox/parse)
-	jobQueuedPosition=$(printf '%s' "api_get|job_queue_position|tagnumber|${tagNum}" | /opt/uit-toolbox/parse)
+	jobName=$(jq -r '.name //empty' "$jobQueueDataFile" 2>/dev/null)
+	jobNameFormatted=$(jq -r '.name_formatted //empty' "$jobQueueDataFile" 2> /dev/null)
+	jobQueuedPosition=$(jq -r '.job_queue_position //empty' "$jobQueueDataFile" 2> /dev/null)
 }
 
 linuxPath="images"
@@ -659,13 +661,13 @@ function findIdentityInDB {
 	printf '\n'
 
 	UUID=""
-	UUID=$(uit-cli --key "new_transaction_uuid" --get | jq -r '.transaction_uuid' 2>/dev/null)
+	UUID=$(uit-cli --key "new_transaction_uuid" --get | jq -r '.transaction_uuid //empty' 2>/dev/null)
 	if [[ -z $UUID ]]; then
 		UUID=$(cat /proc/sys/kernel/random/uuid)
 	fi
 
 	systemSerial=$(dmidecode --string system-serial-number 2>/dev/null)
-	tagNum=$(uit-cli --serial "${systemSerial}" --key "client_lookup_by_serial" --value "${systemSerial}" --get | jq -r '.tagnumber' 2>/dev/null)
+	tagNum=$(uit-cli --serial "${systemSerial}" --key "client_lookup_by_serial" --value "${systemSerial}" --get | jq -r '.tagnumber //empty' 2>/dev/null)
 
 	if [[ -n $tagNum && $tagNum != "null" ]]; then
 		uit-cli --serial "${systemSerial}" --tag "${tagNum}" --key "init" --value "${systemSerial}" --uuid "${UUID}" --post
@@ -2092,8 +2094,14 @@ function autodetectClient {
 		systemModel=$(cat /sys/class/dmi/id/product_name)
 	fi
 
-	cloneImgName=$(uit-cli --key "disk_image_name" --value "$systemModel" --get | jq -r '.disk_image_name')
-	if [[ -z $cloneImgName || $cloneImgName == "null" ]]; then
+	while test ! -f "$jobQueueDataFile"; do 
+		# wait for uit-clientd to write data
+		echo "waiting for uit-clientd to write client job queue data to ${jobQueueDataFile}"
+		sleep 1
+	done
+
+	cloneImgName=$(jq -r '.disk_image_name //empty' "$jobQueueDataFile" 2>/dev/null)
+	if [[ -z $cloneImgName ]]; then
 		cloneImgName="TechCommons-HP-LaptopsLZ4"
 	fi
 
