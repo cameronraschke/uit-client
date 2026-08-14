@@ -2,14 +2,15 @@ package requests
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
-	"io"
+	"fmt"
 	"net/url"
 	"strconv"
 	"sync"
 )
 
-type JobQueueDataRequest struct {
+type ClientJobQueueDataResponse struct {
 	CloneMode     string `json:"clone_mode"`
 	EraseMode     string `json:"erase_mode"`
 	IsQueued      *bool  `json:"is_queued"`
@@ -17,7 +18,7 @@ type JobQueueDataRequest struct {
 	Name          string `json:"name"`
 	NameFormatted string `json:"name_formatted"`
 	DiskImageName string `json:"disk_image_name"`
-	QueuePosition string `json:"queue_position"`
+	QueuePosition int64  `json:"queue_position"`
 }
 
 var (
@@ -25,26 +26,29 @@ var (
 	jobQueueDataBufMu sync.Mutex
 )
 
-func getJobQueueData(tag int64) (JobQueueDataRequest, error) {
-	jq := JobQueueDataRequest{}
+func GetJobQueueData(ctx context.Context, tag int64) (ClientJobQueueDataResponse, error) {
+	jq := ClientJobQueueDataResponse{}
 
 	q := url.Values{}
 	q.Set("tagnumber", strconv.FormatInt(tag, 10))
-	resp, err := getRequest(url.URL{
-		Path:     "/api/v2/app/live/job",
-		RawQuery: q.Encode(),
-	})
-	if err != nil {
-		return JobQueueDataRequest{}, err
-	}
 
 	jobQueueDataBufMu.Lock()
 	defer jobQueueDataBufMu.Unlock()
 
 	jobQueueDataBuf.Reset()
+	jobQueueDataBuf, err := getRequest(
+		ctx,
+		url.URL{
+			Path:     "/api/v2/app/live/job",
+			RawQuery: q.Encode(),
+		})
+	if err != nil {
+		return ClientJobQueueDataResponse{}, err
+	}
 
-	jobQueueDataBuf, err := io.ReadAll(resp)
-	json.Unmarshal(jobQueueDataBuf, &jq)
+	if err := json.Unmarshal(jobQueueDataBuf, &jq); err != nil {
+		return ClientJobQueueDataResponse{}, fmt.Errorf("cannot unmarshal ClientJobQueueDataResponse JSON (GetJobQueueData): %v", err)
+	}
 
 	return jq, err
 }

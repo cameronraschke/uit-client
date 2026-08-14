@@ -21,6 +21,7 @@ func getUnixSocketListener() (net.Listener, bool, error) {
 		return nil, false, err
 	}
 
+	// Fallback in case systemd has no sockets available
 	listener, err = net.Listen("unix", unixSocketPath)
 	if err != nil {
 		return nil, false, err
@@ -72,10 +73,12 @@ func getInheritedUnixSocketListener() (net.Listener, error) {
 	return listener, nil
 }
 
-func handleConnection(ctx context.Context, conn net.Conn) {
+func handleConnection(ctx context.Context, conn net.Conn) error {
 	defer conn.Close()
 
-	// Unblock Scan as soon as shutdown starts.
+	// Closes conn (and Scanner) when parent ctx is cancelled.
+	// Necessary in conjunction with ctx.Err() check at beginning of loop,
+	// otherwise scanner.Scan() listens indefinitely
 	done := make(chan struct{})
 	go func() {
 		select {
@@ -88,6 +91,9 @@ func handleConnection(ctx context.Context, conn net.Conn) {
 
 	scanner := bufio.NewScanner(conn)
 	for scanner.Scan() {
+		if ctx.Err() != nil {
+			break
+		}
 		response, err := handleInput(ctx, scanner.Text())
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "failed to handle input: %v\n", err)
@@ -98,6 +104,7 @@ func handleConnection(ctx context.Context, conn net.Conn) {
 	}
 
 	if err := scanner.Err(); err != nil && ctx.Err() == nil && !errors.Is(err, net.ErrClosed) {
-		fmt.Fprintf(os.Stderr, "unix socket read error: %v\n", err)
+		return fmt.Errorf("unix socket read error: %v\n", err)
 	}
+	return nil
 }

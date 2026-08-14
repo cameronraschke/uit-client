@@ -8,9 +8,8 @@ const (
 )
 
 type LiveDataRequest struct {
-	Hardware   *HardwareDataRequest `json:"hardware"`
-	Job        *JobQueueDataRequest `json:"job"`
-	Status     *AppStatusRequest    `json:"status"`
-	Screenshot []byte               `json:"live_screenshot"`
+	Hardware   *HardwareDataRequest        `json:"hardware"`
+	Job        *ClientJobQueueDataResponse `json:"job"`
+	Status     *AppStatusRequest           `json:"status"`
+	Screenshot []byte                      `json:"live_screenshot"`
 }
-

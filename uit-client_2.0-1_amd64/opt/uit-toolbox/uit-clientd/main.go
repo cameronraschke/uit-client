@@ -16,9 +16,16 @@ import (
 	"sync"
 	"sync/atomic"
 	"syscall"
+	"time"
+	"uit-clientd/requests"
 )
 
-var clientConfig atomic.Pointer[ClientConfig]
+var (
+	clientConfig atomic.Pointer[ClientConfig]
+	systemSerial string
+	tagnumber    int64
+	jobQueueData requests.ClientJobQueueDataResponse
+)
 
 const unixSocketPath = "/run/uit-client/uit-clientd.sock"
 
@@ -91,8 +98,45 @@ func handleInput(ctx context.Context, stdinData string) (string, error) {
 	return string(res), nil
 }
 
+func initListener(rootCtx context.Context, wg *sync.WaitGroup) error {
+	listener, inherited, err := getUnixSocketListener()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = listener.Close()
+		if !inherited {
+			_ = os.Remove(unixSocketPath)
+		}
+	}()
+
+	go func() {
+		<-rootCtx.Done()
+		_ = listener.Close()
+	}()
+
+	for {
+		conn, err := listener.Accept()
+		if err != nil {
+			if rootCtx.Err() != nil || errors.Is(err, net.ErrClosed) {
+				fmt.Fprintf(os.Stderr, "shutting down: %v\n", rootCtx.Err())
+				wg.Wait()
+				return nil // no error on regular shutdown
+			}
+			fmt.Fprintf(os.Stderr, "unix socket accept error: %v\n", err)
+			continue // no app shutdown if error isolated to specific socket connection
+		}
+
+		wg.Go((func() {
+			if err := handleConnection(rootCtx, conn); err != nil {
+				fmt.Fprintf(os.Stderr, "(handleConnection) %v", err)
+			}
+		}))
+	}
+}
+
 func main() {
-	ctx, stop := signal.NotifyContext(
+	rootCtx, rootCtxCancel := signal.NotifyContext(
 		context.Background(),
 		syscall.SIGHUP,
 		syscall.SIGINT,
@@ -100,7 +144,7 @@ func main() {
 		syscall.SIGABRT,
 		syscall.SIGTERM,
 	)
-	defer stop()
+	defer rootCtxCancel()
 
 	config, err := GetClientConfig()
 	if err != nil {
@@ -113,36 +157,57 @@ func main() {
 	}
 	clientConfig.Store(config)
 
-	listener, inherited, err := getUnixSocketListener()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to acquire unix socket listener: %v\n", err)
-		os.Exit(1)
-	}
-	defer func() {
-		_ = listener.Close()
-		if !inherited {
-			_ = os.Remove(unixSocketPath)
-		}
-	}()
-
-	go func() {
-		<-ctx.Done()
-		_ = listener.Close()
-	}()
-
 	var wg sync.WaitGroup
-	for {
-		conn, err := listener.Accept()
-		if err != nil {
-			if ctx.Err() != nil || errors.Is(err, net.ErrClosed) {
-				fmt.Fprintf(os.Stderr, "shutting down: %v\n", ctx.Err())
-				wg.Wait()
-				return
-			}
-			fmt.Fprintf(os.Stderr, "unix socket accept error: %v\n", err)
-			continue
-		}
 
-		wg.Go((func() { handleConnection(ctx, conn) }))
+	// System serial, set once
+	for {
+		if systemSerial != "" {
+			break
+		}
+		systemSerial, err = requests.GetSerial(rootCtx)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "failed to retrieve system serial, retrying: %v", err)
+		}
+		time.Sleep(1 * time.Second)
 	}
+
+	// Tag number, set once
+	for {
+		if tagnumber > 100000 && tagnumber < 999999 {
+			break
+		}
+		tagnumber, err = requests.GetTagFromSerial(rootCtx, systemSerial)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "failed to retrieve tag number, retrrying: %v", err)
+		}
+		time.Sleep(1 * time.Second)
+	}
+
+	// Unix socket listener
+	wg.Go(func() {
+		if err := initListener(rootCtx, &wg); err != nil {
+			fmt.Fprintf(os.Stderr, "failed to acquire unix socket listener: %v\n", err)
+		}
+	})
+
+	// Main app loop
+	wg.Go(func() {
+		for {
+			jobQueueData, err = requests.GetJobQueueData(rootCtx, tagnumber)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "error retrieving client job queue data: %v", err)
+			}
+
+			jobQueueBytes, err := json.Marshal(jobQueueData)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "cannot unmarshal ClientJobQueueDataResponse JSON (main): %v", err)
+			}
+			if err := os.WriteFile("/root/job_queue_data", jobQueueBytes, 0644); err != nil {
+				fmt.Fprintf(os.Stderr, "error writing client job queue data to disk: %v", err)
+			}
+			time.Sleep(3 * time.Second)
+		}
+	})
+
+	wg.Wait()
 }

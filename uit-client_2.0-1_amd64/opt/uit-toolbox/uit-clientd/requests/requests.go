@@ -1,6 +1,7 @@
 package requests
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -33,11 +34,15 @@ func constructURL(u url.URL) url.URL {
 	}
 }
 
-func getRequest(u url.URL) (io.Reader, error) {
+func getRequest(ctx context.Context, u url.URL) ([]byte, error) {
 	if client == nil || tr == nil {
 		initRequests()
 	}
 	merged := constructURL(u)
+
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
 
 	resp, err := client.Get(merged.String())
 	if err != nil {
@@ -45,14 +50,23 @@ func getRequest(u url.URL) (io.Reader, error) {
 	}
 	defer resp.Body.Close()
 
-	return resp.Body, nil
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
 }
 
-func postRequest(u url.URL, contentType string, body io.Reader) error {
+func postRequest(ctx context.Context, u url.URL, contentType string, body io.Reader) error {
 	if client == nil || tr == nil {
 		initRequests()
 	}
 	merged := constructURL(u)
+
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
 
 	resp, err := client.Post(merged.String(), contentType, body)
 	if err != nil {
