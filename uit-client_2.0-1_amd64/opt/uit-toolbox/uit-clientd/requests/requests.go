@@ -46,7 +46,10 @@ func getRequest(ctx context.Context, u url.URL) ([]byte, error) {
 
 	resp, err := client.Get(merged.String())
 	if err != nil {
-		return nil, fmt.Errorf("error GETing request from '%s' (%d): %w", merged.String(), resp.StatusCode, err)
+		if resp != nil {
+			return nil, fmt.Errorf("error GETing request from '%s' (%d): %w", merged.String(), resp.StatusCode, err)
+		}
+		return nil, fmt.Errorf("error GETing request from '%s': %w", merged.String(), err)
 	}
 	defer resp.Body.Close()
 
@@ -70,7 +73,10 @@ func postRequest(ctx context.Context, u url.URL, contentType string, body io.Rea
 
 	resp, err := client.Post(merged.String(), contentType, body)
 	if err != nil {
-		return fmt.Errorf("error POSTing request to '%s' (%d): %w", merged.String(), resp.StatusCode, err)
+		if resp != nil {
+			return fmt.Errorf("error POSTing request to '%s' (%d): %w", merged.String(), resp.StatusCode, err)
+		}
+		return fmt.Errorf("error POSTing request to '%s': %w", merged.String(), err)
 	}
 	defer resp.Body.Close()
 
