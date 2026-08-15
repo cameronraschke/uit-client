@@ -37,19 +37,21 @@ func GetJobQueueData(ctx context.Context, tag int64) (ClientJobQueueDataResponse
 	defer jobQueueDataBufMu.Unlock()
 
 	jobQueueDataBuf.Reset()
-	jobQueueDataBuf, err := getRequest(
+
+	if err := getRequest(
 		ctx,
 		url.URL{
 			Path:     "/api/v2/app/live/job",
 			RawQuery: q.Encode(),
-		})
-	if err != nil {
+		},
+		&jobQueueDataBuf,
+	); err != nil {
 		return ClientJobQueueDataResponse{}, err
 	}
 
-	if err := json.Unmarshal(jobQueueDataBuf, &jq); err != nil {
+	if err := json.Unmarshal(jobQueueDataBuf.Bytes(), &jq); err != nil {
 		return ClientJobQueueDataResponse{}, fmt.Errorf("cannot unmarshal ClientJobQueueDataResponse JSON (GetJobQueueData): %v", err)
 	}
 
-	return jq, err
+	return jq, nil
 }

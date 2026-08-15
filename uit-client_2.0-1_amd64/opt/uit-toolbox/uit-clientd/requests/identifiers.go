@@ -48,18 +48,18 @@ func GetTagFromSerial(ctx context.Context, s string) (int64, error) {
 	q := url.Values{}
 	q.Set("system_serial", s)
 
-	resp, err := getRequest(
+	var response bytes.Buffer
+	if err := getRequest(
 		ctx,
 		url.URL{
 			Path:     "/api/client/lookup_ids",
 			RawQuery: q.Encode(),
-		})
-	if err != nil {
+		}, &response); err != nil {
 		return 0, fmt.Errorf("error in GetTagFromSerial: %w", err)
 	}
 
 	var clr ClientLookupRow
-	if err := json.Unmarshal(resp, &clr); err != nil {
+	if err := json.Unmarshal(response.Bytes(), &clr); err != nil {
 		return 0, fmt.Errorf("cannot unmarshal JSON (GetTagFromSerial): %v", err)
 	}
 

@@ -1,10 +1,11 @@
 package requests
 
 import (
+	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
-	"iter"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -45,52 +46,57 @@ func GetCPUData(rootCtx context.Context) (cpuUsagePcnt float64, cpuMHzAvg float6
 		})
 	}
 
-	readProcStat := func(ctx context.Context) (iter.Seq[string], error) {
+	readFirstLineProcStat := func(ctx context.Context) (string, error) {
 		if ctx.Err() != nil {
-			return nil, fmt.Errorf("context error (GetCPUData/readProcStat): %w", ctx.Err())
+			return "", fmt.Errorf("context error (GetCPUData/readFirstLineProcStat): %w", ctx.Err())
 		}
 		f, err := os.Open("/proc/stat")
 		if err != nil {
-			return nil, fmt.Errorf("Error opening file '/proc/stat': %w", err)
+			return "", fmt.Errorf("Error opening file '/proc/stat': %w", err)
 		}
 		defer f.Close()
 
-		data := make([]byte, 1024) // We only need the first line
-		count, err := f.Read(data)
-		if err != nil && err != io.EOF {
-			return nil, fmt.Errorf("error reading /proc/stat")
+		reader := bufio.NewReader(f)
+		line, err := reader.ReadString('\n')
+		if err != nil && !errors.Is(err, io.EOF) {
+			return "", fmt.Errorf("error reading /proc/stat: %w", err)
 		}
 
-		return strings.Lines(string(data[:count])), nil
+		return strings.TrimSpace(line), nil
 	}
 
 	processProcStat := func(ctx context.Context) (totalActiveCPUTime int64, totalCPUTime int64, err error) {
-		lines, err := readProcStat(ctx)
-		if err != nil {
+		if ctx.Err() != nil {
 			return 0, 0, fmt.Errorf("context error (GetCPUData/processProcStat): %w", ctx.Err())
 		}
-		for i := range lines {
-			if ctx.Err() != nil {
-				return 0, 0, fmt.Errorf("context error (GetCPUData/processProcStat): %w", ctx.Err())
-			}
-			// The space after cpu is important, matches only first aggregated row
-			if strings.HasPrefix(i, "cpu ") {
-				cols := strings.Fields(i)
-				user, _ := strconv.ParseInt(cols[1], 10, 64)
-				nice, _ := strconv.ParseInt(cols[2], 10, 64)
-				system, _ := strconv.ParseInt(cols[3], 10, 64)
-				idle, _ := strconv.ParseInt(cols[4], 10, 64)
-				iowait, _ := strconv.ParseInt(cols[5], 10, 64)
-				irq, _ := strconv.ParseInt(cols[6], 10, 64)
-				softirq, _ := strconv.ParseInt(cols[7], 10, 64)
-				steal, _ := strconv.ParseInt(cols[8], 10, 64)
-				guest, _ := strconv.ParseInt(cols[9], 10, 64)
-				guest_nice, _ := strconv.ParseInt(cols[10], 10, 64)
-				totalCPUTime = user + nice + system + idle + iowait + irq + softirq + steal + guest + guest_nice
-				idleTime := idle + iowait
-				totalActiveCPUTime = totalCPUTime - idleTime
-			}
+		firstLine, err := readFirstLineProcStat(ctx)
+		if err != nil {
+			return 0, 0, fmt.Errorf("error reading /proc/stat (GetCPUData/processProcStat): %w", err)
 		}
+
+		if !strings.HasPrefix(firstLine, "cpu ") {
+			return 0, 0, fmt.Errorf("aggregate CPU line missing from /proc/stat")
+		}
+
+		// The space after cpu is important, matches only first aggregated row
+
+		cols := strings.Fields(firstLine)
+		if len(cols) < 11 {
+			return 0, 0, fmt.Errorf("unexpected /proc/stat CPU field count: %d", len(cols))
+		}
+		user, _ := strconv.ParseInt(cols[1], 10, 64)
+		nice, _ := strconv.ParseInt(cols[2], 10, 64)
+		system, _ := strconv.ParseInt(cols[3], 10, 64)
+		idle, _ := strconv.ParseInt(cols[4], 10, 64)
+		iowait, _ := strconv.ParseInt(cols[5], 10, 64)
+		irq, _ := strconv.ParseInt(cols[6], 10, 64)
+		softirq, _ := strconv.ParseInt(cols[7], 10, 64)
+		steal, _ := strconv.ParseInt(cols[8], 10, 64)
+		guest, _ := strconv.ParseInt(cols[9], 10, 64)
+		guest_nice, _ := strconv.ParseInt(cols[10], 10, 64)
+		totalCPUTime = user + nice + system + idle + iowait + irq + softirq + steal + guest + guest_nice
+		idleTime := idle + iowait
+		totalActiveCPUTime = totalCPUTime - idleTime
 		return totalActiveCPUTime, totalCPUTime, nil
 	}
 
@@ -128,16 +134,20 @@ func GetCPUData(rootCtx context.Context) (cpuUsagePcnt float64, cpuMHzAvg float6
 
 	// CPU MHz
 	wg.Go(func() {
-		data, err := os.ReadFile("/proc/cpuinfo")
+		var totalMHz float64
+		var entryCount int
+
+		f, err := os.Open("/proc/cpuinfo")
 		if err != nil {
 			sendToErrChanOnce(fmt.Errorf("error opening /proc/cpuinfo: %w", err))
 			return
 		}
+		defer f.Close()
 
-		lines := strings.Lines(string(data))
-		var totalMHz float64
-		var entryCount int
-		for line := range lines {
+		scanner := bufio.NewScanner(f)
+
+		for scanner.Scan() {
+			line := strings.TrimSpace(scanner.Text())
 			if ctx.Err() != nil {
 				sendToErrChanOnce(fmt.Errorf("context error (GetCPUData - CPU Mhz): %w", ctx.Err()))
 				return
@@ -152,6 +162,14 @@ func GetCPUData(rootCtx context.Context) (cpuUsagePcnt float64, cpuMHzAvg float6
 				totalMHz = totalMHz + mhz
 				entryCount++
 			}
+		}
+		if err := scanner.Err(); err != nil {
+			sendToErrChanOnce(fmt.Errorf("error reading /proc/cpuinfo: %w", err))
+			return
+		}
+		if entryCount == 0 {
+			sendToErrChanOnce(fmt.Errorf("no CPU MHz entries found in /proc/cpuinfo"))
+			return
 		}
 
 		cpuMHzAvg = totalMHz / float64(entryCount)
@@ -174,13 +192,17 @@ func GetCPUData(rootCtx context.Context) (cpuUsagePcnt float64, cpuMHzAvg float6
 				return
 			}
 			hwmonNamePath := filepath.Join("/sys/class/hwmon/", hwmonDir.Name(), "name")
-			data, err := os.ReadFile(hwmonNamePath)
+			fName, err := os.Open(hwmonNamePath)
 			if err != nil {
 				sendToErrChanOnce(fmt.Errorf("cannot open hwmon file '%s': %w", hwmonNamePath, err))
 				return
 			}
-			hwmonName := strings.TrimSpace(string(data)) // string not trimmed for some reason
-			if hwmonName != "coretemp" {
+			reader := bufio.NewReader(fName)
+			hwmonName, err := reader.ReadString('\n')
+			if err != nil && !errors.Is(err, io.EOF) {
+				sendToErrChanOnce(fmt.Errorf("error reading '%s': %w", hwmonNamePath, err))
+			}
+			if strings.TrimSpace(hwmonName) != "coretemp" {
 				continue
 			}
 			hwmonDir := filepath.Join("/sys/class/hwmon/", hwmonDir.Name())
@@ -203,17 +225,22 @@ func GetCPUData(rootCtx context.Context) (cpuUsagePcnt float64, cpuMHzAvg float6
 					continue
 				}
 				fullFilePath := filepath.Join(hwmonDir, input.Name())
-				fileBytes, err := os.ReadFile(fullFilePath)
+				f2, err := os.Open(fullFilePath)
 				if err != nil {
 					sendToErrChanOnce(fmt.Errorf("error reading temp input value from '%s': %w", input.Name(), err))
 					return
 				}
-				intVal, err := strconv.ParseInt(strings.TrimSpace(string(fileBytes)), 10, 64)
+				reader := bufio.NewReader(f2)
+				tempValStr, err := reader.ReadString('\n')
+				if err != nil && !errors.Is(err, io.EOF) {
+					sendToErrChanOnce(fmt.Errorf("error reading '%s': %w", hwmonNamePath, err))
+				}
+				tempValInt, err := strconv.ParseInt(strings.TrimSpace(tempValStr), 10, 64)
 				if err != nil {
 					sendToErrChanOnce(fmt.Errorf("cannot parse hwmon temp value for file '%s': %w", fullFilePath, err))
 					return
 				}
-				totalDegrees = totalDegrees + intVal
+				totalDegrees = totalDegrees + tempValInt
 				totalEntries++
 			}
 		}
@@ -237,20 +264,15 @@ func GetMemoryData() (totalCapacityKB int64, totalUsageKB int64, err error) {
 	}
 	defer f.Close()
 
-	data := make([]byte, 2048) // It's around 1500 KB
-	count, err := f.Read(data)
-	if err != nil {
-		return 0, 0, fmt.Errorf("error reading /proc/meminfo")
-	}
+	scanner := bufio.NewScanner(f)
 
-	lines := strings.Lines(string(data[:count]))
-
-	for i := range lines {
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
 		if totalCapacityKB > 0 && totalUsageKB > 0 {
 			break
 		}
-		if strings.HasPrefix(i, "MemTotal") {
-			memTotalLine := strings.Fields(i)
+		if strings.HasPrefix(line, "MemTotal") {
+			memTotalLine := strings.Fields(line)
 			if len(memTotalLine) == 0 {
 				return 0, 0, fmt.Errorf("Error parsing MemTotal in '/proc/meminfo': %s", "memTotalLine has len of 0")
 			}
@@ -259,8 +281,8 @@ func GetMemoryData() (totalCapacityKB int64, totalUsageKB int64, err error) {
 				return 0, 0, fmt.Errorf("Error parsing MemTotal in '/proc/meminfo': %w", err)
 			}
 		}
-		if strings.HasPrefix(i, "MemAvailable") {
-			memAvailableLine := strings.Fields(i)
+		if strings.HasPrefix(line, "MemAvailable") {
+			memAvailableLine := strings.Fields(line)
 			if len(memAvailableLine) == 0 {
 				return 0, 0, fmt.Errorf("Error parsing MemAvailable in '/proc/meminfo': %s", "memAvailableLine has len of 0")
 			}
@@ -270,6 +292,12 @@ func GetMemoryData() (totalCapacityKB int64, totalUsageKB int64, err error) {
 			}
 			totalUsageKB = totalCapacityKB - memAvailable
 		}
+	}
+	if err := scanner.Err(); err != nil {
+		return 0, 0, fmt.Errorf("error reading /proc/meminfo: %w", err)
+	}
+	if totalCapacityKB == 0 || totalUsageKB == 0 {
+		return 0, 0, fmt.Errorf("total capacity and/or total usage is 0 in /proc/meminfo")
 	}
 	return totalCapacityKB, totalUsageKB, nil
 }
@@ -292,33 +320,47 @@ func GetPowerSupplyData(rootCtx context.Context) (powerUsageWatts float64, batCh
 
 	// Returns total watts used by system (at least that is reported by the kernel)
 	getTotalWatts := func(ctx context.Context) (float64, error) {
+		var totaluJoules int64
+
 		powercapDirs, err := os.ReadDir(powercapRootDir)
 		if err != nil {
-			return 0, fmt.Errorf("cannot open powercap directory: %w", err)
+			return 0, fmt.Errorf("cannot open root powercap directory: %w", err)
 		}
-		var totaluJoules int64
+
 		for _, dir := range powercapDirs {
 			if ctx.Err() != nil {
 				return 0, fmt.Errorf("context error (GetPowerSupplyData/getTotalWatts): %w", ctx.Err())
 			}
-			powercapDir := filepath.Join(powercapRootDir, dir.Name(), "energy_uj")
-			powercapDir2 := filepath.Join(powercapRootDir2, "intel-rapl:0", "energy_uj")
-			var powercapBytes []byte
+
+			var f *os.File
 			var err1 error
 			var err2 error
-			powercapBytes, err1 = os.ReadFile(powercapDir)
-			if err1 != nil { // fallback to other directory (powercapDir2)
-				powercapBytes, err2 = os.ReadFile(powercapDir2)
+
+			powercapFile := filepath.Join(powercapRootDir, dir.Name(), "energy_uj")
+			powercapFileFallback := filepath.Join(powercapRootDir2, "intel-rapl:0", "energy_uj")
+
+			f, err1 = os.Open(powercapFile)
+			if err1 != nil {
+				f, err2 = os.Open(powercapFileFallback)
 				if err2 != nil {
-					return 0, fmt.Errorf("cannot read '%s' (%w) or '%s' (%w)", powercapDir, err1, powercapDir2, err2)
+					return 0, fmt.Errorf("cannot read '%s' (%w) or '%s' (%w)", powercapFile, err1, powercapFileFallback, err2)
 				}
 			}
-			powercapStr := strings.TrimSpace(string(powercapBytes))
-			joules, err := strconv.ParseInt(powercapStr, 10, 64)
-			if err != nil {
-				return 0, fmt.Errorf("unable to parse total microjoules value: %w", err)
+
+			scanner := bufio.NewScanner(f)
+
+			for scanner.Scan() {
+				line := strings.TrimSpace(scanner.Text())
+				joules, err := strconv.ParseInt(line, 10, 64)
+				if err != nil {
+					return 0, fmt.Errorf("unable to parse total microjoules value: %w", err)
+				}
+				totaluJoules += joules
+
 			}
-			totaluJoules += joules
+			if err := scanner.Err(); err != nil {
+				return 0, (fmt.Errorf("error reading powercap file: %w", err))
+			}
 		}
 		if totaluJoules == 0 {
 			return 0, fmt.Errorf("aggregate microjoule value is zero")

@@ -34,31 +34,33 @@ func constructURL(u url.URL) url.URL {
 	}
 }
 
-func getRequest(ctx context.Context, u url.URL) ([]byte, error) {
+func getRequest(ctx context.Context, u url.URL, w io.Writer) error {
 	if client == nil || tr == nil {
-		initRequests()
+		if err := initRequests(); err != nil {
+			return err
+		}
 	}
 	merged := constructURL(u)
 
 	if ctx.Err() != nil {
-		return nil, ctx.Err()
+		return ctx.Err()
 	}
 
 	resp, err := client.Get(merged.String())
 	if err != nil {
 		if resp != nil {
-			return nil, fmt.Errorf("error GETing request from '%s' (%d): %w", merged.String(), resp.StatusCode, err)
+			return fmt.Errorf("error GETing request from '%s' (%d): %w", merged.String(), resp.StatusCode, err)
 		}
-		return nil, fmt.Errorf("error GETing request from '%s': %w", merged.String(), err)
+		return fmt.Errorf("error GETing request from '%s': %w", merged.String(), err)
 	}
 	defer resp.Body.Close()
 
-	b, err := io.ReadAll(resp.Body)
+	_, err = io.Copy(w, resp.Body)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return b, nil
+	return nil
 }
 
 func postRequest(ctx context.Context, u url.URL, contentType string, body io.Reader) error {

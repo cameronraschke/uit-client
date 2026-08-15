@@ -15,14 +15,20 @@ import (
 	"net/url"
 	"os"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"uit-clientd/keypolicy"
 )
 
-var sharedHTTPClient = newHTTPClient()
+var (
+	sharedHTTPClient   = newHTTPClient()
+	validHTTPMethodsMu = sync.RWMutex{}
+	validHTTPMethods   = []string{"GET", "POST", "DELETE"}
+)
 
 const (
 	iso8601Regex                     = `^20[0-2]{1}[0-9]-[0-1]{1}[0-9]{1}-[0-3]{1}[0-9]{1}T[0-2]{1}[0-9]:[0-5]{1}[0-9]:[0-5]{1}[0-9](Z|[\+\-][0-2]{1}[0-9]:[0-5]{1}[0-9])$`
@@ -116,11 +122,13 @@ func sendHTTPRequest(ctx context.Context, data *HTTPRequest) ([]byte, error) {
 	if data == nil || data.Config == nil {
 		return nil, fmt.Errorf("data variable and/or config is nil")
 	}
-	if data.Config.Method != "POST" &&
-		data.Config.Method != "GET" &&
-		data.Config.Method != "DELETE" {
+	validHTTPMethodsMu.RLock()
+	if !slices.Contains(validHTTPMethods, data.Config.Method) {
+		validHTTPMethodsMu.RUnlock()
 		return nil, fmt.Errorf("unsupported HTTP method: %s", data.Config.Method)
 	}
+	validHTTPMethodsMu.RUnlock()
+	
 	if strings.TrimSpace(data.Config.URL.Path) == "" {
 		return nil, fmt.Errorf("relative URL cannot be empty")
 	}

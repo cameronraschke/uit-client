@@ -19,8 +19,8 @@ var (
 	appLastHeardBuf    bytes.Buffer
 	appUptimeBufMu     sync.Mutex
 	appUptimeBuf       bytes.Buffer
-	kernelUpdatedBuf   bytes.Buffer
 	kernelUpdatedBufMu sync.Mutex
+	kernelUpdatedBuf   bytes.Buffer
 )
 
 type AppStatusRequest struct {
@@ -44,7 +44,9 @@ func getKernelUpdated() (bool, error) {
 	defer kernelUpdatedBufMu.Unlock()
 
 	kernelUpdatedBuf.Reset()
-	kernelUpdatedBuf.ReadFrom(f)
+	if _, err := kernelUpdatedBuf.ReadFrom(f); err != nil {
+		return false, fmt.Errorf("cannot read '%s': %w", kernelUpdatedFilePath, err)
+	}
 
 	if kernelUpdatedBuf.String() != "true" {
 		return false, nil
@@ -64,7 +66,9 @@ func getLastHeard() (time.Time, error) {
 	defer appLastHeardBufMu.Unlock()
 
 	appLastHeardBuf.Reset()
-	appLastHeardBuf.ReadFrom(f)
+	if _, err := kernelUpdatedBuf.ReadFrom(f); err != nil {
+		return time.Time{}, fmt.Errorf("cannot read '%s': %w", appLastHeardFilePath, err)
+	}
 
 	if len(appLastHeardBuf.Bytes()) == 0 {
 		return time.Time{}, fmt.Errorf("old last heard value missing/nil (getLastHeard)")
@@ -108,7 +112,9 @@ func getAppUptime() (time.Duration, error) {
 	defer appUptimeBufMu.Unlock()
 
 	appUptimeBuf.Reset()
-	appUptimeBuf.ReadFrom(f)
+	if _, err := kernelUpdatedBuf.ReadFrom(f); err != nil {
+		return 0, fmt.Errorf("cannot read '%s': %w", appUptimeFilePath, err)
+	}
 
 	initialTimeVal, err := time.Parse(time.RFC3339, appUptimeBuf.String())
 	if err != nil {
@@ -129,7 +135,7 @@ func updateAppUptime(t time.Time) error {
 	defer appUptimeBufMu.Unlock()
 
 	appUptimeBuf.Reset()
-	appUptimeBuf.WriteString(time.Now().Format(time.RFC3339))
+	appUptimeBuf.WriteString(t.Format(time.RFC3339))
 
 	if err := os.WriteFile(appUptimeFilePath, appUptimeBuf.Bytes(), 0644); err != nil {
 		return err
