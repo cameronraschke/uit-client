@@ -33,6 +33,7 @@ if (-not ($secureBootUpdatedInRegistry -and $newKeyInSecureBootDB)) {
 		Write-Host "Secure Boot update task is already running."
 	} else {
 		Write-Warning "Secure Boot update task is not ready, exiting. Current state: $secureBootTaskState"
+		Read-Host "Press Enter to exit..."
 		Exit
 	}
 
