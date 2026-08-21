@@ -25,7 +25,7 @@ if (-not ($secureBootUpdatedInRegistry -and $newKeyInSecureBootDB)) {
 	}
 	
 	# Do Secure Boot update (2023 Microsoft CA)
-	$secureBootTaskState = (Get-ScheduledTask -TaskName "Secure-Boot-Update" -ErrorAction SilentlyContinue).State
+	$secureBootTaskState = ([System.String](Get-ScheduledTask -TaskName "Secure-Boot-Update" -ErrorAction SilentlyContinue).State).Trim()
 	if ($secureBootTaskState -ne "Ready") {
 		Write-Host "Starting Secure Boot update task..."
 		Start-ScheduledTask -TaskName "\Microsoft\Windows\PI\Secure-Boot-Update"
@@ -40,15 +40,15 @@ if (-not ($secureBootUpdatedInRegistry -and $newKeyInSecureBootDB)) {
 	while ($secureBootTaskState -ne "Ready") {
 		Write-Host "Waiting for Secure Boot update task to complete..."
 		Start-Sleep -Seconds 5
-		$secureBootTaskState = (Get-ScheduledTask -TaskName "Secure-Boot-Update" -ErrorAction SilentlyContinue).State
+		$secureBootTaskState = ([System.String](Get-ScheduledTask -TaskName "Secure-Boot-Update" -ErrorAction SilentlyContinue).State).Trim()
 	}
 }
 
-$registerUserDeviceTaskState = (Get-ScheduledTask -TaskName "RegisterUserDevice" -ErrorAction SilentlyContinue).State
+$registerUserDeviceTaskState = ([System.String](Get-ScheduledTask -TaskName "RegisterUserDevice" -ErrorAction SilentlyContinue).State).Trim()
 while ($registerUserDeviceTaskState -ne "Ready") {
 	Write-Host "Waiting for RegisterUserDevice task to be ready..."
 	Start-Sleep -Seconds 5
-	$registerUserDeviceTaskState = (Get-ScheduledTask -TaskName "RegisterUserDevice" -ErrorAction SilentlyContinue).State
+	$registerUserDeviceTaskState = ([System.String](Get-ScheduledTask -TaskName "RegisterUserDevice" -ErrorAction SilentlyContinue).State).Trim()
 }
 
 Read-Host "Post-Sysprep scripts finished, press Enter to continue..."
