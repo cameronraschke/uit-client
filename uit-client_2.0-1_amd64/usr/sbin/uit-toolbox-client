@@ -1743,9 +1743,9 @@ function execute_Clone {
 		footer
 		reset
 		sleep 1
-		#--ignore-update-efi-nvram
+		#--ignore-update-efi-nvram --change-geometry auto --load-geometry-from-edd
 		/usr/sbin/ocs-sr --language en_US.UTF-8 --postaction command --user-mode beginner \
-			--skip-set-netboot-first --change-geometry auto --load-geometry-from-edd \
+			--skip-set-netboot-first  \
 			-k1 --skip-check-restorable-r ${cloneMode} ${cloneImgName} ${CLIENTDISK}
 		if [[ $? -ne 0 ]]; then
 			printf "%s" "job_queue|${tagNum}|job_status|fail - cloning ${cloneImgName} -> ${CLIENTDISK}" | /opt/uit-toolbox/parse
