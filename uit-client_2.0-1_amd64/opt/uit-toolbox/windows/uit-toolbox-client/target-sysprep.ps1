@@ -37,6 +37,7 @@ if (-not ($secureBootUpdatedInRegistry -and $newKeyInSecureBootDB)) {
 		Exit
 	}
 
+	Start-Sleep 10
 	while ($secureBootTaskState -ne "Ready") {
 		Write-Host "Waiting for Secure Boot update task to complete..."
 		Start-Sleep -Seconds 5
@@ -44,6 +45,7 @@ if (-not ($secureBootUpdatedInRegistry -and $newKeyInSecureBootDB)) {
 	}
 }
 
+Start-Sleep 10
 $registerUserDeviceTaskState = ([System.String](Get-ScheduledTask -TaskName "RegisterUserDevice" -ErrorAction SilentlyContinue).State).Trim()
 while ($registerUserDeviceTaskState -ne "Ready") {
 	Write-Host "Waiting for RegisterUserDevice task to be ready..."
