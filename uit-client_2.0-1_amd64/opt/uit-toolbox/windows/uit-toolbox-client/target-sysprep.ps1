@@ -26,7 +26,7 @@ if (-not ($secureBootUpdatedInRegistry -and $newKeyInSecureBootDB)) {
 	
 	# Do Secure Boot update (2023 Microsoft CA)
 	$secureBootTaskState = ([System.String](Get-ScheduledTask -TaskName "Secure-Boot-Update" -ErrorAction SilentlyContinue).State).Trim()
-	if ($secureBootTaskState -ne "Ready") {
+	if ($secureBootTaskState -eq "Ready") {
 		Write-Host "Starting Secure Boot update task..."
 		Start-ScheduledTask -TaskName "\Microsoft\Windows\PI\Secure-Boot-Update"
 	} elseif ($secureBootTaskState -eq "Running") {
